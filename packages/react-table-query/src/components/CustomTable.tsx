@@ -1,5 +1,4 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import type { Dispatch, SetStateAction } from 'react';
 
 import { useEffect, useState, useMemo } from 'react';
 import {
@@ -9,49 +8,34 @@ import {
 	useReactTable
 } from '@tanstack/react-table';
 
-import { UseInfiniteQueryResult } from '@tanstack/react-query';
-import { useStore } from 'zustand';
-import { StoreApi } from 'zustand/vanilla';
-import { TableStore } from '../utils/types';
+import { CustomTableProps, TableStore } from '../utils/types';
 import Filter from './Filter';
 import { cx } from 'class-variance-authority';
 import IndeterminateCheckbox from './IndeterminateCheckbox';
+import { useTableStore } from '../utils/hooks';
+
 
 const CustomTable = <TData extends Record<string, any>>({
 	infiniteQuery,
 	setOnQueryKeyChange,
 	store,
 	...props
-}: {
-	infiniteQuery: UseInfiniteQueryResult<
-		{
-			data: TData[];
-		} & Record<string, unknown>,
-		{
-			message: string;
-		} & Record<string, unknown>
-	>;
-	columns: ColumnDef<TData, any>[];
-	setOnQueryKeyChange: Dispatch<
-		SetStateAction<(() => void) | null | undefined>
-	>;
-	store: StoreApi<TableStore<TData>>;
-}) => {
-	const currentPageIndex = useStore(
+}: CustomTableProps<TData>) => {
+	const currentPageIndex = useTableStore(
 		store,
-		(state: TableStore<TData>) => state.currentPageIndex
+		(store) => store.currentPageIndex
 	);
-	const rowSelection = useStore(
+	const rowSelection = useTableStore(
 		store,
-		(state: TableStore<TData>) => state.rowSelection
+		(store) => store.rowSelection
 	);
-	const columnFilters = useStore(
+	const columnFilters = useTableStore(
 		store,
-		(state: TableStore<TData>) => state.columnFilters
+		(store) => store.columnFilters
 	);
-	const filterByFormValues = useStore(
+	const filterByFormValues = useTableStore(
 		store,
-		(state: TableStore<TData>) => state.filterByFormValues
+		(store) => store.filterByFormValues
 	);
 
 	const [filterersKeysMap, setFilterersKeys] = useState(
@@ -71,13 +55,13 @@ const CustomTable = <TData extends Record<string, any>>({
 			);
 	}, [filterByFormValues, filterersKeysMap]);
 
-	const setRowSelection = useStore(
+	const setRowSelection = useTableStore(
 		store,
-		(state: TableStore<TData>) => state.setRowSelection
+		(store) => store.setRowSelection
 	);
-	const setColumnFilters = useStore(
+	const setColumnFilters = useTableStore(
 		store,
-		(state: TableStore<TData>) => state.setColumnFilters
+		(store) => store.setColumnFilters
 	);
 
 	const columns: ColumnDef<TData, any>[] = useMemo(

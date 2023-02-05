@@ -3,7 +3,6 @@ import type { StoreApi } from 'zustand';
 import type { Table, Column } from '@tanstack/react-table';
 import type { InputHTMLAttributes } from 'react';
 
-// import { useStore } from 'zustand';
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useTableStore } from '../utils/hooks';
 
@@ -168,11 +167,8 @@ const StringFilter = <TData extends Record<string, unknown>>({
 
 	const onChange = useCallback(
 		(value: string) => {
-			console.log('remoteFilter', remoteFilter);
 			if (remoteFilter)
 				return setFilterByFormValues((prevData) => {
-					console.log('prevData', prevData);
-					console.log('column.id', column.id);
 					if (!prevData) return prevData;
 					const filter = prevData[column.id];
 					return {

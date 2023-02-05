@@ -39,12 +39,15 @@ export const handleCustomTableStore = <TData extends Record<string, any>[]>({
 			})),
 		setFilterByFormValues: (
 			updaterOrValue: StoreUpdaterOrValue<'filterByFormValues'>
-		) =>
-			set((prevData: TableStore<TData[number]>) => ({
-				filterByFormValues: !prevData.filterByFormValues
+		) => {
+			set((prevData: TableStore<TData[number]>) => {
+				const filterByFormValues = !prevData.filterByFormValues
 					? prevData.filterByFormValues
 					: typeof updaterOrValue === 'function'
-					? updaterOrValue(prevData.filterByFormValues)
-					: updaterOrValue
-			}))
+						? updaterOrValue(prevData.filterByFormValues)
+						: updaterOrValue;
+				
+				return ({ filterByFormValues, currentPageIndex: 0 })
+			})
+		}
 	}));

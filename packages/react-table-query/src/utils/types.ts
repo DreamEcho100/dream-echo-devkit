@@ -1,10 +1,8 @@
-import type {
-	ColumnFiltersState,
-	RowSelectionState
-} from '@tanstack/react-table';
-import type { DeepKeys } from '@tanstack/react-table';
+import type { ColumnDef, ColumnFiltersState, DeepKeys, RowSelectionState } from '@tanstack/react-table';
+import type { UseInfiniteQueryResult } from '@tanstack/react-query';
+import type { StoreApi } from 'zustand/vanilla';
+import type { Dispatch, SetStateAction } from 'react';
 export type { ColumnDef } from '@tanstack/react-table';
-// export  type { TableStore } from '@tanstack/react-table-query';
 
 export type TStringFilter = {
 	dataType: 'text';
@@ -63,6 +61,10 @@ export type TableStore<TData extends Record<string, any>> = {
 	) => any;
 };
 
+/*
+- Components Props
+*/
+
 export type StoreUpdaterOrValue<
 	T extends keyof TableStore<Record<string, unknown>>
 > =
@@ -70,3 +72,33 @@ export type StoreUpdaterOrValue<
 	| ((
 			prevData: TableStore<Record<string, unknown>>[T]
 	  ) => TableStore<Record<string, unknown>>[T]);
+
+		
+		export type TableControlsV1Props<TData extends Record<string, any>> = {
+	infiniteQuery: UseInfiniteQueryResult<
+		{
+			data: TData[];
+		} & Record<string, unknown>,
+		{
+			message: string;
+		} & Record<string, unknown>
+	>;
+	store: StoreApi<TableStore<TData>>;
+}
+
+
+export type CustomTableProps<TData extends Record<string, any>> = {
+	infiniteQuery: UseInfiniteQueryResult<
+		{
+			data: TData[];
+		} & Record<string, unknown>,
+		{
+			message: string;
+		} & Record<string, unknown>
+	>;
+	columns: ColumnDef<TData, any>[];
+	setOnQueryKeyChange: Dispatch<
+		SetStateAction<(() => void) | null | undefined>
+	>;
+	store: StoreApi<TableStore<TData>>;
+}

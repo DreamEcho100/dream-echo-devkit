@@ -1,41 +1,17 @@
+import type { TableControlsV1Props } from '../utils/types';
+
 import { IoIosArrowBack, IoIosArrowForward, IoMdRefresh } from 'react-icons/io';
 import { useCallback, useMemo } from 'react';
+import { useTableStore } from '../utils/hooks';
 
-import { UseInfiniteQueryResult } from '@tanstack/react-query';
-import { useStore } from 'zustand';
-import { StoreApi } from 'zustand/vanilla';
-import { TableStore } from '../utils/types';
 
 const TableControlsV1 = <TData extends Record<string, any>>({
 	infiniteQuery,
 	store
-}: {
-	infiniteQuery: UseInfiniteQueryResult<
-		{
-			data: TData[];
-		} & Record<string, unknown>,
-		{
-			message: string;
-		} & Record<string, unknown>
-	>;
-	store: StoreApi<TableStore<TData>>;
-}) => {
-	const currentPageIndex = useStore(
+}: TableControlsV1Props<TData>) => {
+	const { currentPageIndex, incrementCurrentPageIndex, decrementCurrentPageIndex, setRowSelection } = useTableStore(
 		store,
-		(state: TableStore<TData>) => state.currentPageIndex
-	);
-
-	const incrementCurrentPageIndex = useStore(
-		store,
-		(state: TableStore<TData>) => state.incrementCurrentPageIndex
-	);
-	const decrementCurrentPageIndex = useStore(
-		store,
-		(state: TableStore<TData>) => state.decrementCurrentPageIndex
-	);
-	const setRowSelection = useStore(
-		store,
-		(state: TableStore<TData>) => state.setRowSelection
+		(state) => state
 	);
 
 	const {
@@ -68,12 +44,6 @@ const TableControlsV1 = <TData extends Record<string, any>>({
 		};
 	}, [currentPageIndex, infiniteQuery?.data?.pages]);
 
-	console.log('isLastPageEmpty', isLastPageEmpty);
-	console.log('isInLastPage', isInLastPage);
-	console.log('isInBeforeLastPage', isInBeforeLastPage);
-	console.log('isInFirstPage', isInFirstPage);
-	console.log('pagesLength', pagesLength);
-
 	const isNextPageDisabled = useMemo(
 		() =>
 			(!infiniteQuery.hasNextPage &&
@@ -89,7 +59,6 @@ const TableControlsV1 = <TData extends Record<string, any>>({
 			isLastPageEmpty
 		]
 	);
-	console.log('isNextPageDisabled', isNextPageDisabled);
 
 	const isPreviousPageDisabled = useMemo(
 		() => currentPageIndex === 0 || infiniteQuery.isFetching,
@@ -140,7 +109,6 @@ const TableControlsV1 = <TData extends Record<string, any>>({
 
 					infiniteQuery.fetchNextPage().then((res) => {
 						if (res.data && Array.isArray(res.data?.pages)) {
-							console.log('res.data?.pages', res.data?.pages);
 							const lastPage = res.data.pages[res.data.pages.length - 1];
 							if (isInBeforeLastPage && lastPage.data.length === 0) return;
 						}

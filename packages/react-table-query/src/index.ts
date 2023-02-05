@@ -12,10 +12,7 @@ export type {
 
 
 
-// useCustomInfiniteQuery;
-// CustomTable;
-// TableControlsV1;
-// createColumnHelper;
-// handleCustomTableStore;
-// useCustomInfiniteQuery;
-// ColumnDef;
+// "main": "./dist/index.js",
+// "types": "./dist/index.d.ts",
+// "main": "src/index.ts",
+// "types": "src/index.ts",
