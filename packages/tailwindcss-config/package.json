@@ -1,0 +1,15 @@
+{
+  "name": "tailwindcss-config",
+  "version": "0.0.0",
+  "private": true,
+  "files": [
+    "tailwind.config.cjs"
+  ],
+  "devDependencies": {
+    "@tailwindcss/line-clamp": "^0.4.2",
+    "@tailwindcss/typography": "^0.5.9",
+    "tailwindcss": "^3.2.4",
+    "tailwindcss-brand-colors": "^0.3.3",
+    "tailwindcss-debug-screens": "^2.2.1"
+  }
+}

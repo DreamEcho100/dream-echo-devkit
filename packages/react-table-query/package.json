@@ -1,0 +1,26 @@
+{
+	"name": "react-table-query",
+	"version": "0.0.0",
+	"main": "src/index.tsx",
+	"types": "src/index.tsx",
+	"license": "MIT",
+	"scripts": {
+		"lint": "eslint *.ts*"
+	},
+	"dependencies": {
+		"@tanstack/react-query": "^4.24.4",
+		"@tanstack/react-table": "^8.7.9",
+		"class-variance-authority": "^0.4.0",
+		"react": "^18.2.0",
+		"react-dom": "18.2.0",
+		"react-icons": "^4.7.1",
+		"zustand": "^4.3.2"
+	},
+	"devDependencies": {
+		"@types/react": "^18.0.27",
+		"@types/react-dom": "^18.0.10",
+		"eslint-config-custom": "workspace:*",
+		"eslint": "^8.33.0",
+		"tsconfig": "workspace:*"
+	}
+}
