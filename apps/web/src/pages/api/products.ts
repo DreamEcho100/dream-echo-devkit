@@ -1,24 +1,29 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
-import { Product } from '@/appData/products';
-import products from '@/appData/products/index.json';
+import { Product } from '~/appData/products';
+import products from '~/appData/products/index.json';
 
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 import { z } from 'zod';
 
-const queryValidator = (item: unknown) => 
+const queryValidator = (item: unknown) =>
 	z
 		.object({
 			offset: z.number().min(0).optional().default(0),
-			limit: z.literal(5).or(z.literal(10)).or(z.literal(20)).optional().default(5),
+			limit: z
+				.literal(5)
+				.or(z.literal(10))
+				.or(z.literal(20))
+				.optional()
+				.default(5),
 			filterBy: z
 				.object({
 					category: z.string().optional(),
 					title: z.string().optional(),
-					priceGTE: z.number().optional()
+					priceGTE: z.number().optional(),
 				})
 				.optional()
-				.default({})
+				.default({}),
 		})
 		.parse(item);
 
@@ -27,11 +32,12 @@ export type ProductsAPIOutput = { products: Product[] };
 
 export default function handler(
 	req: NextApiRequest,
-	res: NextApiResponse<ProductsAPIOutput | { message: string }>
+	res: NextApiResponse<ProductsAPIOutput | { message: string }>,
 ) {
-	if (req.method !== 'GET') return res.status(404).json({
-		message: 'Path is not found!'
-	});
+	if (req.method !== 'GET')
+		return res.status(404).json({
+			message: 'Path is not found!',
+		});
 
 	let query: ProductsAPIInput;
 	try {
@@ -41,16 +47,16 @@ export default function handler(
 			filterBy:
 				typeof req.query.filterBy === 'string'
 					? JSON.parse(req.query.filterBy)
-					: undefined
+					: undefined,
 		});
 	} catch (err) {
 		err instanceof Error && console.error('err.message', err.message);
 		return res.status(400).json({
-				message: err instanceof Error ? err.message : JSON.stringify(err)
-			});
+			message: err instanceof Error ? err.message : JSON.stringify(err),
+		});
 	}
 
-	console.log('server query', query)
+	console.log('server query', query);
 
 	const filterBy = query.filterBy;
 

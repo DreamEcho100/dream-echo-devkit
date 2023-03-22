@@ -1,6 +1,6 @@
 module.exports = {
 	env: {
-		node: true
+		node: true,
 	},
 	extends: [
 		'eslint:recommended',
@@ -8,41 +8,26 @@ module.exports = {
 		'plugin:import/errors',
 		'plugin:import/warnings',
 		'plugin:import/typescript',
-		'prettier'
+		'prettier',
 	],
 	plugins: ['import', '@typescript-eslint'],
 	parserOptions: {
-		project: ['./tsconfig.json']
+		project: ['./tsconfig.json'],
 	},
 	settings: {
 		'import/parsers': {
-			'@typescript-eslint/parser': ['.ts']
+			'@typescript-eslint/parser': ['.ts'],
 		},
 		'import/resolver': {
 			node: {
 				extensions: ['.js', '.ts'],
-				moduleDirectory: ['node_modules', 'src/']
+				moduleDirectory: ['node_modules', 'src/'],
 			},
 			typescript: {
 				alwaysTryTypes: true,
-				project: '.'
-			}
-		}
-	},
-	overrides: [
-		{
-			env: {
-				jest: true
+				project: '.',
 			},
-			files: ['**/__tests__/**/*.[jt]s', '**/?(*.)+(spec|test).[jt]s'],
-			extends: ['plugin:jest/recommended'],
-			rules: {
-				'import/no-extraneous-dependencies': [
-					'off',
-					{ devDependencies: ['**/?(*.)+(spec|test).[jt]s'] }
-				]
-			}
-		}
-	],
-	ignorePatterns: ['**/*.js', 'node_modules', '.turbo', 'dist', 'coverage']
+		},
+	},
+	ignorePatterns: ['**/*.js', 'node_modules', '.turbo', 'dist', 'coverage'],
 };
