@@ -1,4 +1,4 @@
-import { TInputDateTypes } from '../types';
+import { InputDateTypes } from '../types';
 
 /**
  * Formats a date object to the desired string format based on the type.
@@ -6,7 +6,7 @@ import { TInputDateTypes } from '../types';
  * @param {string} type - The format type ('date', 'time', 'datetime-local', 'week', or 'month').
  * @returns {string} A formatted string based on the specified format.
  */
-function formatDate(date: Date, type: TInputDateTypes): string {
+function formatDate(date: Date, type: InputDateTypes): string {
 	// Initialize an empty string to hold the formatted date
 	let formattedDate = '';
 
@@ -50,7 +50,7 @@ function formatDate(date: Date, type: TInputDateTypes): string {
  * @param {string} type - The format type ('date', 'time', 'datetime-local', 'week', or 'month').
  * @returns {Date} - The parsed Date object.
  */
-function parseDate(dateString: string, type: TInputDateTypes): Date {
+function parseDate(dateString: string, type: InputDateTypes): Date {
 	// Declare a variable to hold the parsed date
 	let parsedDate: Date;
 

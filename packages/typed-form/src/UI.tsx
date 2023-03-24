@@ -1,18 +1,11 @@
-import type {
-	TFieldShape,
-	TAllFieldsShape,
-	TFormProps,
-	TInputFieldProps,
-	TValue,
-} from './types';
+import type { FieldShape, AllFieldsShape, FormProps, Value } from './types';
 import { useFormStore } from './utils';
 
-export const Form = <TFields extends TAllFieldsShape>({
+export const Form = <Fields extends AllFieldsShape>({
 	store,
 	handleOnSubmit,
-	// customValidationOnSubmit,
 	...props
-}: TFormProps<TFields>) => {
+}: FormProps<Fields>) => {
 	const { setFieldsError, getFieldErrorFormatter } = useFormStore(
 		store,
 		(store) => ({
@@ -23,16 +16,14 @@ export const Form = <TFields extends TAllFieldsShape>({
 	return (
 		<form
 			onSubmit={(event) => {
-				if (!handleOnSubmit) return;
-
 				event.preventDefault();
-				const formFieldsValues: TValue<TFields> = {} as TValue<TFields>;
-				const errors: Partial<Record<keyof TFields, TFieldShape['errors']>> =
-					{};
+				const formFieldsValues: Value<Fields> = {} as Value<Fields>;
+				const errors: Partial<Record<keyof Fields, FieldShape['errors']>> = {};
+				// event.target.
 				const fields = store.getState().fields;
 
-				let fieldName: keyof TFields; // typeof fields
-				let field: TFields[keyof TFields];
+				let fieldName: keyof Fields;
+				let field: Fields[keyof Fields];
 				for (fieldName in fields) {
 					field = fields[fieldName];
 					formFieldsValues[fieldName] = field.value;
@@ -48,9 +39,9 @@ export const Form = <TFields extends TAllFieldsShape>({
 					}
 				}
 
-				// store.getState().
 				if (Object.keys(errors).length > 0) return setFieldsError(errors);
-				else handleOnSubmit({ event, values: formFieldsValues });
+				else if (handleOnSubmit)
+					handleOnSubmit({ event, values: formFieldsValues });
 			}}
 			{...props}
 		/>

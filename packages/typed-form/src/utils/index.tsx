@@ -2,44 +2,20 @@ export { default as inputDateHelpers } from './inputDateHelpers';
 
 import { createStore, useStore } from 'zustand';
 import type {
-	TAllFieldsShape,
-	TFormStoreDataShape,
-	TFormStoreApi,
-	TFieldShape,
+	AllFieldsShape,
+	FormStoreDataShape,
+	FormStoreApi,
+	FieldShape,
+	AllFieldsShapePartial,
+	AllFieldsErrors,
 } from '../types';
 
-type TAllFieldsShapePartial<TAllFields extends TAllFieldsShape> = Record<
-	keyof TAllFields,
-	Pick<TAllFields[keyof TAllFields], 'value'> &
-		Partial<
-			Omit<
-				TAllFields[keyof TAllFields],
-				'value' | 'error' | 'isDirty' | 'isTouched'
-			>
-		>
-	// Pick<TAllFields[keyof TAllFields], 'value'> &
-	// 	Partial<Pick<
-	// 		TAllFields[keyof TAllFields],
-	// 		| 'validationDefaultHandler'
-	// 		| 'validateOnBlur'
-	// 		| 'validateOnChange'
-	// 		| 'validateOnMount'
-	// 		| 'validateOnSubmit'
-	// 		| 'fieldErrorFormatter'
-	// 	>>
->;
-
-const handleAllFieldsShapePartial = <TAllFields extends TAllFieldsShape>(
-	fields: TAllFieldsShapePartial<TAllFields>,
+const handleAllFieldsShapePartial = <TAllFields extends AllFieldsShape>(
+	fields: AllFieldsShapePartial<TAllFields>,
 ): TAllFields => {
 	const allFields = {} as TAllFields;
 
 	for (const fieldName in fields) {
-		/*
-			const fieldName: Extract<keyof TAllFields, string>
-			Type 'TAllFieldsShapePartial<TAllFields>[Extract<keyof TAllFields, string>] & { errors: []; isDirty: false; isTouched: false; }' is not assignable to type 'TAllFields[Extract<keyof TAllFields, string>]'.
-			'TAllFieldsShapePartial<TAllFields>[Extract<keyof TAllFields, string>] & { errors: []; isDirty: false; isTouched: false; }' is assignable to the constraint of type 'TAllFields[Extract<keyof TAllFields, string>]', but 'TAllFields[Extract<keyof TAllFields, string>]' could be instantiated with a different subtype of constraint 'TFieldShape'.ts(2322)
-		*/
 		allFields[fieldName] = {
 			...fields[fieldName],
 			errors: [],
@@ -51,33 +27,95 @@ const handleAllFieldsShapePartial = <TAllFields extends TAllFieldsShape>(
 	return allFields;
 };
 
-export const createFormStore = <TAllFields extends TAllFieldsShape>({
+/**
+ * Creates a form store with default values for form data and fields.
+ * The store can be used to manage form state and handle form submission and validation.
+ *
+ * @template TAllFields - The shape of all fields in the form.
+ *
+ * @param {Object} options - The options to configure the form store.
+ * @param {Object} [options.form] - The initial form data.
+ * @param {Object} [options.fieldsShared] - The shared options for all fields.
+ * @param {Object} options.fields - The shape of all fields in the form.
+ *
+ * @returns {Object} The form store with its initial state and methods to update it.
+ *
+ * @example
+ * const formStore = createFormStore({
+ * 	form: {
+ * 		errors: {},
+ * 		isDirty: false,
+ * 		isTouched: false,
+ * 		validateAllFieldsOnSubmit: true,
+ * 		submitCounter: 0,
+ * 	},
+ * 	fieldsShared: {
+ * 		validateFieldOnSubmit: true,
+ * 		fieldErrorFormatter: errFormatter,
+ * 	},
+ * 	fields: {
+ * 		firstName: {
+ * 			value: '',
+ * 			validationDefaultHandler: isNotEmpty,
+ * 			validateOnChange: true,
+ * 		},
+ * 		lastName: {
+ * 			value: '',
+ * 			validationDefaultHandler: isNotEmpty,
+ * 			validateOnChange: true,
+ * 		},
+ * 		email: {
+ * 			value: '',
+ * 			validationDefaultHandler: isEmailValid,
+ * 			validateOnChange: true,
+ * 		},
+ * 	},
+ * });
+ */
+export const createFormStore = <TAllFields extends AllFieldsShape>({
 	form,
 	fields,
 	fieldsShared,
 }: {
-	form?: Partial<TFormStoreDataShape<TAllFields>['form']>;
-	fieldsShared?: Partial<TFormStoreDataShape<TAllFields>['fieldsShared']>;
-	fields: TAllFieldsShapePartial<TAllFields>;
+	fieldsShared?: Partial<FormStoreDataShape<TAllFields>['fieldsShared']>;
+	form?: Partial<FormStoreDataShape<TAllFields>['form']>;
+	fields: AllFieldsShapePartial<TAllFields>;
 }) =>
-	createStore<TFormStoreDataShape<TAllFields>>((set, get) => ({
+	createStore<FormStoreDataShape<TAllFields>>((set, get) => ({
 		fieldsShared: {
-			validateOnSubmit: true,
 			fieldErrorFormatter: errFormatter,
 			...(fieldsShared || {}),
 		},
 		fields: handleAllFieldsShapePartial(fields),
 		form: {
-			errors: {},
+			errors: (() => {
+				const errors = {
+					___generic: [],
+				} as FormStoreDataShape<TAllFields>['form']['errors'];
+
+				let fieldName: keyof typeof fields;
+				for (fieldName in fields) {
+					// ! Needs more work
+					errors[fieldName] =
+						[] as unknown as (typeof errors)[typeof fieldName]; //[] as string[];
+				}
+
+				if (Object.keys(errors).length - 1 !== Object.keys(fields).length)
+					throw new Error('Invalid fields/errors conversion');
+
+				return errors;
+			})(),
 			isDirty: false,
 			isTouched: false,
 			validateAllFieldsOnSubmit: true,
 			submitCounter: 0,
+			// validateFieldsOnSubmit: true,
+			// fieldErrorFormatter: errFormatter,
 			...form,
 		},
 
 		setFieldValue: ({ name, value }) =>
-			set((state: TFormStoreDataShape<TAllFields>) => {
+			set((state: FormStoreDataShape<TAllFields>) => {
 				if (name in state.fields) return state;
 
 				const field = state.fields[name];
@@ -86,48 +124,51 @@ export const createFormStore = <TAllFields extends TAllFieldsShape>({
 				let validatedValue = value;
 
 				let form = state.form;
-				let formErrors: typeof state.form.errors = {};
-				let isFormDirty: boolean = form.isDirty;
+				let isFormDirty = form.isDirty;
 
-				let formErrorFieldName: keyof typeof formErrors;
-				for (formErrorFieldName in formErrors) {
-					if (formErrorFieldName !== name)
-						formErrors[formErrorFieldName] =
-							state.form.errors[formErrorFieldName];
-					else formErrorFieldName;
-				}
-
+				// If the field has a validation handler and it is set to validate on change,
+				// run the validation handler on the new value.
 				if (field.validateOnChange && field.validationDefaultHandler) {
 					try {
 						validatedValue = field.validationDefaultHandler(field.value);
+						errors = field.errors.length === 0 ? field.errors : [];
 						isDirty = false;
-						// Mutable?
-						if (form.errors[name]) {
-							delete form.errors[name];
-						}
 					} catch (err) {
-						if (err instanceof Error) {
-							const fieldErrorFormatter =
-								field.fieldErrorFormatter ||
-								get().fieldsShared.fieldErrorFormatter;
-							errors = fieldErrorFormatter(err);
+						// If there is an error during validation, set the field as dirty and
+						// set the error in the form state.
+						const fieldErrorFormatter =
+							field.fieldErrorFormatter ||
+							get().fieldsShared.fieldErrorFormatter;
+						errors = fieldErrorFormatter(err);
 
-							if (name in state.fields && errors.length > 0)
-								formErrors[name satisfies keyof TAllFields] = errors;
-
-							form = {
-								...form,
-								errors: formErrors,
-							};
+						// If the field has errors, add them to the form errors object
+						if (errors.length === 0) {
+							throw new Error(
+								'No errors were returned!,\nplease check the `fieldErrorFormatter` method.',
+							);
 						}
+
+						form = {
+							...form,
+							errors: {
+								...form.errors,
+								[name]: errors,
+							},
+						};
+
 						isDirty = true;
 					}
 				}
 
+				// Check if the form is dirty based on whether the field has any errors or not.
 				isFormDirty =
-					errors.length !== 0 || Object.keys(form.errors).length === 0;
-				if (isFormDirty !== form.isDirty) form = { ...form, isDirty };
+					isDirty ||
+					errors.length !== 0 ||
+					!!(form.errors && Object.keys(form.errors).length === 0);
+				if (isFormDirty !== form.isDirty)
+					form = { ...form, isDirty: isFormDirty };
 
+				// Return the updated state with the new field value and form state.
 				return {
 					fields: {
 						form,
@@ -154,12 +195,17 @@ export const createFormStore = <TAllFields extends TAllFieldsShape>({
 		getFieldErrorFormatter: (name) =>
 			(name && get().fields[name]?.fieldErrorFormatter) ||
 			get().fieldsShared.fieldErrorFormatter,
+		getIsFieldIsUncontrolled: (name) => {
+			if (typeof get().fields[name].isUncontrolled === 'boolean')
+				return get().fields[name].isUncontrolled;
+			return get().fieldsShared.isUncontrolled;
+		},
 	}));
 
-export const useFormStore = <TAllFields extends TAllFieldsShape, U>(
-	store: TFormStoreApi<TAllFields>,
+export const useFormStore = <TAllFields extends AllFieldsShape, U>(
+	store: FormStoreApi<TAllFields>,
 	cb: (
-		state: TFormStoreApi<TAllFields> extends {
+		state: FormStoreApi<TAllFields> extends {
 			getState: () => infer T;
 		}
 			? T
@@ -167,7 +213,7 @@ export const useFormStore = <TAllFields extends TAllFieldsShape, U>(
 	) => U,
 ) => useStore(store, cb);
 
-export const errFormatter = (error: unknown): TFieldShape['errors'] => {
+export const errFormatter = (error: unknown): FieldShape['errors'] => {
 	if (error instanceof Error) return [error.message];
 	return ['Something went wrong!'];
 };

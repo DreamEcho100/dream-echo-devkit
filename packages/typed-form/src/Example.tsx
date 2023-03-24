@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { Form } from './UI';
 import { createFormStore, useFormStore } from './utils';
-import { TAllFieldsShape, TInputFieldProps } from './types';
+import { AllFieldsShape, InputFieldProps } from './types';
 
 const formStore = createFormStore({
 	fieldsShared: {
@@ -20,10 +20,10 @@ const formStore = createFormStore({
 	},
 });
 
-const InputField = <TFields extends TAllFieldsShape>({
+const InputField = <TFields extends AllFieldsShape>({
 	store,
 	...props
-}: TInputFieldProps<TFields>) => {
+}: InputFieldProps<TFields>) => {
 	const { field, setFieldValue, errFormatter, setFieldsError } = useFormStore(
 		store,
 		(store) => ({
