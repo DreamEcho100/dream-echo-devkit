@@ -1,3 +1,5 @@
+export { default as inputDateHelpers } from './inputDateHelpers';
+
 import { createStore, useStore } from 'zustand';
 import type {
 	TFieldsShape,
@@ -9,12 +11,13 @@ export const createFormStore = <TFields extends TFieldsShape>({
 	fields,
 	shared,
 }: {
-	shared?: TFormStoreDataShape<TFields>['shared'];
+	shared?: Partial<TFormStoreDataShape<TFields>['shared']>;
 	fields: TFields;
 }) =>
-	createStore<TFormStoreDataShape<TFields>>((set) => ({
+	createStore<TFormStoreDataShape<TFields>>((set, get) => ({
 		shared: {
 			validateOnSubmit: true,
+			fieldErrorFormatter: errFormatter,
 			...(shared || {}),
 		},
 		fields,
@@ -45,7 +48,6 @@ export const createFormStore = <TFields extends TFieldsShape>({
 					},
 				};
 			}),
-		// errors: {},
 		setFieldsError: (errors) =>
 			set((state) => {
 				const modifiedFields = Object.keys(errors).map((fieldName) => ({
@@ -61,6 +63,9 @@ export const createFormStore = <TFields extends TFieldsShape>({
 					},
 				};
 			}),
+		getFieldErrorFormatter: (name) =>
+			(name && get().fields[name]?.fieldErrorFormatter) ||
+			get().shared.fieldErrorFormatter,
 	}));
 
 export const useFormStore = <TFields extends TFieldsShape, U>(
@@ -74,8 +79,7 @@ export const useFormStore = <TFields extends TFieldsShape, U>(
 	) => U,
 ) => useStore(store, cb);
 
-// type ExtractState<S> = S extends {
-// 	getState: () => infer T
-// }
-// 	? T
-// 	: never
+export const errFormatter = (error: unknown) => {
+	if (error instanceof Error) return error.message;
+	return 'Something went wrong!';
+};

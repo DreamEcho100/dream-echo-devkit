@@ -1,4 +1,9 @@
-import type { TFieldsShape, TFormProps, TValue } from './types';
+import type {
+	TFieldsShape,
+	TFormProps,
+	TInputFieldProps,
+	TValue,
+} from './types';
 import { useFormStore } from './utils';
 
 export const Form = <TFields extends TFieldsShape>({
@@ -7,7 +12,13 @@ export const Form = <TFields extends TFieldsShape>({
 	// customValidationOnSubmit,
 	...props
 }: TFormProps<TFields>) => {
-	useFormStore(store, (store) => ({ setFieldsError: store.setFieldsError }));
+	const { setFieldsError, getFieldErrorFormatter } = useFormStore(
+		store,
+		(store) => ({
+			setFieldsError: store.setFieldsError,
+			getFieldErrorFormatter: store.getFieldErrorFormatter,
+		}),
+	);
 	return (
 		<form
 			onSubmit={(event) => {
@@ -19,8 +30,9 @@ export const Form = <TFields extends TFieldsShape>({
 				const fields = store.getState().fields;
 
 				let fieldName: keyof TFields; // typeof fields
+				let field: TFields[keyof TFields];
 				for (fieldName in fields) {
-					const field = fields[fieldName];
+					field = fields[fieldName];
 					formFieldsValues[fieldName] = field.value;
 					if (
 						field.validateOnSubmit &&
@@ -29,13 +41,13 @@ export const Form = <TFields extends TFieldsShape>({
 						try {
 							field.handleValidation(field.value);
 						} catch (error) {
-							if (error instanceof Error) errors[fieldName] = error.message;
+							errors[fieldName] = getFieldErrorFormatter(fieldName)(error);
 						}
 					}
 				}
 
-				if (Object.keys(errors).length > 0)
-					return store.getState().setFieldsError(errors);
+				// store.getState().
+				if (Object.keys(errors).length > 0) return setFieldsError(errors);
 				else handleOnSubmit({ event, values: formFieldsValues });
 			}}
 			{...props}
