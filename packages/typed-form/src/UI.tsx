@@ -1,12 +1,13 @@
 import type {
-	TFieldsShape,
+	TFieldShape,
+	TAllFieldsShape,
 	TFormProps,
 	TInputFieldProps,
 	TValue,
 } from './types';
 import { useFormStore } from './utils';
 
-export const Form = <TFields extends TFieldsShape>({
+export const Form = <TFields extends TAllFieldsShape>({
 	store,
 	handleOnSubmit,
 	// customValidationOnSubmit,
@@ -26,7 +27,8 @@ export const Form = <TFields extends TFieldsShape>({
 
 				event.preventDefault();
 				const formFieldsValues: TValue<TFields> = {} as TValue<TFields>;
-				const errors: Partial<Record<keyof TFields, string>> = {};
+				const errors: Partial<Record<keyof TFields, TFieldShape['errors']>> =
+					{};
 				const fields = store.getState().fields;
 
 				let fieldName: keyof TFields; // typeof fields
@@ -36,10 +38,10 @@ export const Form = <TFields extends TFieldsShape>({
 					formFieldsValues[fieldName] = field.value;
 					if (
 						field.validateOnSubmit &&
-						typeof field.handleValidation === 'function'
+						typeof field.validationDefaultHandler === 'function'
 					) {
 						try {
-							field.handleValidation(field.value);
+							field.validationDefaultHandler(field.value);
 						} catch (error) {
 							errors[fieldName] = getFieldErrorFormatter(fieldName)(error);
 						}

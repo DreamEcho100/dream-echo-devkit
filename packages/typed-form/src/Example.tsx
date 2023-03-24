@@ -1,26 +1,26 @@
 import { z } from 'zod';
 import { Form } from './UI';
 import { createFormStore, useFormStore } from './utils';
-import { TFieldsShape, TInputFieldProps } from './types';
+import { TAllFieldsShape, TInputFieldProps } from './types';
 
 const formStore = createFormStore({
-	shared: {
-		validateOnChange: true,
+	fieldsShared: {
+		// validateOnChange: true,
 		validateOnSubmit: true,
 	},
 	fields: {
 		name: {
 			value: '',
-			handleValidation: (value) => z.string().parse(value),
+			validationDefaultHandler: (value) => z.string().parse(value),
 		},
 		age: {
 			value: 0,
-			handleValidation: (value) => z.number().parse(value),
+			validationDefaultHandler: (value) => z.number().parse(value),
 		},
 	},
 });
 
-const InputField = <TFields extends TFieldsShape>({
+const InputField = <TFields extends TAllFieldsShape>({
 	store,
 	...props
 }: TInputFieldProps<TFields>) => {
@@ -42,8 +42,8 @@ const InputField = <TFields extends TFieldsShape>({
 			onChange={(event) => {
 				try {
 					const value =
-						field.validateOnChange && field.handleValidation
-							? field.handleValidation(event.target.value)
+						field.validateOnChange && field.validationDefaultHandler
+							? field.validationDefaultHandler(event.target.value)
 							: event.target.value;
 
 					setFieldValue({ name: props.name, value });

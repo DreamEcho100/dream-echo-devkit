@@ -11,46 +11,91 @@ export type TInputDateTypes =
 	| 'week'
 	| 'month';
 
-export type TFieldShape = {
+type THandleValidation = (value: unknown) => unknown;
+type TFieldErrorFormatter = (
+	error: unknown,
+) => Exclude<TFieldShape['errors'], []>;
+type TAllFieldsErrorFormatter<TFields extends TAllFieldsShape> = (
+	error: unknown,
+) => Partial<Record<keyof TFields, TFieldShape['errors']>>;
+
+type TFieldErrors =
+	| {
+			errors: [];
+			isDirty: false;
+	  }
+	| {
+			errors: string[];
+			isDirty: true;
+	  };
+type TAllFieldsErrors<TFields extends TAllFieldsShape> =
+	| {
+			errors: Partial<Record<keyof TFields, string[]>>;
+			isDirty: false;
+	  }
+	| {
+			errors: Partial<Record<keyof TFields, string[]>>;
+			isDirty: true;
+	  };
+
+export type TFieldShape = TFieldErrors & {
 	value: unknown;
-	handleValidation?: (value: unknown) => unknown;
-	validateOnChange?: boolean;
-	validateOnSubmit?: boolean;
-	error?: string;
-	fieldErrorFormatter?: (error: unknown) => string;
-	hasValueChangedSinceLastError?: boolean;
+
+	validationDefaultHandler?: THandleValidation;
+	validateOnBlur?: boolean | THandleValidation;
+	validateOnChange?: boolean | THandleValidation;
+	validateOnMount?: boolean | THandleValidation;
+	validateOnSubmit?: boolean | THandleValidation;
+	fieldErrorFormatter?: TFieldErrorFormatter;
+	isTouched: boolean;
 };
 
-export type TFieldsShape = Record<string, TFieldShape>;
+export type TAllFieldsShape = Record<string, TFieldShape>;
 
-export type TFormStoreDataShape<TFields extends TFieldsShape> = {
-	shared: {
-		validateOnChange?: boolean;
-		validateOnSubmit: boolean;
-		fieldErrorFormatter: (error: unknown) => string;
+export type TFormStoreDataShape<TFields extends TAllFieldsShape> = {
+	fieldsShared: {
+		validationDefaultHandler?: THandleValidation;
+		validateFieldOnBlur?: boolean | THandleValidation;
+		validateFieldOnChange?: boolean | THandleValidation;
+		validateOnMount?: boolean | THandleValidation;
+		validateOnSubmit?: boolean | THandleValidation;
+
+		fieldErrorFormatter: TFieldErrorFormatter;
 	};
 	fields: TFields;
-	setFieldValue: <TName extends keyof TFields>(params: {
-		name: TName;
-		value: TFields[TName]['value'];
-		validateOnChange?: TFields[TName]['validateOnChange'];
+	form: TAllFieldsErrors<TFields> & {
+		validateAllFieldsOnSubmit: boolean | THandleValidation;
+		allFieldErrorFormatter?: TAllFieldsErrorFormatter<TFields>;
+		isTouched: boolean;
+		submitCounter: number;
+	};
+
+	setFieldValue: (params: {
+		name: keyof TFields;
+		value: TFields[keyof TFields]['value'];
+		validateOnChange?: TFields[keyof TFields]['validateOnChange'];
 	}) => void;
 	setFieldsError: (
-		errors: Partial<Record<keyof TFields, string> | Record<string, string>>, // ! Maybe it could be handled better
+		errors: Partial<
+			| Record<keyof TFields, NonNullable<TFieldShape['errors']>>
+			| Record<string, NonNullable<TFieldShape['errors']>>
+		>, // ! Maybe it could be handled better
 	) => void;
-	getFieldErrorFormatter: (name?: keyof TFields) => (error: unknown) => string;
+	getFieldErrorFormatter: (
+		name?: keyof TFields,
+	) => (error: unknown) => TFieldShape['errors'];
 };
 
-export type TFormStoreApi<TFields extends TFieldsShape> = StoreApi<
+export type TFormStoreApi<TFields extends TAllFieldsShape> = StoreApi<
 	TFormStoreDataShape<TFields>
 >;
 
-export type TValue<TFields extends TFieldsShape> = Record<
+export type TValue<TFields extends TAllFieldsShape> = Record<
 	keyof TFields,
 	TFields[keyof TFields]['value']
 >;
 
-export type TFormProps<TFields extends TFieldsShape> =
+export type TFormProps<TFields extends TAllFieldsShape> =
 	FormHTMLAttributes<HTMLFormElement> & {
 		store: TFormStoreApi<TFields>;
 		handleOnSubmit?: (params: {
@@ -60,7 +105,7 @@ export type TFormProps<TFields extends TFieldsShape> =
 		// customValidationOnSubmit?: (values: TValue<TFields>) => void
 	};
 
-export type TInputFieldProps<TFields extends TFieldsShape> = Omit<
+export type TInputFieldProps<TFields extends TAllFieldsShape> = Omit<
 	InputHTMLAttributes<HTMLInputElement>,
 	'name'
 > & {
