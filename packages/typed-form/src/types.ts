@@ -19,21 +19,17 @@ type FieldErrors =
 	  };
 export type AllFieldsErrors<TFields extends AllFieldsShape> = Record<
 	keyof TFields,
-	string[] | []
-> & {
-	___generic: string[] | [];
-};
+	string[]
+>;
 
 type HandleValidation = (value: unknown) => unknown;
-type FieldErrorFormatter = (
-	error: unknown,
-) => Exclude<FieldShape['errors'], []>;
+type FieldErrorFormatter = (error: unknown) => string[];
 type AllFieldsErrorFormatter<TFields extends AllFieldsShape> = (
 	error: unknown,
 ) => Partial<AllFieldsErrors<TFields>>;
 
 export type FieldShape<Value = unknown> = FieldErrors & {
-	value: Value;
+	initialValue: Value;
 
 	validationDefaultHandler?: HandleValidation;
 	validateOnBlur?: boolean | HandleValidation;
@@ -59,11 +55,10 @@ export interface FormStoreDataShape<TFields extends AllFieldsShape> {
 		validateOnMount?: boolean | HandleValidation;
 		validateOnSubmit?: boolean | HandleValidation;
 
-		// isUncontrolled?: boolean;
-
 		fieldErrorFormatter: FieldErrorFormatter;
 	};
 	errors: AllFieldsErrors<TFields>;
+	values: Record<keyof TFields, TFields[keyof TFields]['initialValue']>;
 	isDirty: boolean;
 	fields: TFields;
 	form: {
@@ -88,7 +83,7 @@ export interface FormStoreDataShape<TFields extends AllFieldsShape> {
 	 */
 	setFieldValue: (params: {
 		name: keyof TFields;
-		value: TFields[keyof TFields]['value'];
+		value: TFields[keyof TFields]['initialValue'];
 		validateOnChange?: TFields[keyof TFields]['validateOnChange'];
 	}) => void;
 	/**
@@ -97,24 +92,12 @@ export interface FormStoreDataShape<TFields extends AllFieldsShape> {
 	 * @returns An updated state object with the modified fields
 	 */
 	setFieldsError: (
-		errors: Partial<
-			Record<keyof TFields, NonNullable<FieldShape['errors']>>
-			// | Record<string, NonNullable<FieldShape['errors']>>
-		>, // ! Maybe it could be handled better
+		errors: Partial<Record<keyof TFields, NonNullable<FieldShape['errors']>>>,
 	) => void;
-	/**
-	 * Returns the field error formatter function for a specific field name or the shared field error formatter.
-	 * If the field has a specific field error formatter, it is returned. Otherwise, the shared field error formatter
-	 * is returned.
-	 *
-	 * @param name The name of the field to get the field error formatter for. If omitted, the shared field error formatter is returned.
-	 * @returns The field error formatter function.
-	 */
 	getFieldErrorFormatter: (
 		name?: keyof TFields,
 	) => (error: unknown) => FieldShape['errors'];
 
-	// getIsFieldIsUncontrolled: (name: keyof TFields) => boolean | undefined;
 	getFieldValidateOnChange: (
 		name: keyof TFields,
 	) => Exclude<FieldShape['validateOnChange'], boolean>;
@@ -129,7 +112,7 @@ export type FormStoreApi<TFields extends AllFieldsShape> = StoreApi<
 
 export type Value<TFields extends AllFieldsShape> = Record<
 	keyof TFields,
-	TFields[keyof TFields]['value']
+	TFields[keyof TFields]['initialValue']
 >;
 
 export type FormProps<TFields extends AllFieldsShape> =
@@ -154,11 +137,11 @@ export type InputFieldProps<TFields extends AllFieldsShape> = Omit<
 
 export type AllFieldsShapePartial<TAllFields extends AllFieldsShape> = Record<
 	keyof TAllFields,
-	Pick<TAllFields[keyof TAllFields], 'value'> &
+	Pick<TAllFields[keyof TAllFields], 'initialValue'> &
 		Partial<
 			Omit<
 				TAllFields[keyof TAllFields],
-				'value' | 'error' | 'isDirty' | 'isTouched'
+				'initialValue' | 'error' | 'isDirty' | 'isTouched'
 			>
 		>
 >;

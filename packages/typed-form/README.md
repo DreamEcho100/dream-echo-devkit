@@ -55,6 +55,7 @@ Priority is high starting 0
 - [x] There could be more than one error?
 - [x] Support all errors access.
 - [x] Tracking submit attempt count?
+- [x] Fixing a performance issue <https://stackoverflow.com/a/72236411/13961420>
 
 ## General Outline
 
