@@ -6,20 +6,20 @@ export const Form = <Fields extends AllFieldsShape>({
 	handleOnSubmit,
 	...props
 }: FormProps<Fields>) => {
-	const { setFieldsError, getFieldErrorFormatter } = useFormStore(
+	const { form, setFieldsError, getFieldErrorFormatter } = useFormStore(
 		store,
 		(store) => ({
 			setFieldsError: store.setFieldsError,
 			getFieldErrorFormatter: store.getFieldErrorFormatter,
+			form: store.form,
 		}),
 	);
 	return (
 		<form
-			onSubmit={(event) => {
+			onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
 				event.preventDefault();
 				const formFieldsValues: Value<Fields> = {} as Value<Fields>;
 				const errors: Partial<Record<keyof Fields, FieldShape['errors']>> = {};
-				// event.target.
 				const fields = store.getState().fields;
 
 				let fieldName: keyof Fields;
@@ -27,6 +27,7 @@ export const Form = <Fields extends AllFieldsShape>({
 				for (fieldName in fields) {
 					field = fields[fieldName];
 					formFieldsValues[fieldName] = field.value;
+					errors[fieldName] = [];
 					if (
 						field.validateOnSubmit &&
 						typeof field.validationDefaultHandler === 'function'

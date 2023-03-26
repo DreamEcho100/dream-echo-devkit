@@ -1,13 +1,13 @@
 export { default as inputDateHelpers } from './inputDateHelpers';
 
+import { ZodError } from 'zod';
 import { createStore, useStore } from 'zustand';
 import type {
-	AllFieldsShape,
+	AllFieldsShapePartial,
 	FormStoreDataShape,
 	FormStoreApi,
 	FieldShape,
-	AllFieldsShapePartial,
-	AllFieldsErrors,
+	AllFieldsShape,
 } from '../types';
 
 const handleAllFieldsShapePartial = <TAllFields extends AllFieldsShape>(
@@ -42,13 +42,7 @@ const handleAllFieldsShapePartial = <TAllFields extends AllFieldsShape>(
  *
  * @example
  * const formStore = createFormStore({
- * 	form: {
- * 		errors: {},
- * 		isDirty: false,
- * 		isTouched: false,
- * 		validateAllFieldsOnSubmit: true,
- * 		submitCounter: 0,
- * 	},
+ * 	form: { validateAllFieldsOnSubmit: true },
  * 	fieldsShared: {
  * 		validateFieldOnSubmit: true,
  * 		fieldErrorFormatter: errFormatter,
@@ -56,17 +50,17 @@ const handleAllFieldsShapePartial = <TAllFields extends AllFieldsShape>(
  * 	fields: {
  * 		firstName: {
  * 			value: '',
- * 			validationDefaultHandler: isNotEmpty,
+ * 			validationDefaultHandler: (value) => z.string().parse(value),
  * 			validateOnChange: true,
  * 		},
  * 		lastName: {
  * 			value: '',
- * 			validationDefaultHandler: isNotEmpty,
+ * 			validationDefaultHandler: (value) => z.string().parse(value),
  * 			validateOnChange: true,
  * 		},
  * 		email: {
  * 			value: '',
- * 			validationDefaultHandler: isEmailValid,
+ * 			validationDefaultHandler: (value) => z.string().email().parse(value),
  * 			validateOnChange: true,
  * 		},
  * 	},
@@ -87,44 +81,42 @@ export const createFormStore = <TAllFields extends AllFieldsShape>({
 			...(fieldsShared || {}),
 		},
 		fields: handleAllFieldsShapePartial(fields),
+		errors: (() => {
+			const errors = {
+				___generic: [],
+			} as FormStoreDataShape<TAllFields>['errors'];
+
+			let fieldName: keyof typeof fields;
+			for (fieldName in fields) {
+				// ! Needs more work
+				errors[fieldName] = [] as unknown as (typeof errors)[typeof fieldName]; //[] as string[];
+			}
+
+			if (Object.keys(errors).length - 1 !== Object.keys(fields).length)
+				throw new Error('Invalid fields/errors conversion');
+
+			return errors;
+		})(),
+		isDirty: false,
 		form: {
-			errors: (() => {
-				const errors = {
-					___generic: [],
-				} as FormStoreDataShape<TAllFields>['form']['errors'];
-
-				let fieldName: keyof typeof fields;
-				for (fieldName in fields) {
-					// ! Needs more work
-					errors[fieldName] =
-						[] as unknown as (typeof errors)[typeof fieldName]; //[] as string[];
-				}
-
-				if (Object.keys(errors).length - 1 !== Object.keys(fields).length)
-					throw new Error('Invalid fields/errors conversion');
-
-				return errors;
-			})(),
-			isDirty: false,
 			isTouched: false,
 			validateAllFieldsOnSubmit: true,
 			submitCounter: 0,
-			// validateFieldsOnSubmit: true,
-			// fieldErrorFormatter: errFormatter,
 			...form,
 		},
 
 		setFieldValue: ({ name, value }) =>
 			set((state: FormStoreDataShape<TAllFields>) => {
-				if (name in state.fields) return state;
-
-				const field = state.fields[name];
+				const fields = state.fields;
+				const field = fields[name];
 				let errors = field.errors;
 				let isDirty = field.isDirty;
 				let validatedValue = value;
 
 				let form = state.form;
-				let isFormDirty = form.isDirty;
+				let isStateDirty = state.isDirty;
+
+				let stateErrors = state.errors;
 
 				// If the field has a validation handler and it is set to validate on change,
 				// run the validation handler on the new value.
@@ -147,58 +139,110 @@ export const createFormStore = <TAllFields extends AllFieldsShape>({
 								'No errors were returned!,\nplease check the `fieldErrorFormatter` method.',
 							);
 						}
-
-						form = {
-							...form,
-							errors: {
-								...form.errors,
-								[name]: errors,
-							},
-						};
-
 						isDirty = true;
+
+						stateErrors = {
+							...stateErrors,
+							___generic: [],
+							[name]: errors,
+						};
+						isStateDirty = isDirty;
 					}
 				}
 
 				// Check if the form is dirty based on whether the field has any errors or not.
-				isFormDirty =
-					isDirty ||
-					errors.length !== 0 ||
-					!!(form.errors && Object.keys(form.errors).length === 0);
-				if (isFormDirty !== form.isDirty)
-					form = { ...form, isDirty: isFormDirty };
+				isStateDirty = Object.is(state.errors.length, 0);
+				if (isStateDirty !== state.isDirty) isStateDirty = isDirty;
+				// form = { ...form, isDirty: isFormDirty };
+
+				fields[name] = {
+					...field,
+					value: validatedValue,
+					errors,
+					isDirty,
+				};
 
 				// Return the updated state with the new field value and form state.
 				return {
-					fields: {
-						form,
-						...state.fields,
-						[name]: { ...field, value: validatedValue, errors, isDirty },
-					},
+					form,
+					fields,
+					errors: stateErrors,
+					isDirty: isStateDirty,
 				};
 			}),
 		setFieldsError: (errors) =>
 			set((state) => {
-				const modifiedFields = Object.keys(errors).map((fieldName) => ({
-					...state.fields[fieldName],
-					error: errors[fieldName],
-					hasValueChangedSinceLastError: false,
-				}));
+				let isFormDirty = !!state?.isDirty;
+				let reCheckFormErrorsSize = true;
+				// let stateErrors = state.errors;
+				const stateErrors = {
+					...state.errors,
+					...errors,
+				};
+				const errorsFieldsNames: (keyof typeof errors)[] = Object.keys(errors);
+
+				const modifiedFields = {
+					...state.fields,
+				};
+
+				let isFieldDirty: boolean;
+				let fieldNameIterator: keyof typeof state.fields;
+				for (fieldNameIterator of errorsFieldsNames) {
+					// if there is no `error` key then the `errorsFieldsNames` length would be `0`
+					(isFieldDirty = errors[fieldNameIterator]!.length > 0), //checkIsFieldDirty(state.fields[fieldName].errors)
+						(modifiedFields[fieldNameIterator] = {
+							...state.fields[fieldNameIterator],
+							errors: errors[fieldNameIterator],
+							isDirty: isFieldDirty,
+						});
+
+					if (isFieldDirty) reCheckFormErrorsSize = false;
+				}
+
+				//
+				if (reCheckFormErrorsSize) {
+					let stateErrorsKey: keyof typeof stateErrors;
+					for (stateErrorsKey in stateErrors) {
+						if (stateErrors[stateErrorsKey].length > 0) {
+							isFormDirty = true;
+							break;
+						}
+					}
+				}
 
 				return {
-					fields: {
-						...state.fields,
-						...modifiedFields,
+					fields: modifiedFields,
+					form: {
+						...state.form,
 					},
+					isDirty: isFormDirty,
+					errors: stateErrors,
 				};
 			}),
 		getFieldErrorFormatter: (name) =>
 			(name && get().fields[name]?.fieldErrorFormatter) ||
 			get().fieldsShared.fieldErrorFormatter,
-		getIsFieldIsUncontrolled: (name) => {
-			if (typeof get().fields[name].isUncontrolled === 'boolean')
-				return get().fields[name].isUncontrolled;
-			return get().fieldsShared.isUncontrolled;
+		// getIsFieldIsUncontrolled: (name) => {
+		// 	if (typeof get().fields[name].isUncontrolled === 'boolean')
+		// 		return get().fields[name].isUncontrolled;
+		// 	return get().fieldsShared.isUncontrolled;
+		// },
+		getFieldValidateOnChange: (name) => {
+			let validateOnChange =
+				typeof get().fields[name].validateOnChange === 'function'
+					? get().fields[name].validateOnChange
+					: typeof get().fieldsShared.validateOnChange === 'function'
+					? get().fieldsShared.validateOnChange
+					: get().fields[name].validationDefaultHandler;
+
+			if (typeof validateOnChange === 'function') return validateOnChange;
+		},
+		getIsFieldValidatingOnChange: (name) => {
+			return !!(
+				get().fields[name].validateOnChange ||
+				get().fieldsShared.validateOnChange ||
+				get().fields[name].validationDefaultHandler
+			);
 		},
 	}));
 
@@ -214,6 +258,8 @@ export const useFormStore = <TAllFields extends AllFieldsShape, U>(
 ) => useStore(store, cb);
 
 export const errFormatter = (error: unknown): FieldShape['errors'] => {
+	if (error instanceof ZodError) return error.format()._errors;
+
 	if (error instanceof Error) return [error.message];
 	return ['Something went wrong!'];
 };

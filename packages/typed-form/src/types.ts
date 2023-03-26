@@ -19,9 +19,9 @@ type FieldErrors =
 	  };
 export type AllFieldsErrors<TFields extends AllFieldsShape> = Record<
 	keyof TFields,
-	string[] | never[]
+	string[] | []
 > & {
-	___generic: string[];
+	___generic: string[] | [];
 };
 
 type HandleValidation = (value: unknown) => unknown;
@@ -32,14 +32,17 @@ type AllFieldsErrorFormatter<TFields extends AllFieldsShape> = (
 	error: unknown,
 ) => Partial<AllFieldsErrors<TFields>>;
 
-export type FieldShape = FieldErrors & {
-	value: unknown;
+export type FieldShape<Value = unknown> = FieldErrors & {
+	value: Value;
 
 	validationDefaultHandler?: HandleValidation;
 	validateOnBlur?: boolean | HandleValidation;
 	validateOnChange?: boolean | HandleValidation;
 	validateOnMount?: boolean | HandleValidation;
 	validateOnSubmit?: boolean | HandleValidation;
+
+	fieldToStoreFormatter?: (value: any) => Value;
+	storeToFieldFormatter?: (value: any) => any;
 
 	fieldErrorFormatter?: FieldErrorFormatter;
 	isTouched: boolean;
@@ -56,15 +59,15 @@ export interface FormStoreDataShape<TFields extends AllFieldsShape> {
 		validateOnMount?: boolean | HandleValidation;
 		validateOnSubmit?: boolean | HandleValidation;
 
-		isUncontrolled?: boolean;
+		// isUncontrolled?: boolean;
 
 		fieldErrorFormatter: FieldErrorFormatter;
 	};
+	errors: AllFieldsErrors<TFields>;
+	isDirty: boolean;
 	fields: TFields;
 	form: {
 		validateAllFieldsOnSubmit: boolean | HandleValidation;
-		errors: AllFieldsErrors<TFields>;
-		isDirty: boolean;
 		isTouched: boolean;
 		isFieldsUncontrolled?: boolean;
 		submitCounter: number;
@@ -95,8 +98,8 @@ export interface FormStoreDataShape<TFields extends AllFieldsShape> {
 	 */
 	setFieldsError: (
 		errors: Partial<
-			| Record<keyof TFields, NonNullable<FieldShape['errors']>>
-			| Record<string, NonNullable<FieldShape['errors']>>
+			Record<keyof TFields, NonNullable<FieldShape['errors']>>
+			// | Record<string, NonNullable<FieldShape['errors']>>
 		>, // ! Maybe it could be handled better
 	) => void;
 	/**
@@ -111,7 +114,13 @@ export interface FormStoreDataShape<TFields extends AllFieldsShape> {
 		name?: keyof TFields,
 	) => (error: unknown) => FieldShape['errors'];
 
-	getIsFieldIsUncontrolled: (name: keyof TFields) => boolean | undefined;
+	// getIsFieldIsUncontrolled: (name: keyof TFields) => boolean | undefined;
+	getFieldValidateOnChange: (
+		name: keyof TFields,
+	) => Exclude<FieldShape['validateOnChange'], boolean>;
+	getIsFieldValidatingOnChange: (
+		name: keyof TFields,
+	) => Exclude<FieldShape['validateOnChange'], HandleValidation>;
 }
 
 export type FormStoreApi<TFields extends AllFieldsShape> = StoreApi<
@@ -132,13 +141,16 @@ export type FormProps<TFields extends AllFieldsShape> =
 		}) => void;
 	};
 
-export type InputFieldProps<TFields extends AllFieldsShape> = Omit<
-	InputHTMLAttributes<HTMLInputElement>,
-	'name'
-> & {
+export type FieldProps<TFields extends AllFieldsShape> = {
 	store: FormStoreApi<TFields>;
 	name: Exclude<keyof TFields, number | symbol>;
 };
+
+export type InputFieldProps<TFields extends AllFieldsShape> = Omit<
+	InputHTMLAttributes<HTMLInputElement>,
+	'name'
+> &
+	FieldProps<TFields>;
 
 export type AllFieldsShapePartial<TAllFields extends AllFieldsShape> = Record<
 	keyof TAllFields,
