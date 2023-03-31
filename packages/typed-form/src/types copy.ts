@@ -29,19 +29,9 @@ type AllFieldsErrorFormatter<TFields extends AllFieldsShape> = (
 ) => Partial<AllFieldsErrors<TFields>>;
 
 export type FieldShape<Value = unknown> = FieldErrors & {
-	initialValue: Value;
-
-	validationDefaultHandler?: HandleValidation;
-	validateOnBlur?: boolean | HandleValidation;
-	validateOnChange?: boolean | HandleValidation;
-	validateOnMount?: boolean | HandleValidation;
-	validateOnSubmit?: boolean | HandleValidation;
-
 	fieldToStoreFormatter?: (value: any) => Value;
 	storeToFieldFormatter?: (value: any) => any;
 
-	fieldErrorFormatter?: FieldErrorFormatter;
-	isTouched: boolean;
 	isUncontrolled?: boolean;
 };
 
@@ -57,17 +47,11 @@ export interface FormStoreDataShape<TFields extends AllFieldsShape> {
 
 		fieldErrorFormatter: FieldErrorFormatter;
 	};
-	errors: AllFieldsErrors<TFields>;
-	values: Record<keyof TFields, TFields[keyof TFields]['initialValue']>;
-	isDirty: boolean;
 	fields: {
 		[Key in keyof TFields]: TFields[Key];
 	};
 	form: {
-		validateAllFieldsOnSubmit: boolean | HandleValidation;
-		isTouched: boolean;
 		isFieldsUncontrolled?: boolean;
-		submitCounter: number;
 
 		handleValidateFieldsOnSubmit?: HandleValidation;
 		allFieldsErrorsFormatter?: AllFieldsErrorFormatter<TFields>;

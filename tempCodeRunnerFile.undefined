@@ -1,0 +1,43 @@
+// type FieldState = {
+//   isDirty: boolean;
+//   isTouched: boolean;
+//   isVisited: boolean;
+// }
+// type FieldValidation = {
+//   errors: string[];
+// }
+
+type FieldStateAndValidation = {
+	state: {
+		isDirty: boolean;
+		isTouched: boolean;
+		isVisited: boolean;
+	}
+	validation: {
+		errors: string[];
+	}
+}
+
+interface FieldMetadata<Name> {
+  name: Name;
+  id: string;
+}
+
+interface Field<Name, Value extends unknown> {
+  state: FieldState;
+  value: Value;
+  validation: FieldValidation;
+  metadata: FieldMetadata<Name>;
+}
+
+type FormFields<Fields extends Record<string, { value: unknown }>> = {
+  [FieldName in keyof Fields]: Field<FieldName, Fields[FieldName]['value']>;
+}
+
+interface FormStore<Fields extends Record<string, { value: unknown }>> {
+  form: {
+    fields: FormFields<Fields>;
+    // ...other properties of your form store
+  };
+}
+

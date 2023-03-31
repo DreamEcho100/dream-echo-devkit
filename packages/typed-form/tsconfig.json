@@ -4,5 +4,5 @@
 		"lib": ["dom", "dom.iterable", "esnext"]
 	},
 	"include": ["."],
-	"exclude": ["dist", "build", "node_modules", "_temp"]
+	"exclude": ["_type.ts", "dist", "build", "node_modules", "_temp"]
 }

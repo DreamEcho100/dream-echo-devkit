@@ -1,3 +1,6 @@
+/*
+
+// @ts-ignore
 type ValidationEvents = 'submit' | 'change' | 'mount' | 'blur';
 
 type FieldErrorData =
@@ -13,10 +16,12 @@ type FieldErrorCatcherFormatter = (
 type FieldValidate<Value extends unknown> = {
 	defaultHandler?(): HandleValidation<Value>;
 	events: {
-		[key in ValidationEvents]: {
-			handler?(): HandleValidation<Value>;
-			counter: { passed: number; failed: number };
-		};
+		[key in ValidationEvents]?:
+			| boolean
+			| {
+					handler?(): HandleValidation<Value>;
+					counter: { passed: number; failed: number };
+			  };
 	};
 	counter: { passed: number; failed: number };
 };
@@ -46,6 +51,11 @@ type FieldNameValue<Value extends unknown = unknown> = Record<
 			fieldToStore?(): (value: any) => Value;
 			storeToField?(): (value: Value) => any;
 		};
+		validate?: {
+			events: {
+				[key in ValidationEvents]?: boolean | HandleValidation<Value>;
+			};
+		};
 	}
 >;
 
@@ -60,13 +70,48 @@ const validationEvents: ValidationEvents[] = [
 	'blur',
 ];
 
-const createFieldValidate = <Value extends unknown>(): FieldValidate<Value> => {
-	const events = {} as FieldValidate<Value>['events'];
-	for (const eventName of validationEvents) {
-		events[eventName] = {
-			handler: undefined,
-			counter: { failed: 0, passed: 0 },
+type FieldsShared<Fields extends FieldNameValue> = {
+	errorCatcherFormatter(): FieldErrorCatcherFormatter;
+	validate: {
+		events: {
+			[key in ValidationEvents]?: boolean | AllFieldsValidateHandler<Fields>;
 		};
+	};
+};
+
+const createFieldValidate = <
+	Fields extends FieldNameValue,
+	Name extends keyof Fields,
+>(
+	fieldsShared: FieldsShared<Fields>,
+	field: Fields[Name],
+	fieldName: Name,
+): FieldValidate<Fields[Name]['value']> => {
+	const events = {} as FieldValidate<Fields[Name]['value']>['events'];
+	for (const eventName of validationEvents) {
+		const fieldEventsValidate = field.validate?.events[eventName];
+		const fieldValidate = fieldEventsValidate
+			? fieldEventsValidate
+			: typeof fieldsShared.validate?.events[eventName] !== 'undefined'
+			? (() => {
+					const eventValidation = fieldsShared.validate.events[eventName]!;
+					if (typeof eventValidation === 'boolean') return eventValidation;
+
+					const fieldEventValidation = eventValidation[fieldName];
+
+					if (!fieldEventValidation) return false;
+
+					return fieldEventValidation;
+			  })()
+			: false;
+
+		events[eventName] =
+			typeof fieldValidate === 'boolean'
+				? fieldValidate
+				: {
+						handler: fieldValidate as any, // as Exclude<HandleValidation<Fields[Name]["value"]>, boolean>,
+						counter: { failed: 0, passed: 0 },
+				  };
 	}
 
 	return {
@@ -79,14 +124,9 @@ const createFieldValidate = <Value extends unknown>(): FieldValidate<Value> => {
 // Need to handle `fieldsShared` with `fields`
 const createStore = <Fields extends FieldNameValue>(params: {
 	fields: Fields;
-	fieldsShared: {
-		errorCatcherFormatter(): FieldErrorCatcherFormatter;
-		validateOnBlur: boolean | AllFieldsValidateHandler<Fields>;
-		validateOnChange: boolean | AllFieldsValidateHandler<Fields>;
-		validateOnMount: boolean | AllFieldsValidateHandler<Fields>;
-		validateOnSubmit: boolean | AllFieldsValidateHandler<Fields>;
-	};
+	fieldsShared: FieldsShared<Fields>;
 }): AllFieldsShape<Fields> => {
+	const fieldsShared = params.fieldsShared || {};
 	type Store = AllFieldsShape<Fields>;
 	const fields = {} as Store['fields'];
 	const errors = {
@@ -95,7 +135,7 @@ const createStore = <Fields extends FieldNameValue>(params: {
 			failed: 0,
 			passed: 0,
 		},
-	} as Store['errors'];
+	} as Store['form']['errors'];
 	fields.test;
 	const fieldsNames = Object.keys(params.fields) as unknown as (keyof Fields)[];
 
@@ -109,12 +149,15 @@ const createStore = <Fields extends FieldNameValue>(params: {
 			isDirty: false,
 			isTouched: false,
 			formatter: {
-				errorCatcher: undefined,
+				errorCatcher: fieldsShared.errorCatcherFormatter || undefined,
 				fieldToStore: undefined,
 				storeToField: undefined,
 			},
-			validate:
-				createFieldValidate<(typeof fields)[typeof fieldName]['value']>(),
+			validate: createFieldValidate<Fields, typeof fieldName>(
+				fieldsShared,
+				params.fields[fieldName],
+				fieldName,
+			),
 		};
 
 		errors['fields'][fieldName] = [];
@@ -122,8 +165,8 @@ const createStore = <Fields extends FieldNameValue>(params: {
 
 	return {
 		fields,
-		errors,
-		form: { isDirty: false, isTouched: false, submitCounter: 0 },
+		// @ts-ignore
+		form: { errors, isDirty: false, isTouched: false, submitCounter: 0 },
 		// fieldsGlobal: {  }
 		// internalUtils: {},
 		// utils: {}
@@ -131,27 +174,31 @@ const createStore = <Fields extends FieldNameValue>(params: {
 };
 
 interface AllFieldsShape<Fields extends FieldNameValue> {
-	// fieldsGlobal: {
-	// 	errorCatcherFormatter(): FieldErrorCatcherFormatter;
-	// 	// validateOnBlur: boolean | AllFieldsValidateHandler<Fields>;
-	// 	// validateOnChange: boolean | AllFieldsValidateHandler<Fields>;
-	// 	// validateOnMount: boolean | AllFieldsValidateHandler<Fields>;
-	// 	// validateOnSubmit: boolean | AllFieldsValidateHandler<Fields>;
-	// };
 	fields: {
-		// [Key in keyof Fields]: Key extends string
-		// 	? FieldShape<Key, Fields[Key]['value']>
-		// 	: never;
 		[Key in keyof Fields]: FieldShape<Key, Fields[Key]['value']>;
-	};
-	errors: {
-		fields: { [Key in keyof Fields]: string[] };
-		validationCounter: { passed: number; failed: number };
 	};
 	form: {
 		isDirty: boolean;
 		isTouched: boolean;
 		submitCounter: number;
+		errors: {
+			fields: { [Key in keyof Fields]: string[] };
+			validationCounter: { passed: number; failed: number };
+		};
+		validate: {
+			[Key in keyof Fields]: {
+				defaultHandler?(): HandleValidation<Fields[Key]['value']>;
+				events: {
+					[key in ValidationEvents]?:
+						| boolean
+						| {
+								handler?(): HandleValidation<Fields[Key]['value']>;
+								counter: { passed: number; failed: number };
+						  };
+				};
+				counter: { passed: number; failed: number };
+			};
+		};
 	};
 	// utils: {
 	// 	getAllFieldsNames(): keyof Fields[];
@@ -188,3 +235,4 @@ testStoreShape.fields.dateOfBirth.value;
 // testFieldSharedValidateOnSubmitBool;
 // if (typeof testFieldSharedValidateOnSubmitBool !== 'boolean')
 // 	testFieldSharedValidateOnSubmitBool; // never
+*/
