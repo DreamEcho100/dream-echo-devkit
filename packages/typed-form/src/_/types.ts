@@ -2,9 +2,6 @@ import type { StoreApi } from 'zustand';
 
 export type ValidationEvents = 'submit' | 'change' | 'mount' | 'blur';
 
-/*
-Basic types shapes to extend from or use as a generic
-*/
 export type HandleValidation<Value> = (value: unknown) => Value;
 export type PassedAllFieldsShape = Record<string, unknown>;
 export type FieldNameShape = string | number | symbol;
@@ -19,10 +16,12 @@ export interface FieldValidation<Value> {
 		[key in ValidationEvents]: {
 			isActive: boolean;
 			handler?(): HandleValidation<Value>;
-			counter: { passed: number; failed: number };
+			passedAttempts: number;
+			failedAttempts: number;
 		};
 	};
-	counter: { passed: number; failed: number };
+	passedAttempts: number;
+	failedAttempts: number;
 }
 export interface FieldIsDirtyErrorsAndValidationShape<
 	Value,
@@ -40,8 +39,12 @@ export type FieldShape<
 	Value extends unknown,
 > = FieldIsDirtyErrorsAndValidation<Value> & {
 	value: Value;
-	isTouched: boolean;
 	isVisited: boolean;
+	isTouched: boolean;
+	isDisabled: boolean;
+	isHidden: boolean;
+	isFocused: boolean;
+	isReadOnly: boolean;
 	metadata: FieldMetadata<Name, Value>;
 };
 export type AllFieldsShape<PassedAllFields extends PassedAllFieldsShape> = {
@@ -53,19 +56,31 @@ export type AllFieldsShape<PassedAllFields extends PassedAllFieldsShape> = {
 };
 
 export interface FormMetadata<PassedAllFields extends PassedAllFieldsShape> {
-	id: string;
+	formId: string;
 	fieldsNames: (keyof PassedAllFields)[];
 }
 
 export interface FormStoreShape<PassedAllFields extends PassedAllFieldsShape> {
 	fields: AllFieldsShape<PassedAllFields>;
-	form: {
-		errors: {
-			[Key in keyof PassedAllFields]?: string[];
-		};
-		metadata: FormMetadata<PassedAllFields>;
-		submitCounter: number;
-		// ...other properties of your form store
+	errors: {
+		[Key in keyof PassedAllFields]?: string[] | null;
+	};
+	metadata: FormMetadata<PassedAllFields>;
+	submitCounter: number;
+	// form: {
+	// 	// ...other properties of your form store
+	// };
+	utils: {
+		reInitFieldsValues(): void;
+		setFieldValue(
+			name: keyof PassedAllFields,
+			value: PassedAllFields[keyof PassedAllFields],
+		): void;
+		setFieldErrors(params: {
+			name: keyof PassedAllFields;
+			errors: string[] | null;
+			validationEventName: ValidationEvents;
+		}): void;
 	};
 }
 

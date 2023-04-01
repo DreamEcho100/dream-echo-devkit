@@ -1,20 +1,24 @@
 // export { default as inputDateHelpers } from './inputDateHelpers';
 
 import { ZodError } from 'zod';
+
 import { createStore, useStore } from 'zustand';
+
 import type {
 	FormStoreApi,
 	PassedAllFieldsShape,
 	FormStoreShape,
 } from '../types';
 
-function generateUUID4(): string {
-	let uuid = '';
-	for (let i = 0; i < 32; i++) {
+const generateUUID4 = () => {
+	let uuid = '',
+		i = 0,
+		random: number;
+	for (; i < 32; i++) {
 		if (i === 8 || i === 12 || i === 16 || i === 20) {
 			uuid += '-';
 		}
-		const random = (Math.random() * 16) | 0;
+		random = (Math.random() * 16) | 0;
 		if (i === 12) {
 			uuid += '4';
 		} else if (i === 16) {
@@ -24,14 +28,23 @@ function generateUUID4(): string {
 		}
 	}
 	return uuid;
+};
+
+// typeof structuredClone !== 'undefined'
+// 	? structuredClone(baseState)
+// 	:
+type UpdateFn<T> = (draftState: T) => void;
+
+function produce<T extends object>(baseState: T, updateFn: UpdateFn<T>): T {
+	const nextState = { ...baseState };
+	updateFn(nextState);
+	return nextState;
 }
 
 type PassesFieldMultiValues = { value: unknown; baseId?: string };
 export const createFormStore = <
 	TAllFields extends Record<string, PassesFieldMultiValues | unknown>,
 >(params: {
-	// fieldsShared?: TAllFields['fieldsShared'];
-	// form?: TAllFields['form'];
 	fields: TAllFields;
 }) => {
 	type FormStore = FormStoreShape<{
@@ -42,20 +55,19 @@ export const createFormStore = <
 
 	const baseId = generateUUID4();
 
-	const form: FormStore['form'] = {
-		errors: {},
-		metadata: {
-			fieldsNames: Object.keys(params.fields),
-			id: `${baseId}-form`,
-		},
-		submitCounter: 0,
+	const errors = {};
+	const metadata = {
+		fieldsNames: Object.keys(params.fields),
+		formId: `${baseId}-form`,
 	};
+	const submitCounter = 0;
+
 	const fields = {} as FormStore['fields'];
 
 	let fieldName: keyof TAllFields;
 	let passedField: TAllFields[keyof TAllFields];
 	let fieldValue: (typeof fields)[keyof TAllFields]['value'];
-	for (fieldName of form.metadata.fieldsNames) {
+	for (fieldName of metadata.fieldsNames) {
 		passedField = params.fields[fieldName];
 		if (
 			typeof passedField === 'object' &&
@@ -71,21 +83,26 @@ export const createFormStore = <
 			isDirty: false,
 			isTouched: false,
 			isVisited: false,
+			isDisabled: false,
+			isFocused: false,
+			isHidden: false,
+			isReadOnly: false,
 			metadata: {
 				id: `${baseId}-field-${
-					typeof fieldName === 'string' ? fieldName : fieldName.toString()
+					typeof fieldName === 'string' ? fieldName : String(fieldName) //.toString()
 				}`,
 				name: fieldName,
 				initialValue: fieldValue,
 			},
 			validation: {
-				counter: { failed: 0, passed: 0 },
+				failedAttempts: 0,
+				passedAttempts: 0,
 				errors: null,
 				events: {
-					blur: { counter: { failed: 0, passed: 0 }, isActive: false },
-					change: { counter: { failed: 0, passed: 0 }, isActive: false },
-					mount: { counter: { failed: 0, passed: 0 }, isActive: false },
-					submit: { counter: { failed: 0, passed: 0 }, isActive: false },
+					blur: { failedAttempts: 0, passedAttempts: 0, isActive: false },
+					change: { failedAttempts: 0, passedAttempts: 0, isActive: false },
+					mount: { failedAttempts: 0, passedAttempts: 0, isActive: false },
+					submit: { failedAttempts: 0, passedAttempts: 0, isActive: false },
 				},
 			},
 		};
@@ -93,7 +110,66 @@ export const createFormStore = <
 
 	return createStore<FormStore>((set, get) => ({
 		fields,
-		form,
+		errors,
+		metadata,
+		submitCounter,
+		utils: {
+			reInitFieldsValues: () =>
+				set((currentState) => {
+					const fieldsNames = currentState.metadata.fieldsNames;
+					const fields = currentState.fields;
+
+					for (const fieldName of fieldsNames) {
+						fields[fieldName].value = fields[fieldName].metadata.initialValue;
+					}
+
+					return { fields };
+				}),
+			setFieldValue: (name, value) =>
+				set((currentState) => {
+					return {
+						fields: {
+							...currentState.fields,
+							[name]: { ...currentState.fields[name], value },
+						},
+					};
+				}),
+			setFieldErrors: (params) =>
+				set((currentState) => {
+					const hasError = !!params.errors;
+
+					let field = currentState.fields[params.name];
+					let fieldValidateEvent =
+						field.validation.events[params.validationEventName];
+					let errors = currentState.errors;
+
+					field = {
+						...field,
+						isDirty: hasError,
+						validation: {
+							...field.validation,
+							errors: errors,
+							events: {
+								...field.validation.events,
+								[params.validationEventName]: {
+									...fieldValidateEvent,
+									failedAttempts: hasError
+										? fieldValidateEvent.failedAttempts
+										: fieldValidateEvent.failedAttempts + 1,
+									passedAttempts: hasError
+										? fieldValidateEvent.passedAttempts
+										: fieldValidateEvent.passedAttempts + 1,
+								},
+							},
+						},
+					};
+
+					return {
+						fields: { ...currentState.fields, [params.name]: field },
+						errors,
+					};
+				}),
+		},
 	}));
 };
 
