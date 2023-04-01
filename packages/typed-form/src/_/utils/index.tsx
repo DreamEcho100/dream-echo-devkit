@@ -8,9 +8,11 @@ import type {
 	FormStoreApi,
 	PassedAllFieldsShape,
 	FormStoreShape,
+	HandleValidation,
+	ValidationEvents,
 } from '../types';
 
-const generateUUID4 = () => {
+const generateUUIDV1 = () => {
 	let uuid = '',
 		i = 0,
 		random: number;
@@ -30,54 +32,110 @@ const generateUUID4 = () => {
 	return uuid;
 };
 
-// typeof structuredClone !== 'undefined'
-// 	? structuredClone(baseState)
-// 	:
-type UpdateFn<T> = (draftState: T) => void;
+const generateUUIDV2 = () => {
+	const randomValues = new Uint8Array(32);
+	crypto.getRandomValues(randomValues);
 
-function produce<T extends object>(baseState: T, updateFn: UpdateFn<T>): T {
-	const nextState = { ...baseState };
-	updateFn(nextState);
-	return nextState;
-}
+	let uuid = '';
+	let i = 0;
+	let value: number;
 
-type PassesFieldMultiValues = { value: unknown; baseId?: string };
+	for (; i < randomValues.length; i++) {
+		if (i === 8 || i === 12 || i === 16 || i === 20) {
+			uuid += '-';
+		}
+		value = randomValues[i];
+		if (i === 12) {
+			uuid += '4';
+		} else if (i === 16) {
+			uuid += ((value & 3) | 8).toString(16);
+		} else {
+			uuid += value.toString(16);
+		}
+	}
+	return uuid;
+};
+
+const isFieldValueMulti = <Value,>(
+	value: unknown,
+): value is PassesFieldMultiValues<Value> =>
+	!!(value && typeof value === 'object' && 'value' in value);
+// function isFieldValueMulti<T extends FieldValue>(
+// 	field: FieldValue | PassesFieldMultiValues<T>,
+// ): field is PassesFieldMultiValues<T> {
+// 	return (field as PassesFieldMultiValues<T>).value !== undefined;
+// }
+// function isFieldValueMulti<T extends FieldValue>(
+// 	field: FieldValue | PassesFieldMultiValues<T>,
+// ): field is PassesFieldMultiValues<T> {
+// 	return (field as PassesFieldMultiValues<T>) instanceof Object;
+// }
+// function isFieldValueMulti<T extends FieldValue>(
+// 	field: FieldValue | PassesFieldMultiValues<T>,
+// ): field is PassesFieldMultiValues<T> {
+// 	return Object.prototype.toString.call(field) === '[object Object]';
+// }
+
+type PassesFieldMultiValues<Value = unknown> = {
+	value: Value;
+	validationHandler?: HandleValidation<Value>;
+	validation?: {
+		[key in ValidationEvents]?: boolean;
+	};
+};
 export const createFormStore = <
-	TAllFields extends Record<string, PassesFieldMultiValues | unknown>,
+	PassedFields extends Record<string, unknown>,
 >(params: {
-	fields: TAllFields;
+	fields:
+		| PassedFields
+		| {
+				[Key in keyof PassedFields]: PassesFieldMultiValues<PassedFields[Key]>;
+		  };
+	baseId?: string;
+	validation?: {
+		[key in ValidationEvents]?: boolean;
+	};
 }) => {
 	type FormStore = FormStoreShape<{
-		[Key in keyof TAllFields]: TAllFields[Key] extends PassesFieldMultiValues
-			? TAllFields[Key]['value']
-			: TAllFields[Key];
+		[Key in keyof PassedFields]: PassedFields[Key] extends PassesFieldMultiValues
+			? PassedFields[Key]['value']
+			: PassedFields[Key];
 	}>;
 
-	const baseId = generateUUID4();
+	const baseId = params.baseId || generateUUIDV2();
 
 	const errors = {};
 	const metadata = {
-		fieldsNames: Object.keys(params.fields),
+		fieldsNames: Object.keys(params.fields) as (keyof PassedFields)[],
 		formId: `${baseId}-form`,
 	};
 	const submitCounter = 0;
 
 	const fields = {} as FormStore['fields'];
 
-	let fieldName: keyof TAllFields;
-	let passedField: TAllFields[keyof TAllFields];
-	let fieldValue: (typeof fields)[keyof TAllFields]['value'];
-	for (fieldName of metadata.fieldsNames) {
-		passedField = params.fields[fieldName];
-		if (
-			typeof passedField === 'object' &&
-			passedField &&
-			'value' in passedField
-		) {
-			fieldValue = passedField.value as typeof fieldValue;
-		} else fieldValue = passedField as typeof fieldValue;
+	let fieldName: keyof PassedFields;
+	let passedField: (typeof params)['fields'][keyof PassedFields];
 
-		// let value = passedField
+	let fieldValue: PassedFields[keyof PassedFields];
+	let validation: (typeof fields)[keyof PassedFields]['validation'];
+
+	for (fieldName of metadata.fieldsNames) {
+		validation = {
+			failedAttempts: 0,
+			passedAttempts: 0,
+			events: {
+				blur: { failedAttempts: 0, passedAttempts: 0, isActive: false },
+				change: { failedAttempts: 0, passedAttempts: 0, isActive: false },
+				mount: { failedAttempts: 0, passedAttempts: 0, isActive: false },
+				submit: { failedAttempts: 0, passedAttempts: 0, isActive: false },
+			},
+		};
+		passedField = params.fields[fieldName];
+		if (isFieldValueMulti<PassedFields[keyof PassedFields]>(passedField)) {
+			fieldValue = passedField.value;
+			validation.handler = passedField.validationHandler;
+		} else fieldValue = passedField as PassedFields[keyof PassedFields];
+
 		fields[fieldName] = {
 			value: fieldValue,
 			isDirty: false,
@@ -88,23 +146,12 @@ export const createFormStore = <
 			isHidden: false,
 			isReadOnly: false,
 			metadata: {
-				id: `${baseId}-field-${
-					typeof fieldName === 'string' ? fieldName : String(fieldName) //.toString()
-				}`,
+				id: `${baseId}-field-${String(fieldName)}`,
 				name: fieldName,
 				initialValue: fieldValue,
 			},
-			validation: {
-				failedAttempts: 0,
-				passedAttempts: 0,
-				errors: null,
-				events: {
-					blur: { failedAttempts: 0, passedAttempts: 0, isActive: false },
-					change: { failedAttempts: 0, passedAttempts: 0, isActive: false },
-					mount: { failedAttempts: 0, passedAttempts: 0, isActive: false },
-					submit: { failedAttempts: 0, passedAttempts: 0, isActive: false },
-				},
-			},
+			errors: null,
+			validation,
 		};
 	}
 
@@ -119,8 +166,12 @@ export const createFormStore = <
 					const fieldsNames = currentState.metadata.fieldsNames;
 					const fields = currentState.fields;
 
-					for (const fieldName of fieldsNames) {
-						fields[fieldName].value = fields[fieldName].metadata.initialValue;
+					let fieldName: (typeof fieldsNames)[number];
+					for (fieldName of fieldsNames) {
+						fields[fieldName] = {
+							...fields[fieldName],
+							value: fields[fieldName].metadata.initialValue,
+						};
 					}
 
 					return { fields };
@@ -139,26 +190,27 @@ export const createFormStore = <
 					const hasError = !!params.errors;
 
 					let field = currentState.fields[params.name];
-					let fieldValidateEvent =
-						field.validation.events[params.validationEventName];
-					let errors = currentState.errors;
 
 					field = {
 						...field,
 						isDirty: hasError,
+						errors: params.errors,
 						validation: {
 							...field.validation,
-							errors: errors,
 							events: {
 								...field.validation.events,
 								[params.validationEventName]: {
-									...fieldValidateEvent,
+									...field.validation.events[params.validationEventName],
 									failedAttempts: hasError
-										? fieldValidateEvent.failedAttempts
-										: fieldValidateEvent.failedAttempts + 1,
+										? field.validation.events[params.validationEventName]
+												.failedAttempts
+										: field.validation.events[params.validationEventName]
+												.failedAttempts + 1,
 									passedAttempts: hasError
-										? fieldValidateEvent.passedAttempts
-										: fieldValidateEvent.passedAttempts + 1,
+										? field.validation.events[params.validationEventName]
+												.passedAttempts
+										: field.validation.events[params.validationEventName]
+												.passedAttempts + 1,
 								},
 							},
 						},
@@ -190,3 +242,17 @@ export const useFormStore = <TAllFields extends PassedAllFieldsShape, U>(
 // 	if (error instanceof Error) return [error.message];
 // 	return ['Something went wrong!'];
 // };
+
+const testStore = createFormStore({
+	fields: {
+		username: '',
+		email: '',
+		dateOfBirth: { value: new Date() },
+		password: '',
+		confirmPassword: '',
+	},
+});
+
+testStore.getState().metadata.fieldsNames;
+testStore.getState().fields.dateOfBirth;
+testStore.getState().fields.username;
