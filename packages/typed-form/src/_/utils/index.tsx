@@ -95,6 +95,7 @@ export const createFormStore = <
 	validation?: {
 		[key in ValidationEvents]?: boolean;
 	};
+	trackValidationHistory?: boolean;
 }) => {
 	type FormStore = FormStoreShape<{
 		[Key in keyof PassedFields]: PassedFields[Key] extends PassesFieldMultiValues
@@ -118,6 +119,7 @@ export const createFormStore = <
 
 	let fieldValue: PassedFields[keyof PassedFields];
 	let validation: (typeof fields)[keyof PassedFields]['validation'];
+	let passedFieldValidationKey: ValidationEvents;
 
 	for (fieldName of metadata.fieldsNames) {
 		validation = {
@@ -131,9 +133,27 @@ export const createFormStore = <
 			},
 		};
 		passedField = params.fields[fieldName];
+
+		if (params.validation) {
+			for (passedFieldValidationKey in params.validation) {
+				validation.events[passedFieldValidationKey].isActive =
+					!!typeof params.validation[passedFieldValidationKey];
+			}
+		}
+
 		if (isFieldValueMulti<PassedFields[keyof PassedFields]>(passedField)) {
 			fieldValue = passedField.value;
 			validation.handler = passedField.validationHandler;
+			// validation.events.blur.isActive = !!passedField.validation?.blur;
+			// validation.events.change.isActive = !!passedField.validation?.change;
+			// validation.events.mount.isActive = !!passedField.validation?.mount;
+			// validation.events.submit.isActive = !!passedField.validation?.submit;
+			if (passedField.validation) {
+				for (passedFieldValidationKey in passedField.validation) {
+					validation.events[passedFieldValidationKey].isActive =
+						!!typeof passedField.validation[passedFieldValidationKey];
+				}
+			}
 		} else fieldValue = passedField as PassedFields[keyof PassedFields];
 
 		fields[fieldName] = {
@@ -160,6 +180,8 @@ export const createFormStore = <
 		errors,
 		metadata,
 		submitCounter,
+		isTrackingValidationHistory: !!params.trackValidationHistory,
+		validations: { history: [] },
 		utils: {
 			reInitFieldsValues: () =>
 				set((currentState) => {
@@ -199,17 +221,17 @@ export const createFormStore = <
 							...field.validation,
 							events: {
 								...field.validation.events,
-								[params.validationEventName]: {
-									...field.validation.events[params.validationEventName],
+								[params.validationEvent]: {
+									...field.validation.events[params.validationEvent],
 									failedAttempts: hasError
-										? field.validation.events[params.validationEventName]
+										? field.validation.events[params.validationEvent]
 												.failedAttempts
-										: field.validation.events[params.validationEventName]
+										: field.validation.events[params.validationEvent]
 												.failedAttempts + 1,
 									passedAttempts: hasError
-										? field.validation.events[params.validationEventName]
+										? field.validation.events[params.validationEvent]
 												.passedAttempts
-										: field.validation.events[params.validationEventName]
+										: field.validation.events[params.validationEvent]
 												.passedAttempts + 1,
 								},
 							},
@@ -221,6 +243,7 @@ export const createFormStore = <
 						errors,
 					};
 				}),
+			createValidationHistoryRecord: () => {},
 		},
 	}));
 };

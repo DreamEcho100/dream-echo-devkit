@@ -55,6 +55,10 @@ export interface FormStoreShape<PassedAllFields extends PassedAllFieldsShape> {
 	fields: AllFieldsShape<PassedAllFields>;
 	errors: { [Key in keyof PassedAllFields]?: string[] | null };
 	metadata: FormMetadata<PassedAllFields>;
+	isTrackingValidationHistory: boolean;
+	validations: {
+		history: unknown[];
+	};
 	submitCounter: number;
 	utils: {
 		reInitFieldsValues(): void;
@@ -65,8 +69,12 @@ export interface FormStoreShape<PassedAllFields extends PassedAllFieldsShape> {
 		setFieldErrors(params: {
 			name: keyof PassedAllFields;
 			errors: string[] | null;
-			validationEventName: ValidationEvents;
+			validationEvent: ValidationEvents;
 		}): void;
+		createValidationHistoryRecord(params: {
+			validationEvent: ValidationEvents;
+			// fields: AllFieldsShape<PassedAllFields>
+		}): unknown;
 	};
 }
 
