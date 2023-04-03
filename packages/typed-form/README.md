@@ -63,21 +63,22 @@ I'm building a library to manage forms in React.js, it's supposed to have the fo
 
 - A Headless UI.
 - Easy field validations.
-- Can validate fields on Blur, Change, Mount, and Submit.
+- field/s validation can be customized and working on different like on Blur, Change, Mount, and Submit.
 - Tracking the field:
 
-      - `isDirty`
-      - `isVisited`
-      - `isTouched`
-      - `isDisabled`
-      - `isHidden`
-      - `isFocused`
-      - `isReadOnly`
-      - validation for the events `submit`, `change`, `mount`, and `blur` while tracking their `passed` and `failed` validation attempts
-      - `errors` in result of the validation
-      - field `metadata` like `id`, `name`, and `initialValue`
+      - `isDirty`.
+      - `isVisited`.
+      - `isTouched`.
+      - `isDisabled`.
+      - `isHidden`.
+      - `isFocused`.
+      - `isReadOnly`.
+      - validation for the events `submit`, `change`, `mount`, and `blur` .while tracking their `passed` and `failed` validation attempts
+      - `errors` in result of the validation.
+      - field `metadata` like `id`, `name`, and `initialValue`.
 
-- Have some useful utilities like `reInitFieldsValues`
+- Can track validation history.
+- Have some useful utilities like `reInitFieldsValues`, `setFieldValue`, and `setFieldErrors`.
 
 ## Bugs To Fox
 

@@ -31,6 +31,7 @@ export type FieldIsDirtyErrorsAndValidation =
 export type FieldShape<Name, Value> = FieldIsDirtyErrorsAndValidation & {
 	validation: FieldValidation<Value>;
 	value: Value;
+	isUpdatingValueOnError: boolean;
 	isVisited: boolean;
 	isTouched: boolean;
 	isDisabled: boolean;
@@ -51,6 +52,17 @@ export interface FormMetadata<PassedAllFields extends PassedAllFieldsShape> {
 	fieldsNames: (keyof PassedAllFields)[];
 }
 
+export type PassesFieldMultiValues<Value = unknown> = {
+	value: Value;
+	isUpdatingValueOnError?: boolean;
+	validationHandler?: HandleValidation<Value>;
+	validation?: {
+		[key in ValidationEvents]?: boolean;
+	};
+	valueFromFieldToStore?(fieldValue: unknown): Value;
+	valueFromStoreToField?(StoreValue: unknown): unknown;
+};
+
 export interface FormStoreShape<PassedAllFields extends PassedAllFieldsShape> {
 	fields: AllFieldsShape<PassedAllFields>;
 	errors: { [Key in keyof PassedAllFields]?: string[] | null };
@@ -58,9 +70,16 @@ export interface FormStoreShape<PassedAllFields extends PassedAllFieldsShape> {
 	isTrackingValidationHistory: boolean;
 	validations: {
 		history: unknown[];
+		handler: {
+			[Key in keyof PassedAllFields]?: HandleValidation<PassedAllFields[Key]>;
+		};
 	};
 	submitCounter: number;
 	utils: {
+		errFormatter: (
+			error: unknown,
+			validationEvent: ValidationEvents,
+		) => string[];
 		reInitFieldsValues(): void;
 		setFieldValue(
 			name: keyof PassedAllFields,
@@ -73,8 +92,15 @@ export interface FormStoreShape<PassedAllFields extends PassedAllFieldsShape> {
 		}): void;
 		createValidationHistoryRecord(params: {
 			validationEvent: ValidationEvents;
-			// fields: AllFieldsShape<PassedAllFields>
+			validationEventPhase: 'start' | 'end';
+			validationEventState: 'processing' | 'failed' | 'passed';
+			fields: AllFieldsShape<PassedAllFields>[keyof PassedAllFields][];
 		}): unknown;
+		handleFieldValidation<Name extends keyof PassedAllFields>(params: {
+			name: Name;
+			value: PassedAllFields[Name];
+			validationEvent: ValidationEvents;
+		}): PassedAllFields[Name];
 	};
 }
 

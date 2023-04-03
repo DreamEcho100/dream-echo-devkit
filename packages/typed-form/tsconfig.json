@@ -1,7 +1,7 @@
 {
 	"extends": "tsconfig/react-library.json",
 	"compilerOptions": {
-		"lib": ["dom", "dom.iterable", "esnext"]
+		"target": "ESNext"
 	},
 	"include": ["."],
 	"exclude": ["_type.ts", "dist", "build", "node_modules", "_temp"]
