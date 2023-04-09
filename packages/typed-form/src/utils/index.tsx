@@ -1,169 +1,347 @@
 export { default as inputDateHelpers } from './inputDateHelpers';
 
 import { ZodError } from 'zod';
+
 import { createStore, useStore } from 'zustand';
+
 import type {
-	AllFieldsShapePartial,
-	FormStoreDataShape,
 	FormStoreApi,
-	FieldShape,
-	AllFieldsShape,
+	PassedAllFieldsShape,
+	FormStoreShape,
+	ValidationEvents,
+	PassesFieldMultiValues,
+	HandleValidation,
+	CreateCreateFormStore,
 } from '../types';
 
-const handleAllFieldsShapePartial = <TAllFields extends AllFieldsShape>(
-	fields: AllFieldsShapePartial<TAllFields>,
-): TAllFields => {
-	const allFields = {} as TAllFields;
+// Generates a random UUIDv4
+const generateUUIDV4 = () =>
+	'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+		const r = (Math.random() * 16) | 0;
+		const v = c === 'x' ? r : (r & 0x3) | 0x8;
+		return v.toString(16);
+	});
 
-	for (const fieldName in fields) {
-		allFields[fieldName] = {
+const isFieldValueMulti = <Value,>(
+	value: unknown,
+): value is PassesFieldMultiValues<Value> =>
+	!!(value && typeof value === 'object' && 'value' in value);
+
+export const createFormStore = <PassedFields extends Record<string, unknown>>({
+	isUpdatingFieldsValueOnError: updateFieldsValueOnError = true,
+	baseId = generateUUIDV4(),
+	trackValidationHistory = false,
+	validationsHandler = {},
+	...params
+}: {
+	fields:
+		| {
+				[Key in keyof PassedFields]:
+					| PassesFieldMultiValues<PassedFields[Key]>
+					| PassedFields[Key];
+		  };
+	isUpdatingFieldsValueOnError?: boolean;
+	baseId?: string;
+	validation?: { [key in ValidationEvents]?: boolean };
+	trackValidationHistory?: boolean;
+	validationsHandler?: {
+		[Key in keyof PassedFields]?: HandleValidation<PassedFields[Key]>;
+	};
+	errorFormatter?: (
+		error: unknown,
+		validationEvent: ValidationEvents,
+	) => string[];
+}): FormStoreApi<PassedFields> => {
+	type FormStore = CreateCreateFormStore<PassedFields>;
+
+	const errors = {};
+	const metadata = {
+		fieldsNames: Object.keys(params.fields) as (keyof PassedFields)[],
+		formId: `${baseId}-form`,
+	};
+	const submitCounter = 0;
+
+	const fields = {} as FormStore['fields'];
+
+	let fieldName: keyof PassedFields;
+	let passedField: (typeof params)['fields'][keyof PassedFields];
+
+	let fieldValue: PassedFields[keyof PassedFields];
+	let validation: (typeof fields)[keyof PassedFields]['validation'];
+	let passedFieldValidations: NonNullable<typeof params.validation> = {};
+	let isFieldHavingPassedValidations = false;
+	let passedFieldValidationKey: ValidationEvents;
+
+	// debugger;
+
+	for (fieldName of metadata.fieldsNames) {
+		validation = {
+			failedAttempts: 0,
+			passedAttempts: 0,
+			events: {
+				blur: { failedAttempts: 0, passedAttempts: 0, isActive: false },
+				change: { failedAttempts: 0, passedAttempts: 0, isActive: false },
+				mount: { failedAttempts: 0, passedAttempts: 0, isActive: false },
+				submit: { failedAttempts: 0, passedAttempts: 0, isActive: false },
+			},
+		};
+		passedField = params.fields[fieldName];
+
+		if (params.validation) {
+			isFieldHavingPassedValidations = true;
+			passedFieldValidations = {
+				...passedFieldValidations,
+				...params.validation,
+			};
+		}
+
+		fields[fieldName] = {} as (typeof fields)[typeof fieldName];
+
+		let isUpdatingValueOnError = updateFieldsValueOnError;
+
+		if (isFieldValueMulti<PassedFields[keyof PassedFields]>(passedField)) {
+			fieldValue = passedField.value;
+			isUpdatingValueOnError = !!passedField.isUpdatingValueOnError;
+			validation.handler =
+				passedField.validationHandler || validationsHandler[fieldName];
+			fields[fieldName].valueFromFieldToStore =
+				passedField.valueFromFieldToStore;
+			fields[fieldName].valueFromStoreToField =
+				passedField.valueFromStoreToField;
+			if (passedField.validation) {
+				isFieldHavingPassedValidations = true;
+				passedFieldValidations = {
+					...passedFieldValidations,
+					...passedField.validation,
+				};
+			}
+		} else fieldValue = passedField as PassedFields[keyof PassedFields];
+		// as Exclude<typeof passedField, ({ [Key in keyof PassedFields]: PassesFieldMultiValues<PassedFields[Key]>; })[keyof PassedFields]>
+
+		if (isFieldHavingPassedValidations) {
+			for (passedFieldValidationKey in passedFieldValidations) {
+				validation.events[passedFieldValidationKey].isActive =
+					!!typeof passedFieldValidations[passedFieldValidationKey];
+			}
+		}
+
+		fields[fieldName] = {
 			...fields[fieldName],
-			errors: [],
+			value: fieldValue,
+			isUpdatingValueOnError,
 			isDirty: false,
 			isTouched: false,
-		} as (typeof allFields)[typeof fieldName];
+			isVisited: false,
+			isDisabled: false,
+			isFocused: false,
+			isHidden: false,
+			isReadOnly: false,
+			metadata: {
+				id: `${baseId}-field-${String(fieldName)}`,
+				name: fieldName,
+				initialValue: fieldValue,
+			},
+			errors: null,
+			validation,
+		};
 	}
 
-	return allFields;
-};
+	return createStore<FormStore>((set, get) => ({
+		fields,
+		errors,
+		metadata,
+		submitCounter,
+		isTrackingValidationHistory: trackValidationHistory,
+		validations: { handler: {}, history: [] },
+		utils: {
+			errorFormatter: (error, validationEvent) => {
+				if (error instanceof ZodError) return error.format()._errors;
 
-/**
- * Creates a form store with default values for form data and fields.
- * The store can be used to manage form state and handle form submission and validation.
- *
- * @template TAllFields - The shape of all fields in the form.
- *
- * @param {Object} options - The options to configure the form store.
- * @param {Object} [options.form] - The initial form data.
- * @param {Object} [options.fieldsShared] - The shared options for all fields.
- * @param {Object} options.fields - The shape of all fields in the form.
- *
- * @returns {Object} The form store with its initial state and methods to update it.
- */
-export const createFormStore = <TAllFields extends AllFieldsShape>({
-	form,
-	fields,
-	fieldsShared,
-}: {
-	fieldsShared?: Partial<FormStoreDataShape<TAllFields>['fieldsShared']>;
-	form?: Partial<FormStoreDataShape<TAllFields>['form']>;
-	fields: AllFieldsShapePartial<TAllFields>;
-}) =>
-	createStore<FormStoreDataShape<TAllFields>>((set, get) => ({
-		fieldsShared: {
-			fieldErrorFormatter: errFormatter,
-			...(fieldsShared || {}),
-		},
-		fields: handleAllFieldsShapePartial(fields),
-		errors: (() => {
-			const errors = {} as FormStoreDataShape<TAllFields>['errors'];
+				if (error instanceof Error) return [error.message];
+				return ['Something went wrong!'];
+			},
+			reInitFieldsValues: () =>
+				set((currentState) => {
+					const fieldsNames = currentState.metadata.fieldsNames;
+					const fields = currentState.fields;
 
-			let fieldName: keyof typeof fields;
-			for (fieldName in fields) {
-				errors[fieldName] = [];
-			}
+					let fieldName: (typeof fieldsNames)[number];
+					for (fieldName of fieldsNames) {
+						fields[fieldName] = {
+							...fields[fieldName],
+							value: fields[fieldName].metadata.initialValue,
+						};
+					}
 
-			return errors;
-		})(),
-		values: (() => {
-			const values = {} as FormStoreDataShape<TAllFields>['values'];
+					return { fields };
+				}),
+			setFieldValue: (name, value) =>
+				set((currentState) => {
+					// debugger;
 
-			let fieldName: keyof typeof fields;
-			for (fieldName in fields) {
-				values[fieldName] = fields[fieldName]['initialValue'];
-			}
+					return {
+						fields: {
+							...currentState.fields,
+							[name]: {
+								...currentState.fields[name],
+								value,
+							},
+						},
+					};
+				}),
+			setFieldErrors: (params) =>
+				set((currentState) => {
+					const hasError = !!params.errors;
 
-			return values;
-		})(),
-		isDirty: false,
-		form: {
-			isTouched: false,
-			validateAllFieldsOnSubmit: true,
-			submitCounter: 0,
-			...form,
-		},
+					let field = currentState.fields[params.name];
 
-		setFieldValue: ({ name, value }) =>
-			set((state: FormStoreDataShape<TAllFields>) => {
-				let values = state.values;
+					field = {
+						...field,
+						isDirty: hasError,
+						errors: params.errors,
+						validation: {
+							...field.validation,
+							events: {
+								...field.validation.events,
+								[params.validationEvent]: {
+									...field.validation.events[params.validationEvent],
+									failedAttempts: hasError
+										? field.validation.events[params.validationEvent]
+												.failedAttempts
+										: field.validation.events[params.validationEvent]
+												.failedAttempts + 1,
+									passedAttempts: hasError
+										? field.validation.events[params.validationEvent]
+												.passedAttempts
+										: field.validation.events[params.validationEvent]
+												.passedAttempts + 1,
+								},
+							},
+						},
+					};
 
-				values[name] = value;
-
-				return {
-					values,
-				};
-			}),
-		setFieldsError: (errors) =>
-			set((state) => {
-				let isFormDirty = !!state?.isDirty;
-				let reCheckFormErrorsSize = true;
-				const stateErrors = {
-					...state.errors,
-					...errors,
-				};
-				const errorsFieldsNames: (keyof typeof errors)[] = Object.keys(errors);
-
-				const modifiedFields = state.fields;
-
-				let isFieldDirty: boolean;
-				let fieldNameIterator: keyof typeof modifiedFields;
-				for (fieldNameIterator of errorsFieldsNames) {
-					// if there is no `error` key then the `errorsFieldsNames` length would be `0`
-					(isFieldDirty = errors[fieldNameIterator]!.length > 0), //checkIsFieldDirty(state.fields[fieldName].errors)
-						(modifiedFields[fieldNameIterator] = {
-							...modifiedFields[fieldNameIterator],
-							errors: errors[fieldNameIterator],
-							isDirty: isFieldDirty,
-						});
-
-					if (isFieldDirty) reCheckFormErrorsSize = false;
+					return {
+						fields: { ...currentState.fields, [params.name]: field },
+						errors,
+					};
+				}),
+			createValidationHistoryRecord: ({
+				fields,
+				validationEvent,
+				validationEventPhase,
+				validationEventState,
+			}) => {
+				//
+				const logs: string[] = [];
+				if (validationEventPhase === 'start') {
+					logs.push(
+						`Starting the validation for fields: [${Object.keys(fields).join(
+							', ',
+						)}]`,
+					);
 				}
 
-				//
-				if (reCheckFormErrorsSize) {
-					let stateErrorsKey: keyof typeof stateErrors;
-					for (stateErrorsKey in stateErrors) {
-						if (stateErrors[stateErrorsKey].length > 0) {
-							isFormDirty = true;
-							break;
-						}
+				if (validationEventPhase === 'end') {
+					logs.push(
+						`Ending the validation for fields: [${Object.keys(fields).join(
+							', ',
+						)}]`,
+					);
+				}
+
+				logs.push(
+					`Validation ${
+						validationEventState[0].toUpperCase() +
+						validationEventState.slice(1)
+					}!`,
+				);
+
+				fields.forEach((field) => {
+					logs.push(
+						`Field: ${String(field.metadata.name)}, Failed Attempts: ${
+							field.validation.events[validationEvent].failedAttempts
+						}, Passed Attempt: ${
+							field.validation.events[validationEvent].passedAttempts
+						}`,
+					);
+				});
+			},
+			handleFieldValidation: ({ name, validationEvent, value }) => {
+				// debugger;
+				const currentState = get();
+
+				if (
+					!currentState.fields[name].validation.events[validationEvent].isActive
+				)
+					return value;
+
+				const validationHandler =
+					currentState.fields[name].validation.handler ||
+					currentState.validations.handler[name];
+
+				if (!validationHandler) return value;
+
+				const valueFromFieldToStore =
+					currentState.fields[name].valueFromFieldToStore;
+				let validatedValue = valueFromFieldToStore
+					? valueFromFieldToStore(value)
+					: value;
+
+				let isUpdatingValueOnError =
+					currentState.fields[name].isUpdatingValueOnError;
+
+				const handleSetError = (error: unknown) => {
+					currentState.utils.setFieldErrors({
+						name,
+						errors: currentState.utils.errorFormatter(error, validationEvent),
+						validationEvent,
+					});
+					return isUpdatingValueOnError
+						? validatedValue
+						: currentState.fields[name].value;
+				};
+
+				if (currentState.isTrackingValidationHistory) {
+					try {
+						currentState.utils.createValidationHistoryRecord({
+							fields: [currentState.fields[name]],
+							validationEvent,
+							validationEventPhase: 'start',
+							validationEventState: 'processing',
+						});
+
+						validatedValue = validationHandler(validatedValue, validationEvent);
+
+						currentState.utils.createValidationHistoryRecord({
+							fields: [currentState.fields[name]],
+							validationEvent,
+							validationEventPhase: 'end',
+							validationEventState: 'passed',
+						});
+					} catch (error) {
+						validatedValue = handleSetError(error);
+						currentState.utils.createValidationHistoryRecord({
+							fields: [currentState.fields[name]],
+							validationEvent,
+							validationEventPhase: 'end',
+							validationEventState: 'failed',
+						});
+					}
+				} else {
+					try {
+						validatedValue = validationHandler(validatedValue, validationEvent);
+					} catch (error) {
+						validatedValue = handleSetError(error);
 					}
 				}
 
-				return {
-					fields: modifiedFields,
-					isDirty: isFormDirty,
-					errors: stateErrors,
-				};
-			}),
-		getFieldErrorFormatter: (name) =>
-			(name && get().fields[name]?.fieldErrorFormatter) ||
-			get().fieldsShared.fieldErrorFormatter,
-		// getIsFieldIsUncontrolled: (name) => {
-		// 	if (typeof get().fields[name].isUncontrolled === 'boolean')
-		// 		return get().fields[name].isUncontrolled;
-		// 	return get().fieldsShared.isUncontrolled;
-		// },
-		getFieldValidateOnChange: (name) => {
-			let validateOnChange =
-				typeof get().fields[name].validateOnChange === 'function'
-					? get().fields[name].validateOnChange
-					: typeof get().fieldsShared.validateOnChange === 'function'
-					? get().fieldsShared.validateOnChange
-					: get().fields[name].validationDefaultHandler;
-
-			if (typeof validateOnChange === 'function') return validateOnChange;
-		},
-		getIsFieldValidatingOnChange: (name) => {
-			return !!(
-				get().fields[name].validateOnChange ||
-				get().fieldsShared.validateOnChange ||
-				get().fields[name].validationDefaultHandler
-			);
+				return validatedValue;
+			},
 		},
 	}));
+};
 
-export const useFormStore = <TAllFields extends AllFieldsShape, U>(
+export const useFormStore = <TAllFields extends PassedAllFieldsShape, U>(
 	store: FormStoreApi<TAllFields>,
 	cb: (
 		state: FormStoreApi<TAllFields> extends {
@@ -174,9 +352,16 @@ export const useFormStore = <TAllFields extends AllFieldsShape, U>(
 	) => U,
 ) => useStore(store, cb);
 
-export const errFormatter = (error: unknown): FieldShape['errors'] => {
-	if (error instanceof ZodError) return error.format()._errors;
+// const testStore = createFormStore({
+// 	fields: {
+// 		username: '',
+// 		email: '',
+// 		dateOfBirth: { value: new Date() },
+// 		password: '',
+// 		confirmPassword: '',
+// 	},
+// });
 
-	if (error instanceof Error) return [error.message];
-	return ['Something went wrong!'];
-};
+// testStore.getState().metadata.fieldsNames;
+// testStore.getState().fields.dateOfBirth;
+// testStore.getState().fields.username.value;

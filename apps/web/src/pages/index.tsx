@@ -2,150 +2,139 @@ import { Button } from 'ui';
 import {
 	createFormStore,
 	AllFieldsShape,
-	FormProps,
 	useFormStore,
-	Value,
 	FieldShape,
-	InputFieldProps,
-	FieldProps,
+	PassedAllFieldsShape,
+	FormStoreApi,
+	FormStoreValues,
+	CreateCreateFormStore,
+	StoreApi,
+	inputDateHelpers,
 } from 'typed-form';
-import React, { useMemo } from 'react';
+import React, {
+	FormEvent,
+	FormHTMLAttributes,
+	InputHTMLAttributes,
+	useMemo,
+} from 'react';
 import { z } from 'zod';
 
 const formStore = createFormStore({
-	fieldsShared: {
-		validateOnChange: false,
-		validateOnSubmit: true,
-	},
 	fields: {
-		name: {
-			initialValue: '',
-			validationDefaultHandler: (value) => z.string().parse(value),
+		name: 'Test',
+		counter: {
+			value: 1,
+			valueFromFieldToStore: (value) => Number(value),
+			isUpdatingValueOnError: true,
 		},
-		age: {
-			initialValue: 0,
-			validationDefaultHandler: (value) =>
-				z.number().nonnegative().parse(value),
-			fieldToStoreFormatter: (value: string) => Number(value),
-			storeToFieldFormatter: (value: number) => value.toString(),
+		dateOfBirth: {
+			value: new Date(),
+			valueFromFieldToStore: (value) =>
+				inputDateHelpers.parseDate(value as string, 'date'),
+			valueFromStoreToField: (value: Date) =>
+				inputDateHelpers.formatDate(value, 'date'),
 		},
 	},
+	validationsHandler: {
+		counter: (value) => z.number().nonnegative().parse(value),
+		dateOfBirth: (value) => z.date().parse(value),
+		name: (value) => z.string().min(1).max(4).parse(value),
+	},
+	validation: { change: true },
 });
 
-export const Form = <Fields extends AllFieldsShape>({
+export type FormProps<Fields extends PassedAllFieldsShape> =
+	FormHTMLAttributes<HTMLFormElement> & {
+		store: FormStoreApi<Fields>;
+		handleOnSubmit?: (params: {
+			event: FormEvent<HTMLFormElement>;
+			values: Fields; // { [Key in keyof TFields]: TFields[Key]['value'] }// Value<TFields>;
+		}) => void;
+	};
+
+export const Form = <Fields extends PassedAllFieldsShape>({
 	store,
 	handleOnSubmit,
 	...props
 }: FormProps<Fields>) => {
-	const form = useFormStore(store, (store) => store.form);
+	// const form = useFormStore(store, (store) => store.form);
 	return (
 		<form
 			onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
 				event.preventDefault();
-				const storeState = store.getState();
-				const formFieldsValues: Value<Fields> = {} as Value<Fields>;
-				const errors: Partial<Record<keyof Fields, FieldShape['errors']>> = {};
-				const fields = storeState.fields;
-				const values = storeState.values;
-				let fieldName: keyof typeof values;
-				let field: Fields[keyof typeof fields];
-				let validateOnSubmit: boolean;
+				const currentStore = store.getState();
+				const fields = currentStore.fields;
+				const values = {} as Fields;
 
-				for (fieldName in values) {
-					field = fields[fieldName];
-					formFieldsValues[fieldName] = values[fieldName];
-					errors[fieldName] = [];
-					validateOnSubmit = !!(typeof field.validateOnSubmit === 'boolean'
-						? field.validateOnSubmit
-						: form.validateAllFieldsOnSubmit);
-					if (
-						validateOnSubmit &&
-						typeof field.validationDefaultHandler === 'function'
-					) {
-						try {
-							field.validationDefaultHandler(values[fieldName]);
-						} catch (error) {
-							console.log('field', field);
-							errors[fieldName] = store
-								.getState()
-								.getFieldErrorFormatter(fieldName)(error);
-							console.log('errors[fieldName]', errors[fieldName]);
-						}
-					}
+				let fieldName: keyof typeof fields;
+				for (fieldName in fields) {
+					values[fieldName] = fields[fieldName]
+						.value as (typeof values)[typeof fieldName];
 				}
 
-				storeState.setFieldsError(errors);
-
-				if (handleOnSubmit) handleOnSubmit({ event, values: formFieldsValues });
+				handleOnSubmit?.({
+					event,
+					values,
+				});
 			}}
 			{...props}
 		/>
 	);
 };
 
-const FieldErrors = <TFields extends AllFieldsShape>({
+export type FieldProps<TFields extends PassedAllFieldsShape> = {
+	store: FormStoreApi<TFields>;
+	name: keyof TFields;
+};
+
+const FieldErrors = <TFields extends PassedAllFieldsShape>({
 	store,
 	name,
 }: FieldProps<TFields>) => {
-	const { field } = useFormStore(store, (store) => ({
-		field: store.fields[name],
-	}));
+	const isDirty = useFormStore(store, (store) => store.fields[name].isDirty);
+	const errors = useFormStore(store, (store) => store.fields[name].errors);
 
-	if (!field.isDirty) return <></>;
+	if (!isDirty) return <></>;
 
 	return (
 		<ul>
-			{field.errors.map((error) => (
+			{errors!.map((error) => (
 				<p key={error}>{error}</p>
 			))}
 		</ul>
 	);
 };
 
-const InputField = <TFields extends AllFieldsShape>({
+export type InputFieldProps<TFields extends PassedAllFieldsShape> = Omit<
+	InputHTMLAttributes<HTMLInputElement>,
+	'name'
+> &
+	FieldProps<TFields>;
+
+const InputField = <TFields extends PassedAllFieldsShape>({
 	store,
 	...props
 }: InputFieldProps<TFields>) => {
 	const name = useMemo(() => props.name, [props.name]);
-	const value = useFormStore(store, (store) => store.values[name]);
+	const value = useFormStore(store, (store) => store.fields[name].value);
 
 	return (
 		<input
 			type='text'
 			className='text-black'
 			{...props}
+			// @ts-ignore
 			name={name}
-			value={
-				typeof store.getState().fields[name].storeToFieldFormatter !==
-				'undefined'
-					? store.getState().fields[name].storeToFieldFormatter?.(value)
-					: value
-			}
+			// @ts-ignore
+			value={value}
 			onChange={(event) => {
-				const errors: Partial<
-					Record<keyof TFields, NonNullable<[] | string[]>>
-				> = {};
-				let value: unknown = event.target.value;
-				const storeState = store.getState();
-
-				try {
-					const validationHandler = storeState.getFieldValidateOnChange(name);
-					const validateOnChange =
-						!!validationHandler &&
-						storeState.getIsFieldValidatingOnChange(name);
-					const field = storeState.fields[name];
-
-					value = field.fieldToStoreFormatter
-						? field.fieldToStoreFormatter(value)
-						: value;
-					value = validateOnChange ? validationHandler(value) : value;
-					if (field.isDirty) errors[name] = [];
-				} catch (error) {
-					errors[name] = storeState.getFieldErrorFormatter(name)(error);
-				}
-
-				storeState.setFieldValue({ name, value });
-				storeState.setFieldsError(errors);
+				const currentStore = store.getState();
+				const value = currentStore.utils.handleFieldValidation({
+					name,
+					value: event.target.value,
+					validationEvent: 'change',
+				});
+				currentStore.utils.setFieldValue(props.name, value);
 			}}
 		/>
 	);
@@ -163,8 +152,10 @@ const Example = () => {
 		>
 			<InputField store={formStore} name='name' />
 			<FieldErrors store={formStore} name='name' />
-			<InputField store={formStore} name='age' />
-			<FieldErrors store={formStore} name='age' />
+			<InputField store={formStore} name='counter' type='number' />
+			<FieldErrors store={formStore} name='counter' />
+			<InputField store={formStore} name='dateOfBirth' type='date' />
+			<FieldErrors store={formStore} name='dateOfBirth' />
 			<button type='submit'>Submit</button>
 		</Form>
 	);

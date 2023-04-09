@@ -1,149 +1,136 @@
+export type { StoreApi } from 'zustand';
 import type { StoreApi } from 'zustand';
 
-import type { FormEvent, FormHTMLAttributes, InputHTMLAttributes } from 'react';
+export type ValidationEvents = 'submit' | 'change' | 'mount' | 'blur';
 
-export type InputDateTypes =
-	| 'date'
-	| 'time'
-	| 'datetime-local'
-	| 'week'
-	| 'month';
-type FieldErrors =
-	| {
-			errors: [];
-			isDirty: false;
-	  }
-	| {
-			errors: string[];
-			isDirty: true;
-	  };
-export type AllFieldsErrors<TFields extends AllFieldsShape> = Record<
-	keyof TFields,
-	string[]
->;
-
-type HandleValidation = (value: unknown) => unknown;
-type FieldErrorFormatter = (error: unknown) => string[];
-type AllFieldsErrorFormatter<TFields extends AllFieldsShape> = (
-	error: unknown,
-) => Partial<AllFieldsErrors<TFields>>;
-
-export type FieldShape<Value = unknown> = FieldErrors & {
+export type HandleValidation<Value> = (
+	value: unknown,
+	validationEvent: ValidationEvents,
+) => Value;
+export type PassedAllFieldsShape = Record<string, unknown>;
+// export type FieldNameShape = string | number | symbol;
+export interface FieldMetadata<Name, Value> {
+	name: Name;
+	id: string;
 	initialValue: Value;
-
-	validationDefaultHandler?: HandleValidation;
-	validateOnBlur?: boolean | HandleValidation;
-	validateOnChange?: boolean | HandleValidation;
-	validateOnMount?: boolean | HandleValidation;
-	validateOnSubmit?: boolean | HandleValidation;
-
-	fieldToStoreFormatter?: (value: any) => Value;
-	storeToFieldFormatter?: (value: any) => any;
-
-	fieldErrorFormatter?: FieldErrorFormatter;
+}
+export interface FieldValidation<Value> {
+	handler?: HandleValidation<Value>;
+	events: {
+		[key in ValidationEvents]: {
+			isActive: boolean;
+			passedAttempts: number;
+			failedAttempts: number;
+		};
+	};
+	passedAttempts: number;
+	failedAttempts: number;
+}
+export type FieldIsDirtyErrorsAndValidation =
+	| { isDirty: false; errors: null }
+	| { isDirty: true; errors: string[] };
+export type FieldShape<Name, Value> = FieldIsDirtyErrorsAndValidation & {
+	validation: FieldValidation<Value>;
+	value: Value;
+	isUpdatingValueOnError: boolean;
+	isVisited: boolean;
 	isTouched: boolean;
-	isUncontrolled?: boolean;
+	isDisabled: boolean;
+	isHidden: boolean;
+	isFocused: boolean;
+	isReadOnly: boolean;
+	metadata: FieldMetadata<Name, Value>;
+	valueFromFieldToStore?(fieldValue: unknown): Value;
+	valueFromStoreToField?(StoreValue: unknown): unknown;
+};
+export type AllFieldsShape<PassedAllFields extends PassedAllFieldsShape> = {
+	[FieldName in keyof PassedAllFields]: FieldShape<
+		FieldName,
+		PassedAllFields[FieldName]
+	>;
 };
 
-export type AllFieldsShape = Record<string, FieldShape>;
-
-export interface FormStoreDataShape<TFields extends AllFieldsShape> {
-	fieldsShared: {
-		validationDefaultHandler?: HandleValidation;
-		validateOnBlur?: boolean | HandleValidation;
-		validateOnChange?: boolean | HandleValidation;
-		validateOnMount?: boolean | HandleValidation;
-		validateOnSubmit?: boolean | HandleValidation;
-
-		fieldErrorFormatter: FieldErrorFormatter;
-	};
-	errors: AllFieldsErrors<TFields>;
-	values: Record<keyof TFields, TFields[keyof TFields]['initialValue']>;
-	isDirty: boolean;
-	fields: {
-		[Key in keyof TFields]: TFields[Key];
-	};
-	form: {
-		validateAllFieldsOnSubmit: boolean | HandleValidation;
-		isTouched: boolean;
-		isFieldsUncontrolled?: boolean;
-		submitCounter: number;
-
-		handleValidateFieldsOnSubmit?: HandleValidation;
-		allFieldsErrorsFormatter?: AllFieldsErrorFormatter<TFields>;
-	};
-
-	/**
-	 * Updates the value of a specific field, and validates it if necessary. It then updates
-	 * the form state with the updated values, and marks the field as dirty and the form as
-	 * dirty as well. If there is an error during validation, it sets the field as dirty and
-	 * sets the error in the form state.
-	 *
-	 * @param {string} name - The name of the field to update.
-	 * @param {any} value - The new value of the field.
-	 * @returns {void}
-	 */
-	setFieldValue: (params: {
-		name: keyof TFields;
-		value: TFields[keyof TFields]['initialValue'];
-		validateOnChange?: TFields[keyof TFields]['validateOnChange'];
-	}) => void;
-	/**
-	 * Update the error message of multiple fields and mark them as not having a value change since the last error message
-	 * @param errors - An object containing the field names as keys and their error messages as values
-	 * @returns An updated state object with the modified fields
-	 */
-	setFieldsError: (
-		errors: Partial<Record<keyof TFields, NonNullable<FieldShape['errors']>>>,
-	) => void;
-	getFieldErrorFormatter: (
-		name?: keyof TFields,
-	) => (error: unknown) => FieldShape['errors'];
-
-	getFieldValidateOnChange: (
-		name: keyof TFields,
-	) => Exclude<FieldShape['validateOnChange'], boolean>;
-	getIsFieldValidatingOnChange: (
-		name: keyof TFields,
-	) => Exclude<FieldShape['validateOnChange'], HandleValidation>;
+export interface FormMetadata<PassedAllFields extends PassedAllFieldsShape> {
+	formId: string;
+	fieldsNames: (keyof PassedAllFields)[];
 }
 
-export type FormStoreApi<TFields extends AllFieldsShape> = StoreApi<
-	FormStoreDataShape<TFields>
->;
-
-export type Value<TFields extends AllFieldsShape> = Record<
-	keyof TFields,
-	TFields[keyof TFields]['initialValue']
->;
-
-export type FormProps<TFields extends AllFieldsShape> =
-	FormHTMLAttributes<HTMLFormElement> & {
-		store: FormStoreApi<TFields>;
-		handleOnSubmit?: (params: {
-			event: FormEvent<HTMLFormElement>;
-			values: Value<TFields>;
-		}) => void;
+export interface PassesFieldMultiValues<Value = unknown> {
+	value: Value;
+	// oo: { value: Value; }
+	isUpdatingValueOnError?: boolean;
+	validationHandler?: HandleValidation<Value>;
+	validation?: {
+		[key in ValidationEvents]?: boolean;
 	};
+	valueFromFieldToStore?(fieldValue: string | number): Value;
+	valueFromStoreToField?(StoreValue: unknown): unknown;
+}
 
-export type FieldProps<TFields extends AllFieldsShape> = {
-	store: FormStoreApi<TFields>;
-	name: Exclude<keyof TFields, number | symbol>;
-};
+export interface FormStoreShape<PassedAllFields extends PassedAllFieldsShape> {
+	fields: AllFieldsShape<PassedAllFields>;
+	errors: { [Key in keyof PassedAllFields]?: string[] | null };
+	metadata: FormMetadata<PassedAllFields>;
+	isTrackingValidationHistory: boolean;
+	validations: {
+		history: unknown[];
+		handler: {
+			[Key in keyof PassedAllFields]?: HandleValidation<PassedAllFields[Key]>;
+		};
+	};
+	submitCounter: number;
+	utils: {
+		errorFormatter: (
+			error: unknown,
+			validationEvent: ValidationEvents,
+		) => string[];
+		reInitFieldsValues(): void;
+		setFieldValue(
+			name: keyof PassedAllFields,
+			value:
+				| ((
+						value: unknown, // PassedAllFields[typeof name]
+				  ) => PassedAllFields[typeof name])
+				| unknown, // PassedAllFields[typeof name],
+		): void;
+		setFieldErrors(params: {
+			name: keyof PassedAllFields;
+			errors: string[] | null;
+			validationEvent: ValidationEvents;
+		}): void;
+		createValidationHistoryRecord(params: {
+			validationEvent: ValidationEvents;
+			validationEventPhase: 'start' | 'end';
+			validationEventState: 'processing' | 'failed' | 'passed';
+			fields: AllFieldsShape<PassedAllFields>[keyof PassedAllFields][];
+		}): unknown;
+		handleFieldValidation<Name extends keyof PassedAllFields>(params: {
+			name: Name;
+			value: any; // unknown | PassedAllFields[Name];
+			validationEvent: ValidationEvents;
+		}): PassedAllFields[Name];
+	};
+}
 
-export type InputFieldProps<TFields extends AllFieldsShape> = Omit<
-	InputHTMLAttributes<HTMLInputElement>,
-	'name'
-> &
-	FieldProps<TFields>;
+export type CreateCreateFormStore<
+	PassedFields extends Record<string, unknown>,
+> = FormStoreShape<{
+	[Key in keyof PassedFields]: PassedFields[Key] extends PassesFieldMultiValues
+		? PassedFields[Key]['value']
+		: PassedFields[Key];
+}>;
 
-export type AllFieldsShapePartial<TAllFields extends AllFieldsShape> = Record<
-	keyof TAllFields,
-	Pick<TAllFields[keyof TAllFields], 'initialValue'> &
-		Partial<
-			Omit<
-				TAllFields[keyof TAllFields],
-				'initialValue' | 'error' | 'isDirty' | 'isTouched'
-			>
-		>
+export type FormStoreApi<Fields extends PassedAllFieldsShape> = StoreApi<
+	CreateCreateFormStore<Fields>
 >;
+// 	StoreApi<
+// 	FormStoreShape<Fields>
+// >;
+
+export type FormStoreValues<
+	TFields extends AllFieldsShape<PassedAllFieldsShape>,
+> = { [Key in keyof TFields]: TFields[Key]['value'] };
+
+export type FormStoreErrors<
+	TFields extends AllFieldsShape<PassedAllFieldsShape>,
+> = { [Key in keyof TFields]: TFields[Key]['errors'] };

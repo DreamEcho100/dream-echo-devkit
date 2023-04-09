@@ -1,4 +1,4 @@
-import { InputDateTypes } from '../types';
+import { InputDateTypes } from '../_types';
 
 /**
  * Formats a date object to the desired string format based on the type.
@@ -29,7 +29,12 @@ function formatDate(date: Date, type: InputDateTypes): string {
 			// For the 'week' type, format the week as yyyy-Www using getWeekNumber and padStart
 			const year = date.getFullYear();
 			const weekNumber = getWeekNumber(date);
-			formattedDate = `${year}-W${weekNumber.toString().padStart(2, '0')}`;
+			formattedDate = `${year}-W${
+				weekNumber.toString().length < 2
+					? '0' + weekNumber.toString()
+					: weekNumber.toString()
+			}`;
+			// weekNumber.toString().padStart(2, '0')
 			break;
 		case 'month':
 			// For the 'month' type, format the month as yyyy-mm using toISOString and slice
