@@ -7,7 +7,6 @@ import { createStore, useStore } from 'zustand';
 import type {
 	FormStoreApi,
 	PassedAllFieldsShape,
-	FormStoreShape,
 	ValidationEvents,
 	PassesFieldMultiValues,
 	HandleValidation,
@@ -76,6 +75,7 @@ export const createFormStore = <PassedFields extends Record<string, unknown>>({
 
 	for (fieldName of metadata.fieldsNames) {
 		validation = {
+			handler: validationsHandler[fieldName],
 			failedAttempts: 0,
 			passedAttempts: 0,
 			events: {
@@ -102,8 +102,7 @@ export const createFormStore = <PassedFields extends Record<string, unknown>>({
 		if (isFieldValueMulti<PassedFields[keyof PassedFields]>(passedField)) {
 			fieldValue = passedField.value;
 			isUpdatingValueOnError = !!passedField.isUpdatingValueOnError;
-			validation.handler =
-				passedField.validationHandler || validationsHandler[fieldName];
+			validation.handler = passedField.validationHandler;
 			fields[fieldName].valueFromFieldToStore =
 				passedField.valueFromFieldToStore;
 			fields[fieldName].valueFromStoreToField =
@@ -267,7 +266,7 @@ export const createFormStore = <PassedFields extends Record<string, unknown>>({
 				});
 			},
 			handleFieldValidation: ({ name, validationEvent, value }) => {
-				// debugger;
+				debugger;
 				const currentState = get();
 
 				if (
@@ -281,6 +280,7 @@ export const createFormStore = <PassedFields extends Record<string, unknown>>({
 
 				if (!validationHandler) return value;
 
+				// debugger;
 				const valueFromFieldToStore =
 					currentState.fields[name].valueFromFieldToStore;
 				let validatedValue = valueFromFieldToStore

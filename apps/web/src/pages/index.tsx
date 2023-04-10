@@ -1,14 +1,9 @@
 import { Button } from 'ui';
 import {
 	createFormStore,
-	AllFieldsShape,
 	useFormStore,
-	FieldShape,
 	PassedAllFieldsShape,
 	FormStoreApi,
-	FormStoreValues,
-	CreateCreateFormStore,
-	StoreApi,
 	inputDateHelpers,
 } from 'typed-form';
 import React, {
@@ -25,12 +20,11 @@ const formStore = createFormStore({
 		counter: {
 			value: 1,
 			valueFromFieldToStore: (value) => Number(value),
-			isUpdatingValueOnError: true,
 		},
 		dateOfBirth: {
 			value: new Date(),
 			valueFromFieldToStore: (value) =>
-				inputDateHelpers.parseDate(value as string, 'date'),
+				inputDateHelpers.parseDate(value, 'date'),
 			valueFromStoreToField: (value: Date) =>
 				inputDateHelpers.formatDate(value, 'date'),
 		},
@@ -117,16 +111,20 @@ const InputField = <TFields extends PassedAllFieldsShape>({
 }: InputFieldProps<TFields>) => {
 	const name = useMemo(() => props.name, [props.name]);
 	const value = useFormStore(store, (store) => store.fields[name].value);
+	const valueFromStoreToField = useFormStore(
+		store,
+		(store) => store.fields[name].valueFromStoreToField,
+	);
 
 	return (
 		<input
 			type='text'
-			className='text-black'
+			className='px-2 py-1 text-black'
 			{...props}
 			// @ts-ignore
 			name={name}
 			// @ts-ignore
-			value={value}
+			value={valueFromStoreToField ? valueFromStoreToField(value) : value}
 			onChange={(event) => {
 				const currentStore = store.getState();
 				const value = currentStore.utils.handleFieldValidation({

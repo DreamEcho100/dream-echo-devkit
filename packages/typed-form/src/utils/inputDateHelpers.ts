@@ -55,7 +55,7 @@ function formatDate(date: Date, type: InputDateTypes): string {
  * @param {string} type - The format type ('date', 'time', 'datetime-local', 'week', or 'month').
  * @returns {Date} - The parsed Date object.
  */
-function parseDate(dateString: string, type: InputDateTypes): Date {
+function parseDate(dateString: string | number, type: InputDateTypes): Date {
 	// Declare a variable to hold the parsed date
 	let parsedDate: Date;
 
@@ -67,7 +67,7 @@ function parseDate(dateString: string, type: InputDateTypes): Date {
 			break;
 		case 'time':
 			// For the 'time' type, split the string into hours, minutes, and seconds components
-			const [hours, minutes, seconds] = dateString.split(':');
+			const [hours, minutes, seconds] = dateString.toString().split(':');
 			// Create a new Date object and set the hours, minutes, and seconds based on the input string
 			parsedDate = new Date();
 			parsedDate.setHours(Number(hours));
@@ -76,11 +76,11 @@ function parseDate(dateString: string, type: InputDateTypes): Date {
 			break;
 		case 'datetime-local':
 			// For the 'datetime-local' type, replace the space character with 'T' and parse the resulting string as a date in ISO format
-			parsedDate = new Date(dateString.replace(' ', 'T'));
+			parsedDate = new Date(dateString.toString().replace(' ', 'T'));
 			break;
 		case 'week':
 			// For the 'week' type, split the string into year and week number components
-			const [yearString, weekString] = dateString.split('-W');
+			const [yearString, weekString] = dateString.toString().split('-W');
 			const year = Number(yearString);
 			const week = Number(weekString);
 			// Use the getFirstDateOfWeek helper function to calculate the first date of the specified week in the specified year

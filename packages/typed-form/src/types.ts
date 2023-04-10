@@ -1,4 +1,3 @@
-export type { StoreApi } from 'zustand';
 import type { StoreApi } from 'zustand';
 
 export type ValidationEvents = 'submit' | 'change' | 'mount' | 'blur';
