@@ -127,17 +127,14 @@ var createFormStore = ({
   };
   const submitCounter = 0;
   const fields = {};
-  let fieldName;
   let passedField;
   let validation;
   let passedFieldValidations = {};
   let isFieldHavingPassedValidations = false;
   let passedFieldValidationKey;
-  let defaultValidationHandler;
-  for (fieldName of metadata.fieldsNames) {
-    defaultValidationHandler = validationsHandler[fieldName];
+  for (const fieldName of metadata.fieldsNames) {
     validation = {
-      handler: defaultValidationHandler instanceof ZodSchema ? (value) => defaultValidationHandler.parse(value) : defaultValidationHandler,
+      handler: validationsHandler[fieldName] instanceof ZodSchema ? (value, validationEvent) => validationsHandler[fieldName].parse(value) : validationsHandler[fieldName],
       failedAttempts: 0,
       passedAttempts: 0,
       events: {
@@ -205,11 +202,11 @@ var createFormStore = ({
       reInitFieldsValues: () => set((currentState) => {
         const fieldsNames = currentState.metadata.fieldsNames;
         const fields2 = currentState.fields;
-        let fieldName2;
-        for (fieldName2 of fieldsNames) {
-          fields2[fieldName2] = {
-            ...fields2[fieldName2],
-            value: fields2[fieldName2].metadata.initialValue
+        let fieldName;
+        for (fieldName of fieldsNames) {
+          fields2[fieldName] = {
+            ...fields2[fieldName],
+            value: fields2[fieldName].metadata.initialValue
           };
         }
         return { fields: fields2 };

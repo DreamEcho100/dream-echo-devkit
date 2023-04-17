@@ -10,6 +10,7 @@ import type {
 	ValidationEvents,
 	CreateFormStoreProps,
 	CreateCreateFormStore,
+	HandleValidation,
 } from '../types';
 
 const generateUUIDV4 = () =>
@@ -39,7 +40,7 @@ export const createFormStore = <PassedFields extends Record<string, unknown>>({
 
 	const fields = {} as FormStore['fields'];
 
-	let fieldName: keyof PassedFields;
+	// let fieldName: keyof PassedFields;
 	let passedField: (typeof params)['initValues'][keyof PassedFields];
 
 	let validation: (typeof fields)[keyof PassedFields]['validation'];
@@ -47,18 +48,15 @@ export const createFormStore = <PassedFields extends Record<string, unknown>>({
 	let isFieldHavingPassedValidations = false;
 	let passedFieldValidationKey: ValidationEvents;
 
-	let defaultValidationHandler: NonNullable<
-		CreateFormStoreProps<PassedFields>['validationsHandler']
-	>[keyof PassedFields];
-
-	for (fieldName of metadata.fieldsNames) {
-		defaultValidationHandler = validationsHandler[fieldName];
-		// debugger;
+	for (const fieldName of metadata.fieldsNames) {
 		validation = {
 			handler:
-				defaultValidationHandler instanceof ZodSchema
-					? (value) => (defaultValidationHandler as ZodSchema).parse(value)
-					: defaultValidationHandler,
+				validationsHandler[fieldName] instanceof ZodSchema
+					? (value, validationEvent) =>
+							(validationsHandler[fieldName] as ZodSchema).parse(value)
+					: (validationsHandler[fieldName] as HandleValidation<
+							PassedFields[typeof fieldName]
+					  >),
 			failedAttempts: 0,
 			passedAttempts: 0,
 			events: {
