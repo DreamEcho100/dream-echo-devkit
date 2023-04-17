@@ -1,0 +1,34 @@
+{
+	"name": "form-echo",
+	"version": "0.0.0",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"sideEffects": false,
+	"type": "module",
+	"exports": {
+		".": "./dist/index.js"
+	},
+	"license": "MIT",
+	"scripts": {
+		"lint": "eslint *.ts*",
+		"build": "tsup src/index.ts",
+		"dev": "pnpm run build -- --watch"
+	},
+	"peerDependencies": {
+		"react": "^18.2.0"
+	},
+	"devDependencies": {
+		"@types/node": "^18.15.5",
+		"@types/react": "^18.0.17",
+		"@types/react-dom": "^18.0.6",
+		"esbuild-plugin-external-global": "^1.0.1",
+		"eslint": "^8.36.0",
+		"eslint-config-custom": "workspace:*",
+		"react": "^18.2.0",
+		"tsconfig": "workspace:*",
+		"tsup": "^6.7.0",
+		"typescript": "^5.0.2",
+		"zod": "^3.21.4",
+		"zustand": "^4.3.6"
+	}
+}
