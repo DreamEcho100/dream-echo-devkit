@@ -5,34 +5,27 @@ import {
 	PassedAllFieldsShape,
 	FormStoreApi,
 	inputDateHelpers,
-} from 'typed-form';
-import React, {
-	FormEvent,
-	FormHTMLAttributes,
-	InputHTMLAttributes,
-	useMemo,
-} from 'react';
+} from 'form-echo';
+import { FormEvent, FormHTMLAttributes, InputHTMLAttributes } from 'react';
 import { z } from 'zod';
 
 const formStore = createFormStore({
-	fields: {
+	initValues: {
 		name: 'Test',
-		counter: {
-			value: 1,
-			valueFromFieldToStore: (value) => Number(value),
-		},
-		dateOfBirth: {
-			value: new Date(),
-			valueFromFieldToStore: (value) =>
-				inputDateHelpers.parseDate(value, 'date'),
-			valueFromStoreToField: (value: Date) =>
-				inputDateHelpers.formatDate(value, 'date'),
-		},
+		counter: 1,
+		dateOfBirth: new Date(),
 	},
 	validationsHandler: {
-		counter: (value) => z.number().nonnegative().parse(value),
-		dateOfBirth: (value) => z.date().parse(value),
-		name: (value) => z.string().min(1).max(4).parse(value),
+		counter: z.number().nonnegative(),
+		dateOfBirth: z.date(),
+		name: z.string().min(1).max(4),
+	},
+	valuesFromFieldsToStore: {
+		counter: (value) => Number(value),
+		dateOfBirth: (value) => inputDateHelpers.parseDate(value, 'date'),
+	},
+	valuesFromStoreToFields: {
+		dateOfBirth: (value) => inputDateHelpers.formatDate(value, 'date'),
 	},
 	validation: { change: true },
 });
@@ -42,7 +35,7 @@ export type FormProps<Fields extends PassedAllFieldsShape> =
 		store: FormStoreApi<Fields>;
 		handleOnSubmit?: (params: {
 			event: FormEvent<HTMLFormElement>;
-			values: Fields; // { [Key in keyof TFields]: TFields[Key]['value'] }// Value<TFields>;
+			values: Fields;
 		}) => void;
 	};
 
@@ -51,7 +44,6 @@ export const Form = <Fields extends PassedAllFieldsShape>({
 	handleOnSubmit,
 	...props
 }: FormProps<Fields>) => {
-	// const form = useFormStore(store, (store) => store.form);
 	return (
 		<form
 			onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
@@ -109,11 +101,19 @@ const InputField = <TFields extends PassedAllFieldsShape>({
 	store,
 	...props
 }: InputFieldProps<TFields>) => {
-	const name = useMemo(() => props.name, [props.name]);
-	const value = useFormStore(store, (store) => store.fields[name].value);
-	const valueFromStoreToField = useFormStore(
+	const value = useFormStore(store, (store) => {
+		const field = store.fields[props.name];
+		return field.valueFromStoreToField
+			? field.valueFromStoreToField(field.value)
+			: field.value;
+	}) as string;
+	const metadata = useFormStore(
 		store,
-		(store) => store.fields[name].valueFromStoreToField,
+		(store) => store.fields[props.name].metadata,
+	);
+	const handleOnInputChange = useFormStore(
+		store,
+		(store) => store.utils.handleOnInputChange,
 	);
 
 	return (
@@ -121,19 +121,10 @@ const InputField = <TFields extends PassedAllFieldsShape>({
 			type='text'
 			className='px-2 py-1 text-black'
 			{...props}
-			// @ts-ignore
-			name={name}
-			// @ts-ignore
-			value={valueFromStoreToField ? valueFromStoreToField(value) : value}
-			onChange={(event) => {
-				const currentStore = store.getState();
-				const value = currentStore.utils.handleFieldValidation({
-					name,
-					value: event.target.value,
-					validationEvent: 'change',
-				});
-				currentStore.utils.setFieldValue(props.name, value);
-			}}
+			name={metadata.name}
+			id={metadata.id}
+			value={value}
+			onChange={(event) => handleOnInputChange(props.name, event.target.value)}
 		/>
 	);
 };

@@ -7,7 +7,7 @@
 			"outputs": ["dist/**", ".next/**", "!.next/cache/**"]
 		},
 		"lint": {
-			"outputs": []
+			"outputs": ["dist/**"]
 		},
 		"dev": {
 			"cache": false,

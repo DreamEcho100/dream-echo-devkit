@@ -1,4 +1,4 @@
 module.exports = {
 	reactStrictMode: true,
-	transpilePackages: ['ui', 'typed-form'],
+	transpilePackages: ['ui', 'form-echo'],
 };
