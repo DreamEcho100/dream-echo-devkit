@@ -22,19 +22,25 @@ const generateUUIDV4 = () =>
 
 export const createFormStore = <PassedFields extends Record<string, unknown>>({
 	isUpdatingFieldsValueOnError = true,
-	baseId = generateUUIDV4(),
 	trackValidationHistory = false,
 	valuesFromFieldsToStore,
 	valuesFromStoreToFields,
-	validationsHandler = {},
+	validationHandler: validationsHandler = {},
 	...params
 }: CreateFormStoreProps<PassedFields>): FormStoreApi<PassedFields> => {
 	type FormStore = CreateCreateFormStore<PassedFields>;
 
+	const baseId =
+		typeof params.baseId === 'boolean'
+			? generateUUIDV4()
+			: params.baseId
+			? `${params.baseId}-`
+			: '';
+
 	const errors = {};
 	const metadata = {
 		fieldsNames: Object.keys(params.initValues) as (keyof PassedFields)[],
-		formId: `${baseId}-form`,
+		formId: `${baseId}form`,
 	};
 	const submitCounter = 0;
 
@@ -44,16 +50,17 @@ export const createFormStore = <PassedFields extends Record<string, unknown>>({
 	let passedField: (typeof params)['initValues'][keyof PassedFields];
 
 	let validation: (typeof fields)[keyof PassedFields]['validation'];
-	let passedFieldValidations: NonNullable<typeof params.validation> = {};
+	let fieldValidationEvents: NonNullable<typeof params.validationEvents> = {
+		submit: true,
+	};
 	let isFieldHavingPassedValidations = false;
-	let passedFieldValidationKey: ValidationEvents;
+	let fieldValidationEventKey: ValidationEvents;
 
 	for (const fieldName of metadata.fieldsNames) {
 		validation = {
 			handler:
 				validationsHandler[fieldName] instanceof ZodSchema
-					? (value, validationEvent) =>
-							(validationsHandler[fieldName] as ZodSchema).parse(value)
+					? (value) => (validationsHandler[fieldName] as ZodSchema).parse(value)
 					: (validationsHandler[fieldName] as HandleValidation<
 							PassedFields[typeof fieldName]
 					  >),
@@ -69,11 +76,11 @@ export const createFormStore = <PassedFields extends Record<string, unknown>>({
 
 		passedField = params.initValues[fieldName];
 
-		if (params.validation) {
+		if (params.validationEvents) {
 			isFieldHavingPassedValidations = true;
-			passedFieldValidations = {
-				...passedFieldValidations,
-				...params.validation,
+			fieldValidationEvents = {
+				...fieldValidationEvents,
+				...params.validationEvents,
 			};
 		}
 
@@ -89,18 +96,18 @@ export const createFormStore = <PassedFields extends Record<string, unknown>>({
 		} as (typeof fields)[typeof fieldName];
 
 		if (isFieldHavingPassedValidations) {
-			for (passedFieldValidationKey in passedFieldValidations) {
-				validation.events[passedFieldValidationKey].isActive =
-					!!typeof passedFieldValidations[passedFieldValidationKey];
+			for (fieldValidationEventKey in fieldValidationEvents) {
+				validation.events[fieldValidationEventKey].isActive =
+					!!typeof fieldValidationEvents[fieldValidationEventKey];
 			}
 		}
 
 		fields[fieldName] = {
 			...fields[fieldName],
-			errors: [],
+			errors: null,
 			isDirty: false,
 			metadata: {
-				id: `${baseId}-field-${String(fieldName)}`,
+				id: `${baseId}field-${String(fieldName)}`,
 				name: fieldName,
 				initialValue: fields[fieldName].value,
 			},
@@ -125,7 +132,7 @@ export const createFormStore = <PassedFields extends Record<string, unknown>>({
 				});
 				currentStore.utils.setFieldValue(name, _value);
 			},
-			errorFormatter: (error, validationEvent) => {
+			errorFormatter: (error) => {
 				if (error instanceof ZodError) return error.format()._errors;
 
 				if (error instanceof Error) return [error.message];
@@ -316,6 +323,58 @@ export const createFormStore = <PassedFields extends Record<string, unknown>>({
 				}
 
 				return validatedValue;
+			},
+			handlePreSubmit: (cb) => (event) => {
+				event.preventDefault();
+				if (!cb) return;
+
+				const currentStore = get();
+				const fields = currentStore.fields;
+				const values = {} as PassedFields;
+				const errors = {} as {
+					[Key in keyof PassedFields]: {
+						name: Key;
+						errors: string[] | null;
+						validationEvent: ValidationEvents;
+					};
+				};
+
+				let hasError = false;
+
+				let fieldName: keyof typeof fields;
+				for (fieldName in fields) {
+					try {
+						values[fieldName] =
+							fields[fieldName].validation.events.submit.isActive &&
+							fields[fieldName].validation.handler
+								? fields[fieldName].validation.handler!(
+										fields[fieldName].value,
+										'submit',
+								  )
+								: fields[fieldName].value;
+
+						errors[fieldName] = {
+							name: fieldName,
+							errors: null,
+							validationEvent: 'submit',
+						};
+					} catch (error) {
+						errors[fieldName] = {
+							name: fieldName,
+							errors: currentStore.utils.errorFormatter(error, 'submit'),
+							validationEvent: 'submit',
+						};
+
+						hasError = true;
+					}
+				}
+
+				let errorKey: keyof typeof errors;
+				for (errorKey in errors) {
+					currentStore.utils.setFieldErrors(errors[errorKey]);
+				}
+
+				if (!hasError) cb(event, { values, hasError, errors });
 			},
 		},
 	}));

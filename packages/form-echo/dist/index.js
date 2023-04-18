@@ -113,28 +113,30 @@ var generateUUIDV4 = () => "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/
 });
 var createFormStore = ({
   isUpdatingFieldsValueOnError = true,
-  baseId = generateUUIDV4(),
   trackValidationHistory = false,
   valuesFromFieldsToStore,
   valuesFromStoreToFields,
-  validationsHandler = {},
+  validationHandler: validationsHandler = {},
   ...params
 }) => {
+  const baseId = typeof params.baseId === "boolean" ? generateUUIDV4() : params.baseId ? `${params.baseId}-` : "";
   const errors = {};
   const metadata = {
     fieldsNames: Object.keys(params.initValues),
-    formId: `${baseId}-form`
+    formId: `${baseId}form`
   };
   const submitCounter = 0;
   const fields = {};
   let passedField;
   let validation;
-  let passedFieldValidations = {};
+  let fieldValidationEvents = {
+    submit: true
+  };
   let isFieldHavingPassedValidations = false;
-  let passedFieldValidationKey;
+  let fieldValidationEventKey;
   for (const fieldName of metadata.fieldsNames) {
     validation = {
-      handler: validationsHandler[fieldName] instanceof ZodSchema ? (value, validationEvent) => validationsHandler[fieldName].parse(value) : validationsHandler[fieldName],
+      handler: validationsHandler[fieldName] instanceof ZodSchema ? (value) => validationsHandler[fieldName].parse(value) : validationsHandler[fieldName],
       failedAttempts: 0,
       passedAttempts: 0,
       events: {
@@ -145,11 +147,11 @@ var createFormStore = ({
       }
     };
     passedField = params.initValues[fieldName];
-    if (params.validation) {
+    if (params.validationEvents) {
       isFieldHavingPassedValidations = true;
-      passedFieldValidations = {
-        ...passedFieldValidations,
-        ...params.validation
+      fieldValidationEvents = {
+        ...fieldValidationEvents,
+        ...params.validationEvents
       };
     }
     fields[fieldName] = {
@@ -159,16 +161,16 @@ var createFormStore = ({
       valueFromStoreToField: valuesFromStoreToFields?.[fieldName] ? valuesFromStoreToFields[fieldName] : void 0
     };
     if (isFieldHavingPassedValidations) {
-      for (passedFieldValidationKey in passedFieldValidations) {
-        validation.events[passedFieldValidationKey].isActive = !!typeof passedFieldValidations[passedFieldValidationKey];
+      for (fieldValidationEventKey in fieldValidationEvents) {
+        validation.events[fieldValidationEventKey].isActive = !!typeof fieldValidationEvents[fieldValidationEventKey];
       }
     }
     fields[fieldName] = {
       ...fields[fieldName],
-      errors: [],
+      errors: null,
       isDirty: false,
       metadata: {
-        id: `${baseId}-field-${String(fieldName)}`,
+        id: `${baseId}field-${String(fieldName)}`,
         name: fieldName,
         initialValue: fields[fieldName].value
       },
@@ -192,7 +194,7 @@ var createFormStore = ({
         });
         currentStore.utils.setFieldValue(name, _value);
       },
-      errorFormatter: (error, validationEvent) => {
+      errorFormatter: (error) => {
         if (error instanceof ZodError)
           return error.format()._errors;
         if (error instanceof Error)
@@ -338,6 +340,43 @@ var createFormStore = ({
           }
         }
         return validatedValue;
+      },
+      handlePreSubmit: (cb) => (event) => {
+        event.preventDefault();
+        if (!cb)
+          return;
+        const currentStore = get();
+        const fields2 = currentStore.fields;
+        const values = {};
+        const errors2 = {};
+        let hasError = false;
+        let fieldName;
+        for (fieldName in fields2) {
+          try {
+            values[fieldName] = fields2[fieldName].validation.events.submit.isActive && fields2[fieldName].validation.handler ? fields2[fieldName].validation.handler(
+              fields2[fieldName].value,
+              "submit"
+            ) : fields2[fieldName].value;
+            errors2[fieldName] = {
+              name: fieldName,
+              errors: null,
+              validationEvent: "submit"
+            };
+          } catch (error) {
+            errors2[fieldName] = {
+              name: fieldName,
+              errors: currentStore.utils.errorFormatter(error, "submit"),
+              validationEvent: "submit"
+            };
+            hasError = true;
+          }
+        }
+        let errorKey;
+        for (errorKey in errors2) {
+          currentStore.utils.setFieldErrors(errors2[errorKey]);
+        }
+        if (!hasError)
+          cb(event, { values, hasError, errors: errors2 });
       }
     }
   }));

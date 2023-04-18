@@ -1,3 +1,4 @@
+import { FormEvent } from 'react';
 import { ZodSchema } from 'zod';
 import { StoreApi } from 'zustand';
 
@@ -6,7 +7,7 @@ type ValidationEvents = 'submit' | 'change' | 'mount' | 'blur';
 type HandleValidation<Value> = (value: unknown, validationEvent: ValidationEvents) => Value;
 type PassedAllFieldsShape = Record<string, unknown>;
 interface FieldMetadata<Name, Value> {
-    name: string;
+    name: Name & string;
     id: string;
     initialValue: Value;
 }
@@ -81,8 +82,20 @@ interface FormStoreShape<PassedAllFields extends PassedAllFieldsShape> {
             value: any;
             validationEvent: ValidationEvents;
         }): PassedAllFields[Name];
+        handlePreSubmit: (cb?: HandlePreSubmitCB<PassedAllFields>) => (event: FormEvent<HTMLFormElement>) => void;
     };
 }
+type HandlePreSubmitCB<PassedAllFields extends Record<string, unknown>> = (event: FormEvent<HTMLFormElement>, params: {
+    values: PassedAllFields;
+    hasError: boolean;
+    errors: {
+        [Key in keyof PassedAllFields]: {
+            name: Key;
+            errors: string[] | null;
+            validationEvent: ValidationEvents;
+        };
+    };
+}) => void;
 type CreateCreateFormStore<PassedFields> = FormStoreShape<{
     [Key in keyof PassedFields]: PassedFields[Key];
 }>;
@@ -96,12 +109,12 @@ type FormStoreErrors<TFields extends AllFieldsShape<PassedAllFieldsShape>> = {
 type CreateFormStoreProps<PassedFields extends Record<string, unknown>> = {
     initValues: PassedFields;
     isUpdatingFieldsValueOnError?: boolean;
-    baseId?: string;
-    validation?: {
+    baseId?: string | boolean;
+    trackValidationHistory?: boolean;
+    validationEvents?: {
         [key in ValidationEvents]?: boolean;
     };
-    trackValidationHistory?: boolean;
-    validationsHandler?: {
+    validationHandler?: {
         [Key in keyof PassedFields]?: HandleValidation<PassedFields[Key]> | ZodSchema;
     };
     valuesFromFieldsToStore?: {
@@ -174,7 +187,7 @@ declare const inputDateHelpers: {
     getFirstDateOfWeek: typeof getFirstDateOfWeek;
 };
 
-declare const createFormStore: <PassedFields extends Record<string, unknown>>({ isUpdatingFieldsValueOnError, baseId, trackValidationHistory, valuesFromFieldsToStore, valuesFromStoreToFields, validationsHandler, ...params }: CreateFormStoreProps<PassedFields>) => FormStoreApi<PassedFields>;
+declare const createFormStore: <PassedFields extends Record<string, unknown>>({ isUpdatingFieldsValueOnError, trackValidationHistory, valuesFromFieldsToStore, valuesFromStoreToFields, validationHandler: validationsHandler, ...params }: CreateFormStoreProps<PassedFields>) => FormStoreApi<PassedFields>;
 declare const useFormStore: <TAllFields extends PassedAllFieldsShape, U>(store: FormStoreApi<TAllFields>, cb: (state: CreateCreateFormStore<TAllFields>) => U) => U;
 
-export { AllFieldsShape, CreateCreateFormStore, CreateFormStoreProps, FieldIsDirtyErrorsAndValidation, FieldMetadata, FieldShape, FieldValidation, FormMetadata, FormStoreApi, FormStoreErrors, FormStoreShape, FormStoreValues, HandleValidation, InputDateTypes, PassedAllFieldsShape, ValidationEvents, createFormStore, inputDateHelpers, useFormStore };
+export { AllFieldsShape, CreateCreateFormStore, CreateFormStoreProps, FieldIsDirtyErrorsAndValidation, FieldMetadata, FieldShape, FieldValidation, FormMetadata, FormStoreApi, FormStoreErrors, FormStoreShape, FormStoreValues, HandlePreSubmitCB, HandleValidation, InputDateTypes, PassedAllFieldsShape, ValidationEvents, createFormStore, inputDateHelpers, useFormStore };

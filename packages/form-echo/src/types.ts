@@ -1,3 +1,5 @@
+import { FormEvent } from 'react';
+
 import { ZodSchema } from 'zod';
 
 import type { StoreApi } from 'zustand';
@@ -18,7 +20,7 @@ export type HandleValidation<Value> = (
 export type PassedAllFieldsShape = Record<string, unknown>;
 // export type FieldNameShape = string | number | symbol;
 export interface FieldMetadata<Name, Value> {
-	name: string;
+	name: Name & string;
 	id: string;
 	initialValue: Value;
 }
@@ -101,8 +103,27 @@ export interface FormStoreShape<PassedAllFields extends PassedAllFieldsShape> {
 			value: any; // unknown | PassedAllFields[Name];
 			validationEvent: ValidationEvents;
 		}): PassedAllFields[Name];
+		handlePreSubmit: (
+			cb?: HandlePreSubmitCB<PassedAllFields>,
+		) => (event: FormEvent<HTMLFormElement>) => void;
 	};
 }
+
+export type HandlePreSubmitCB<PassedAllFields extends Record<string, unknown>> =
+	(
+		event: FormEvent<HTMLFormElement>,
+		params: {
+			values: PassedAllFields;
+			hasError: boolean;
+			errors: {
+				[Key in keyof PassedAllFields]: {
+					name: Key;
+					errors: string[] | null;
+					validationEvent: ValidationEvents;
+				};
+			};
+		},
+	) => void;
 
 export type CreateCreateFormStore<PassedFields> = FormStoreShape<{
 	[Key in keyof PassedFields]: PassedFields[Key];
@@ -122,10 +143,10 @@ export type CreateFormStoreProps<PassedFields extends Record<string, unknown>> =
 	{
 		initValues: PassedFields;
 		isUpdatingFieldsValueOnError?: boolean;
-		baseId?: string;
-		validation?: { [key in ValidationEvents]?: boolean };
+		baseId?: string | boolean;
 		trackValidationHistory?: boolean;
-		validationsHandler?: {
+		validationEvents?: { [key in ValidationEvents]?: boolean };
+		validationHandler?: {
 			[Key in keyof PassedFields]?:
 				| HandleValidation<PassedFields[Key]>
 				| ZodSchema;

@@ -2,81 +2,41 @@ import { Button } from 'ui';
 import {
 	createFormStore,
 	useFormStore,
-	PassedAllFieldsShape,
 	FormStoreApi,
 	inputDateHelpers,
+	HandlePreSubmitCB,
 } from 'form-echo';
-import { FormEvent, FormHTMLAttributes, InputHTMLAttributes } from 'react';
+import { FormHTMLAttributes, InputHTMLAttributes, useId, useMemo } from 'react';
 import { z } from 'zod';
 
-const formStore = createFormStore({
-	initValues: {
-		name: 'Test',
-		counter: 1,
-		dateOfBirth: new Date(),
-	},
-	validationsHandler: {
-		counter: z.number().nonnegative(),
-		dateOfBirth: z.date(),
-		name: z.string().min(1).max(4),
-	},
-	valuesFromFieldsToStore: {
-		counter: (value) => Number(value),
-		dateOfBirth: (value) => inputDateHelpers.parseDate(value, 'date'),
-	},
-	valuesFromStoreToFields: {
-		dateOfBirth: (value) => inputDateHelpers.formatDate(value, 'date'),
-	},
-	validation: { change: true },
-});
-
-export type FormProps<Fields extends PassedAllFieldsShape> =
+export type FormProps<Fields extends Record<string, unknown>> =
 	FormHTMLAttributes<HTMLFormElement> & {
 		store: FormStoreApi<Fields>;
-		handleOnSubmit?: (params: {
-			event: FormEvent<HTMLFormElement>;
-			values: Fields;
-		}) => void;
+		handleOnSubmit?: HandlePreSubmitCB<Fields>;
 	};
 
-export const Form = <Fields extends PassedAllFieldsShape>({
+export const Form = <Fields extends Record<string, unknown>>({
 	store,
 	handleOnSubmit,
 	...props
 }: FormProps<Fields>) => {
-	return (
-		<form
-			onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
-				event.preventDefault();
-				const currentStore = store.getState();
-				const fields = currentStore.fields;
-				const values = {} as Fields;
-
-				let fieldName: keyof typeof fields;
-				for (fieldName in fields) {
-					values[fieldName] = fields[fieldName]
-						.value as (typeof values)[typeof fieldName];
-				}
-
-				handleOnSubmit?.({
-					event,
-					values,
-				});
-			}}
-			{...props}
-		/>
+	const handlePreSubmit = useFormStore(
+		store,
+		(state) => state.utils.handlePreSubmit,
 	);
+
+	return <form onSubmit={handlePreSubmit(handleOnSubmit)} {...props} />;
 };
 
-export type FieldProps<TFields extends PassedAllFieldsShape> = {
-	store: FormStoreApi<TFields>;
-	name: keyof TFields;
+export type FieldProps<Fields extends Record<string, unknown>> = {
+	store: FormStoreApi<Fields>;
+	name: keyof Fields;
 };
 
-const FieldErrors = <TFields extends PassedAllFieldsShape>({
+const FieldErrors = <Fields extends Record<string, unknown>>({
 	store,
 	name,
-}: FieldProps<TFields>) => {
+}: FieldProps<Fields>) => {
 	const isDirty = useFormStore(store, (store) => store.fields[name].isDirty);
 	const errors = useFormStore(store, (store) => store.fields[name].errors);
 
@@ -91,16 +51,16 @@ const FieldErrors = <TFields extends PassedAllFieldsShape>({
 	);
 };
 
-export type InputFieldProps<TFields extends PassedAllFieldsShape> = Omit<
+export type InputFieldProps<Fields extends Record<string, unknown>> = Omit<
 	InputHTMLAttributes<HTMLInputElement>,
 	'name'
 > &
-	FieldProps<TFields>;
+	FieldProps<Fields>;
 
-const InputField = <TFields extends PassedAllFieldsShape>({
+const InputField = <Fields extends Record<string, unknown>>({
 	store,
 	...props
-}: InputFieldProps<TFields>) => {
+}: InputFieldProps<Fields>) => {
 	const value = useFormStore(store, (store) => {
 		const field = store.fields[props.name];
 		return field.valueFromStoreToField
@@ -130,17 +90,44 @@ const InputField = <TFields extends PassedAllFieldsShape>({
 };
 
 const Example = () => {
+	const baseId = useId();
+	const formStore = useMemo(
+		() =>
+			createFormStore({
+				baseId,
+				initValues: {
+					username: 'Test',
+					counter: 1,
+					dateOfBirth: new Date(),
+				},
+				validationHandler: {
+					counter: z.number().nonnegative(),
+					dateOfBirth: z.date(),
+					username: z.string().min(1).max(4),
+				},
+				valuesFromFieldsToStore: {
+					counter: (value) => Number(value),
+					dateOfBirth: (value) => inputDateHelpers.parseDate(value, 'date'),
+				},
+				valuesFromStoreToFields: {
+					dateOfBirth: (value) => inputDateHelpers.formatDate(value, 'date'),
+				},
+				validationEvents: { change: true },
+			}),
+		[baseId],
+	);
+
 	return (
 		<Form
 			store={formStore}
-			handleOnSubmit={({ values }) => {
+			handleOnSubmit={(event, { values }) => {
 				console.log('values', values);
 			}}
 			className='flex
 			w-fit flex-col gap-2 bg-neutral-500 p-4 text-white'
 		>
-			<InputField store={formStore} name='name' />
-			<FieldErrors store={formStore} name='name' />
+			<InputField store={formStore} name='username' />
+			<FieldErrors store={formStore} name='username' />
 			<InputField store={formStore} name='counter' type='number' />
 			<FieldErrors store={formStore} name='counter' />
 			<InputField store={formStore} name='dateOfBirth' type='date' />

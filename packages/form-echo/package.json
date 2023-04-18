@@ -1,26 +1,34 @@
 {
 	"name": "form-echo",
-	"version": "0.0.0",
+	"version": "0.0.2",
+	"description": "A form state management for fields validations and errors",
+	"keywords": [
+		"form",
+		"store",
+		"manage"
+	],
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
 	"sideEffects": false,
 	"type": "module",
+	"author": {
+		"name": "Mazen Mohamed",
+		"email": "maze6572198@gmail.com",
+		"url": "https://github.com/DreamEcho100/"
+	},
+	"readme": "./README.md",
 	"exports": {
 		".": "./dist/index.js"
 	},
-	"license": "MIT",
+	"license": "ISC",
 	"scripts": {
 		"lint": "eslint *.ts*",
 		"build": "tsup src/index.ts",
 		"dev": "pnpm run build -- --watch"
 	},
-	"peerDependencies": {
-		"react": "^18.2.0"
-	},
 	"devDependencies": {
 		"@types/node": "^18.15.5",
 		"@types/react": "^18.0.17",
-		"@types/react-dom": "^18.0.6",
 		"esbuild-plugin-external-global": "^1.0.1",
 		"eslint": "^8.36.0",
 		"eslint-config-custom": "workspace:*",
