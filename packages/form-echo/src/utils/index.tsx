@@ -2,8 +2,7 @@ export { default as inputDateHelpers } from './inputDateHelpers';
 
 import type { ZodTypeAny, ZodError } from 'zod';
 
-import { useStore } from 'zustand/react';
-import { createStore } from 'zustand/vanilla';
+import { useStore, createStore } from 'zustand';
 
 import type {
 	FormStoreApi,

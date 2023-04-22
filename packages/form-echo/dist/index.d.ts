@@ -1,7 +1,7 @@
 import { FormEvent } from 'react';
 import { ZodSchema } from 'zod';
+import * as zustand from 'zustand';
 import { StoreApi } from 'zustand';
-import * as zustand_vanilla from 'zustand/vanilla';
 
 type InputDateTypes = 'date' | 'time' | 'datetime-local' | 'week' | 'month';
 type ValidationEvents = 'submit' | 'change' | 'mount' | 'blur';
@@ -196,7 +196,7 @@ declare const inputDateHelpers: {
     getFirstDateOfWeek: typeof getFirstDateOfWeek;
 };
 
-declare const createFormStore: <PassedFields, PassedValidationHandler extends ValidationHandler<PassedFields>>({ isUpdatingFieldsValueOnError, trackValidationHistory, valuesFromFieldsToStore, valuesFromStoreToFields, validationHandler: validationsHandler, ...params }: CreateFormStoreProps<PassedFields, PassedValidationHandler>) => zustand_vanilla.StoreApi<CreateCreateFormStore<PassedFields, PassedValidationHandler>>;
+declare const createFormStore: <PassedFields, PassedValidationHandler extends ValidationHandler<PassedFields>>({ isUpdatingFieldsValueOnError, trackValidationHistory, valuesFromFieldsToStore, valuesFromStoreToFields, validationHandler: validationsHandler, ...params }: CreateFormStoreProps<PassedFields, PassedValidationHandler>) => zustand.StoreApi<CreateCreateFormStore<PassedFields, PassedValidationHandler>>;
 declare const useFormStore: <fields extends Record<string, unknown>, PassedValidatedFields, U>(store: FormStoreApi<fields, PassedValidatedFields>, cb: (state: CreateCreateFormStore<fields, PassedValidatedFields>) => U) => U;
 
 export { AllFieldsShape, CreateCreateFormStore, CreateFormStoreProps, FieldIsDirtyErrorsAndValidation, FieldMetadata, FieldShape, FieldValidation, FormMetadata, FormStoreApi, FormStoreErrors, FormStoreShape, FormStoreValues, GetFieldsValueFromValidationHandler, HandlePreSubmitCB, HandleValidation, InputDateTypes, ValidationEvents, ValidationHandler, createFormStore, inputDateHelpers, useFormStore };

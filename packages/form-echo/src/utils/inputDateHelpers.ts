@@ -1,4 +1,4 @@
-import { InputDateTypes } from '../types';
+import type { InputDateTypes } from '../types';
 
 /**
  * Formats a date object to the desired string format based on the type.
@@ -88,7 +88,7 @@ function parseDate(dateString: string | number, type: InputDateTypes): Date {
 			break;
 		case 'month':
 			// For the 'month' type, append '-01' to the input string to represent the first day of the month and parse as a date in ISO format
-			parsedDate = new Date(dateString + '-01');
+			parsedDate = new Date(`${dateString}-01`);
 			break;
 		default:
 			// For an unrecognized format, return the current date/time
