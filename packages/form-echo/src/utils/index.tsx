@@ -1,16 +1,18 @@
 export { default as inputDateHelpers } from './inputDateHelpers';
 
-import { ZodError, ZodSchema } from 'zod';
+import type { ZodTypeAny, ZodError } from 'zod';
 
-import { createStore, useStore } from 'zustand';
+import { useStore } from 'zustand/react';
+import { createStore } from 'zustand/vanilla';
 
 import type {
 	FormStoreApi,
-	PassedAllFieldsShape,
 	ValidationEvents,
 	CreateFormStoreProps,
 	CreateCreateFormStore,
 	HandleValidation,
+	ValidationHandler,
+	GetFieldsValueFromValidationHandler,
 } from '../types';
 
 const generateUUIDV4 = () =>
@@ -20,15 +22,30 @@ const generateUUIDV4 = () =>
 		return v.toString(16);
 	});
 
-export const createFormStore = <PassedFields extends Record<string, unknown>>({
+const isZodValidator = (validator: unknown): validator is ZodTypeAny => {
+	return !!(
+		validator instanceof Object &&
+		'parseAsync' in validator &&
+		typeof validator.parseAsync === 'function'
+	);
+};
+
+const isZodError = (error: unknown): error is ZodError => {
+	return error instanceof Object && 'errors' in error;
+};
+
+export const createFormStore = <
+	PassedFields,
+	PassedValidationHandler extends ValidationHandler<PassedFields>,
+>({
 	isUpdatingFieldsValueOnError = true,
 	trackValidationHistory = false,
 	valuesFromFieldsToStore,
 	valuesFromStoreToFields,
-	validationHandler: validationsHandler = {},
+	validationHandler: validationsHandler, // = {},
 	...params
-}: CreateFormStoreProps<PassedFields>): FormStoreApi<PassedFields> => {
-	type FormStore = CreateCreateFormStore<PassedFields>;
+}: CreateFormStoreProps<PassedFields, PassedValidationHandler>) => {
+	type FormStore = CreateCreateFormStore<PassedFields, PassedValidationHandler>;
 
 	const baseId =
 		typeof params.baseId === 'boolean'
@@ -57,13 +74,14 @@ export const createFormStore = <PassedFields extends Record<string, unknown>>({
 	let fieldValidationEventKey: ValidationEvents;
 
 	for (const fieldName of metadata.fieldsNames) {
+		const fieldValidationsHandler = validationsHandler?.[fieldName];
+
 		validation = {
-			handler:
-				validationsHandler[fieldName] instanceof ZodSchema
-					? (value) => (validationsHandler[fieldName] as ZodSchema).parse(value)
-					: (validationsHandler[fieldName] as HandleValidation<
-							PassedFields[typeof fieldName]
-					  >),
+			handler: isZodValidator(fieldValidationsHandler)
+				? (value) => fieldValidationsHandler.parse(value)
+				: (fieldValidationsHandler as HandleValidation<
+						PassedFields[typeof fieldName]
+				  >),
 			failedAttempts: 0,
 			passedAttempts: 0,
 			events: {
@@ -72,7 +90,7 @@ export const createFormStore = <PassedFields extends Record<string, unknown>>({
 				mount: { failedAttempts: 0, passedAttempts: 0, isActive: false },
 				submit: { failedAttempts: 0, passedAttempts: 0, isActive: false },
 			},
-		};
+		} as NonNullable<typeof validation>;
 
 		passedField = params.initValues[fieldName];
 
@@ -133,7 +151,7 @@ export const createFormStore = <PassedFields extends Record<string, unknown>>({
 				currentStore.utils.setFieldValue(name, _value);
 			},
 			errorFormatter: (error) => {
-				if (error instanceof ZodError) return error.format()._errors;
+				if (isZodError(error)) return error.format()._errors;
 
 				if (error instanceof Error) return [error.message];
 				return ['Something went wrong!'];
@@ -160,7 +178,14 @@ export const createFormStore = <PassedFields extends Record<string, unknown>>({
 							...currentState.fields,
 							[name]: {
 								...currentState.fields[name],
-								value,
+								value:
+									typeof value === 'function'
+										? // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+										  // @ts-ignore
+										  (value(
+												currentState.fields[name].value,
+										  ) as (typeof currentState.fields)[typeof name]['value'])
+										: value,
 							},
 						},
 					};
@@ -248,13 +273,13 @@ export const createFormStore = <PassedFields extends Record<string, unknown>>({
 				if (
 					!currentState.fields[name].validation.events[validationEvent].isActive
 				)
-					return value;
+					return value as PassedFields[typeof name];
 
 				const validationHandler =
 					currentState.fields[name].validation.handler ||
 					currentState.validations.handler[name];
 
-				if (!validationHandler) return value;
+				if (!validationHandler) return value as PassedFields[typeof name];
 
 				const valueFromFieldToStore =
 					currentState.fields[name].valueFromFieldToStore;
@@ -262,7 +287,7 @@ export const createFormStore = <PassedFields extends Record<string, unknown>>({
 					? valueFromFieldToStore(value)
 					: value;
 
-				let isUpdatingValueOnError =
+				const isUpdatingValueOnError =
 					currentState.fields[name].isUpdatingValueOnError;
 
 				const handleSetError = (error: unknown) => {
@@ -285,7 +310,10 @@ export const createFormStore = <PassedFields extends Record<string, unknown>>({
 							validationEventState: 'processing',
 						});
 
-						validatedValue = validationHandler(validatedValue, validationEvent);
+						validatedValue = validationHandler(
+							validatedValue,
+							validationEvent,
+						) as typeof validatedValue;
 						if (currentState.fields[name].isDirty)
 							currentState.utils.setFieldErrors({
 								name,
@@ -310,7 +338,10 @@ export const createFormStore = <PassedFields extends Record<string, unknown>>({
 					}
 				} else {
 					try {
-						validatedValue = validationHandler(validatedValue, validationEvent);
+						validatedValue = validationHandler(
+							validatedValue,
+							validationEvent,
+						) as typeof validatedValue;
 						if (currentState.fields[name].isDirty)
 							currentState.utils.setFieldErrors({
 								name,
@@ -322,7 +353,7 @@ export const createFormStore = <PassedFields extends Record<string, unknown>>({
 					}
 				}
 
-				return validatedValue;
+				return validatedValue as PassedFields[typeof name];
 			},
 			handlePreSubmit: (cb) => (event) => {
 				event.preventDefault();
@@ -331,6 +362,7 @@ export const createFormStore = <PassedFields extends Record<string, unknown>>({
 				const currentStore = get();
 				const fields = currentStore.fields;
 				const values = {} as PassedFields;
+				const validatedValues = {} as ValidationHandler<PassedFields>;
 				const errors = {} as {
 					[Key in keyof PassedFields]: {
 						name: Key;
@@ -341,17 +373,17 @@ export const createFormStore = <PassedFields extends Record<string, unknown>>({
 
 				let hasError = false;
 
-				let fieldName: keyof typeof fields;
+				let fieldName: keyof typeof values;
 				for (fieldName in fields) {
 					try {
-						values[fieldName] =
+						if (
 							fields[fieldName].validation.events.submit.isActive &&
 							fields[fieldName].validation.handler
-								? fields[fieldName].validation.handler!(
-										fields[fieldName].value,
-										'submit',
-								  )
-								: fields[fieldName].value;
+						) {
+							validatedValues[fieldName] = fields[fieldName].validation
+								.handler!(fields[fieldName].value, 'submit');
+						}
+						values[fieldName] = fields[fieldName].value;
 
 						errors[fieldName] = {
 							name: fieldName,
@@ -374,16 +406,35 @@ export const createFormStore = <PassedFields extends Record<string, unknown>>({
 					currentStore.utils.setFieldErrors(errors[errorKey]);
 				}
 
-				if (!hasError) cb(event, { values, hasError, errors });
+				if (!hasError)
+					cb(event, {
+						values,
+						validatedValues:
+							validatedValues as PassedValidationHandler extends ValidationHandler<PassedFields>
+								? GetFieldsValueFromValidationHandler<
+										PassedFields,
+										PassedValidationHandler
+								  >
+								: never,
+						hasError,
+						errors,
+					});
 			},
 		},
-	}));
+	})) satisfies FormStoreApi<PassedFields, PassedValidationHandler>;
 };
 
-export const useFormStore = <TAllFields extends PassedAllFieldsShape, U>(
-	store: FormStoreApi<TAllFields>,
+export const useFormStore = <
+	fields extends Record<string, unknown>,
+	PassedValidatedFields,
+	// extends
+	// 	| ValidationHandler<Record<string, unknown>>
+	// 	| undefined,
+	U,
+>(
+	store: FormStoreApi<fields, PassedValidatedFields>,
 	cb: (
-		state: FormStoreApi<TAllFields> extends {
+		state: FormStoreApi<fields, PassedValidatedFields> extends {
 			getState: () => infer T;
 		}
 			? T

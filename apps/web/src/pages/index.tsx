@@ -1,25 +1,25 @@
 import { Button } from 'ui';
-import {
-	createFormStore,
-	useFormStore,
-	FormStoreApi,
-	inputDateHelpers,
-	HandlePreSubmitCB,
-} from 'form-echo';
 import { FormHTMLAttributes, InputHTMLAttributes, useId, useMemo } from 'react';
 import { z } from 'zod';
+import {
+	FormStoreApi,
+	HandlePreSubmitCB,
+	useFormStore,
+	createFormStore,
+	inputDateHelpers,
+} from 'form-echo';
 
-export type FormProps<Fields extends Record<string, unknown>> =
+export type FormProps<Fields, ValidatedField> =
 	FormHTMLAttributes<HTMLFormElement> & {
-		store: FormStoreApi<Fields>;
-		handleOnSubmit?: HandlePreSubmitCB<Fields>;
+		store: FormStoreApi<Fields, ValidatedField>;
+		handleOnSubmit?: HandlePreSubmitCB<Fields, ValidatedField>;
 	};
 
-export const Form = <Fields extends Record<string, unknown>>({
+export const Form = <Fields extends Record<string, unknown>, ValidatedField>({
 	store,
 	handleOnSubmit,
 	...props
-}: FormProps<Fields>) => {
+}: FormProps<Fields, ValidatedField>) => {
 	const handlePreSubmit = useFormStore(
 		store,
 		(state) => state.utils.handlePreSubmit,
@@ -28,15 +28,15 @@ export const Form = <Fields extends Record<string, unknown>>({
 	return <form onSubmit={handlePreSubmit(handleOnSubmit)} {...props} />;
 };
 
-export type FieldProps<Fields extends Record<string, unknown>> = {
-	store: FormStoreApi<Fields>;
+export type FieldProps<Fields, ValidatedField> = {
+	store: FormStoreApi<Fields, ValidatedField>;
 	name: keyof Fields;
 };
 
-const FieldErrors = <Fields extends Record<string, unknown>>({
+const FieldErrors = <Fields extends Record<string, unknown>, ValidatedField>({
 	store,
 	name,
-}: FieldProps<Fields>) => {
+}: FieldProps<Fields, ValidatedField>) => {
 	const isDirty = useFormStore(store, (store) => store.fields[name].isDirty);
 	const errors = useFormStore(store, (store) => store.fields[name].errors);
 
@@ -51,16 +51,16 @@ const FieldErrors = <Fields extends Record<string, unknown>>({
 	);
 };
 
-export type InputFieldProps<Fields extends Record<string, unknown>> = Omit<
+export type InputFieldProps<Fields, ValidatedField> = Omit<
 	InputHTMLAttributes<HTMLInputElement>,
 	'name'
 > &
-	FieldProps<Fields>;
+	FieldProps<Fields, ValidatedField>;
 
-const InputField = <Fields extends Record<string, unknown>>({
+const InputField = <Fields extends Record<string, unknown>, ValidatedField>({
 	store,
 	...props
-}: InputFieldProps<Fields>) => {
+}: InputFieldProps<Fields, ValidatedField>) => {
 	const value = useFormStore(store, (store) => {
 		const field = store.fields[props.name];
 		return field.valueFromStoreToField
@@ -123,8 +123,7 @@ const Example = () => {
 			handleOnSubmit={(event, { values }) => {
 				console.log('values', values);
 			}}
-			className='flex
-			w-fit flex-col gap-2 bg-neutral-500 p-4 text-white'
+			className='flex w-fit flex-col gap-2 bg-neutral-500 p-4 text-white'
 		>
 			<InputField store={formStore} name='username' />
 			<FieldErrors store={formStore} name='username' />

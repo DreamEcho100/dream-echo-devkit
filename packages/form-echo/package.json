@@ -1,6 +1,6 @@
 {
 	"name": "form-echo",
-	"version": "0.0.2",
+	"version": "0.0.6-canary.10",
 	"description": "A form state management for fields validations and errors",
 	"keywords": [
 		"form",
@@ -10,7 +10,6 @@
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
 	"sideEffects": false,
-	"type": "module",
 	"author": {
 		"name": "Mazen Mohamed",
 		"email": "maze6572198@gmail.com",
@@ -23,12 +22,13 @@
 	"license": "ISC",
 	"scripts": {
 		"lint": "eslint *.ts*",
-		"build": "tsup src/index.ts",
+		"build": "cross-env NODE_ENV=production tsup",
 		"dev": "pnpm run build -- --watch"
 	},
 	"devDependencies": {
 		"@types/node": "^18.15.5",
 		"@types/react": "^18.0.17",
+		"cross-env": "^7.0.3",
 		"esbuild-plugin-external-global": "^1.0.1",
 		"eslint": "^8.36.0",
 		"eslint-config-custom": "workspace:*",
