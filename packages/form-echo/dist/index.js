@@ -1,2 +1,446 @@
-"use strict";var P=Object.defineProperty;var I=Object.getOwnPropertyDescriptor;var $=Object.getOwnPropertyNames;var C=Object.prototype.hasOwnProperty;var j=(s,n)=>{for(var a in n)P(s,a,{get:n[a],enumerable:!0})},U=(s,n,a,u)=>{if(n&&typeof n=="object"||typeof n=="function")for(let o of $(n))!C.call(s,o)&&o!==a&&P(s,o,{get:()=>n[o],enumerable:!(u=I(n,o))||u.enumerable});return s};var M=s=>U(P({},"__esModule",{value:!0}),s);var q={};j(q,{createFormStore:()=>_,inputDateHelpers:()=>T,useFormStore:()=>z});module.exports=M(q);function Z(s,n){let a="";switch(n){case"date":a=s.toISOString().slice(0,10);break;case"time":a=s.toTimeString().slice(0,8);break;case"datetime-local":a=s.toISOString().slice(0,16),a=a.replace("T"," ");break;case"week":let u=s.getFullYear(),o=w(s);a=`${u}-W${o.toString().length<2?"0"+o.toString():o.toString()}`;break;case"month":a=s.toISOString().slice(0,7);break;default:break}return a}function R(s,n){let a;switch(n){case"date":a=new Date(s);break;case"time":let[u,o,c]=s.toString().split(":");a=new Date,a.setHours(Number(u)),a.setMinutes(Number(o)),a.setSeconds(Number(c));break;case"datetime-local":a=new Date(s.toString().replace(" ","T"));break;case"week":let[y,x]=s.toString().split("-W"),g=Number(y),k=Number(x);a=N(g,k);break;case"month":a=new Date(`${s}-01`);break;default:a=new Date;break}return a}function w(s){let n=new Date(s.getFullYear(),0,1),a=(s.valueOf()-n.valueOf())/(1e3*60*60*24);return Math.floor(a/7)+1}function N(s,n){let a=new Date(s,0,1),u=(8-a.getDay())%7,o=new Date(a);o.setDate(a.getDate()+u);let c=(n-1)*7,y=new Date(o);return y.setDate(o.getDate()+c),y}var K={formatDate:Z,parseDate:R,getWeekNumber:w,getFirstDateOfWeek:N},T=K;var h=require("zustand"),W=()=>"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,s=>{let n=Math.random()*16|0;return(s==="x"?n:n&3|8).toString(16)}),Y=s=>s instanceof Object&&"parseAsync"in s&&typeof s.parseAsync=="function",G=s=>s instanceof Object&&"errors"in s,_=({isUpdatingFieldsValueOnError:s=!0,trackValidationHistory:n=!1,valuesFromFieldsToStore:a,valuesFromStoreToFields:u,validationHandler:o,...c})=>{let y=typeof c.baseId=="boolean"?W():c.baseId?`${c.baseId}-`:"",x={},g={fieldsNames:Object.keys(c.initValues),formId:`${y}form`},k=0,V={},E,A,S={submit:!0},H=!1,D;for(let l of g.fieldsNames){let F=o?.[l];if(A={handler:Y(F)?e=>F.parse(e):F,failedAttempts:0,passedAttempts:0,events:{blur:{failedAttempts:0,passedAttempts:0,isActive:!1},change:{failedAttempts:0,passedAttempts:0,isActive:!1},mount:{failedAttempts:0,passedAttempts:0,isActive:!1},submit:{failedAttempts:0,passedAttempts:0,isActive:!1}}},E=c.initValues[l],c.validationEvents&&(H=!0,S={...S,...c.validationEvents}),V[l]={value:E,isUpdatingValueOnError:s,valueFromFieldToStore:a?.[l]?a[l]:void 0,valueFromStoreToField:u?.[l]?u[l]:void 0},H)for(D in S)A.events[D].isActive=!!typeof S[D];V[l]={...V[l],errors:null,isDirty:!1,metadata:{id:`${y}field-${String(l)}`,name:l,initialValue:V[l].value},validation:A}}return(0,h.createStore)((l,F)=>({fields:V,errors:x,metadata:g,submitCounter:k,isTrackingValidationHistory:n,validations:{handler:{},history:[]},utils:{handleOnInputChange:(e,i)=>{let r=F(),t=r.utils.handleFieldValidation({name:e,value:i,validationEvent:"change"});r.utils.setFieldValue(e,t)},errorFormatter:e=>G(e)?e.format()._errors:e instanceof Error?[e.message]:["Something went wrong!"],reInitFieldsValues:()=>l(e=>{let i=e.metadata.fieldsNames,r=e.fields,t;for(t of i)r[t]={...r[t],value:r[t].metadata.initialValue};return{fields:r}}),setFieldValue:(e,i)=>l(r=>({fields:{...r.fields,[e]:{...r.fields[e],value:typeof i=="function"?i(r.fields[e].value):i}}})),setFieldErrors:e=>l(i=>{let r=!!e.errors,t=i.fields[e.name];return t={...t,isDirty:r,errors:e.errors,validation:{...t.validation,events:{...t.validation.events,[e.validationEvent]:{...t.validation.events[e.validationEvent],failedAttempts:r?t.validation.events[e.validationEvent].failedAttempts:t.validation.events[e.validationEvent].failedAttempts+1,passedAttempts:r?t.validation.events[e.validationEvent].passedAttempts:t.validation.events[e.validationEvent].passedAttempts+1}}}},{fields:{...i.fields,[e.name]:t},errors:x}}),createValidationHistoryRecord:({fields:e,validationEvent:i,validationEventPhase:r,validationEventState:t})=>{let p=[];r==="start"&&p.push(`Starting the validation for fields: [${Object.keys(e).join(", ")}]`),r==="end"&&p.push(`Ending the validation for fields: [${Object.keys(e).join(", ")}]`),p.push(`Validation ${t[0].toUpperCase()+t.slice(1)}!`),e.forEach(m=>{p.push(`Field: ${String(m.metadata.name)}, Failed Attempts: ${m.validation.events[i].failedAttempts}, Passed Attempt: ${m.validation.events[i].passedAttempts}`)})},handleFieldValidation:({name:e,validationEvent:i,value:r})=>{let t=F();if(!t.fields[e].validation.events[i].isActive)return r;let p=t.fields[e].validation.handler||t.validations.handler[e];if(!p)return r;let m=t.fields[e].valueFromFieldToStore,f=m?m(r):r,b=t.fields[e].isUpdatingValueOnError,d=v=>(t.utils.setFieldErrors({name:e,errors:t.utils.errorFormatter(v,i),validationEvent:i}),b?f:t.fields[e].value);if(t.isTrackingValidationHistory)try{t.utils.createValidationHistoryRecord({fields:[t.fields[e]],validationEvent:i,validationEventPhase:"start",validationEventState:"processing"}),f=p(f,i),t.fields[e].isDirty&&t.utils.setFieldErrors({name:e,errors:null,validationEvent:i}),t.utils.createValidationHistoryRecord({fields:[t.fields[e]],validationEvent:i,validationEventPhase:"end",validationEventState:"passed"})}catch(v){f=d(v),t.utils.createValidationHistoryRecord({fields:[t.fields[e]],validationEvent:i,validationEventPhase:"end",validationEventState:"failed"})}else try{f=p(f,i),t.fields[e].isDirty&&t.utils.setFieldErrors({name:e,errors:null,validationEvent:i})}catch(v){f=d(v)}return f},handlePreSubmit:e=>i=>{if(i.preventDefault(),!e)return;let r=F(),t=r.fields,p={},m={},f={},b=!1,d;for(d in t)try{t[d].validation.events.submit.isActive&&t[d].validation.handler&&(m[d]=t[d].validation.handler(t[d].value,"submit")),p[d]=t[d].value,f[d]={name:d,errors:null,validationEvent:"submit"}}catch(O){f[d]={name:d,errors:r.utils.errorFormatter(O,"submit"),validationEvent:"submit"},b=!0}let v;for(v in f)r.utils.setFieldErrors(f[v]);b||e(i,{values:p,validatedValues:m,hasError:b,errors:f})}}}))},z=(s,n)=>(0,h.useStore)(s,n);0&&(module.exports={createFormStore,inputDateHelpers,useFormStore});
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+// src/index.ts
+var src_exports = {};
+__export(src_exports, {
+  createFormStore: () => createFormStore,
+  inputDateHelpers: () => inputDateHelpers_default,
+  useFormStore: () => useFormStore
+});
+module.exports = __toCommonJS(src_exports);
+
+// src/utils/inputDateHelpers.ts
+function formatDate(date, type) {
+  let formattedDate = "";
+  switch (type) {
+    case "date":
+      formattedDate = date.toISOString().slice(0, 10);
+      break;
+    case "time":
+      formattedDate = date.toTimeString().slice(0, 8);
+      break;
+    case "datetime-local":
+      formattedDate = date.toISOString().slice(0, 16);
+      formattedDate = formattedDate.replace("T", " ");
+      break;
+    case "week":
+      const year = date.getFullYear();
+      const weekNumber = getWeekNumber(date);
+      formattedDate = `${year}-W${weekNumber.toString().length < 2 ? "0" + weekNumber.toString() : weekNumber.toString()}`;
+      break;
+    case "month":
+      formattedDate = date.toISOString().slice(0, 7);
+      break;
+    default:
+      break;
+  }
+  return formattedDate;
+}
+function parseDate(dateString, type) {
+  let parsedDate;
+  switch (type) {
+    case "date":
+      parsedDate = new Date(dateString);
+      break;
+    case "time":
+      const [hours, minutes, seconds] = dateString.toString().split(":");
+      parsedDate = /* @__PURE__ */ new Date();
+      parsedDate.setHours(Number(hours));
+      parsedDate.setMinutes(Number(minutes));
+      parsedDate.setSeconds(Number(seconds));
+      break;
+    case "datetime-local":
+      parsedDate = new Date(dateString.toString().replace(" ", "T"));
+      break;
+    case "week":
+      const [yearString, weekString] = dateString.toString().split("-W");
+      const year = Number(yearString);
+      const week = Number(weekString);
+      parsedDate = getFirstDateOfWeek(year, week);
+      break;
+    case "month":
+      parsedDate = /* @__PURE__ */ new Date(`${dateString}-01`);
+      break;
+    default:
+      parsedDate = /* @__PURE__ */ new Date();
+      break;
+  }
+  return parsedDate;
+}
+function getWeekNumber(date) {
+  const yearStart = new Date(date.getFullYear(), 0, 1);
+  const daysSinceYearStart = (date.valueOf() - yearStart.valueOf()) / (1e3 * 60 * 60 * 24);
+  const weekNumber = Math.floor(daysSinceYearStart / 7) + 1;
+  return weekNumber;
+}
+function getFirstDateOfWeek(year, week) {
+  const januaryFirst = new Date(year, 0, 1);
+  const daysToFirstMonday = (8 - januaryFirst.getDay()) % 7;
+  const firstMonday = new Date(januaryFirst);
+  firstMonday.setDate(januaryFirst.getDate() + daysToFirstMonday);
+  const daysToTargetMonday = (week - 1) * 7;
+  const targetMonday = new Date(firstMonday);
+  targetMonday.setDate(firstMonday.getDate() + daysToTargetMonday);
+  return targetMonday;
+}
+var inputDateHelpers = {
+  /**
+   * Formats a date object to the desired string format based on the type.
+   * @param {Date} date - The Date object to be formatted.
+   * @param {string} type - The format type ('date', 'time', 'datetime-local', 'week', or 'month').
+   * @returns {string} A formatted string based on the specified format.
+   */
+  formatDate,
+  /**
+   * Parses a string in the specified format and returns a Date object.
+   * @param {string} dateString - The string to be parsed.
+   * @param {string} type - The format type ('date', 'time', 'datetime-local', 'week', or 'month').
+   * @returns {Date} - The parsed Date object.
+   */
+  parseDate,
+  /**
+   * Returns the week number of the year for a given date.
+   * @param {Date} date - The date object for which to calculate the week number.
+   * @returns {number} - The week number.
+   */
+  getWeekNumber,
+  /**
+   * Returns the first date (Monday) of a given week in a year.
+   * @param {number} year - The year of the target week.
+   * @param {number} week - The week number (1-53) of the desired week.
+   * @returns {Date} - The first date (Monday) of the specified week.
+   */
+  getFirstDateOfWeek
+};
+var inputDateHelpers_default = inputDateHelpers;
+
+// src/utils/index.tsx
+var import_zustand = require("zustand");
+var generateUUIDV4 = () => "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+  const r = Math.random() * 16 | 0;
+  const v = c === "x" ? r : r & 3 | 8;
+  return v.toString(16);
+});
+var isZodValidator = (validator) => {
+  return !!(validator instanceof Object && "parseAsync" in validator && typeof validator.parseAsync === "function");
+};
+var isZodError = (error) => {
+  return error instanceof Object && "errors" in error;
+};
+var createFormStore = ({
+  isUpdatingFieldsValueOnError = true,
+  trackValidationHistory = false,
+  valuesFromFieldsToStore,
+  valuesFromStoreToFields,
+  validationHandler,
+  ...params
+}) => {
+  if (!params.initValues || typeof params.initValues !== "object")
+    throw new Error("");
+  const baseId = typeof params.baseId === "boolean" ? generateUUIDV4() : params.baseId ? `${params.baseId}-` : "";
+  const errors = {};
+  const metadata = {
+    fieldsNames: Object.keys(params.initValues),
+    formId: `${baseId}form`
+  };
+  const submitCounter = 0;
+  const fields = {};
+  let passedField;
+  let validation;
+  let fieldValidationEvents = {
+    submit: true
+  };
+  let isFieldHavingPassedValidations = false;
+  let fieldValidationEventKey;
+  for (const fieldName of metadata.fieldsNames) {
+    const fieldValidationsHandler = validationHandler?.[fieldName];
+    validation = {
+      handler: !fieldValidationsHandler ? void 0 : isZodValidator(fieldValidationsHandler) ? (value) => fieldValidationsHandler.parse(value) : fieldValidationsHandler,
+      failedAttempts: 0,
+      passedAttempts: 0,
+      events: {
+        blur: { failedAttempts: 0, passedAttempts: 0, isActive: false },
+        change: { failedAttempts: 0, passedAttempts: 0, isActive: false },
+        mount: { failedAttempts: 0, passedAttempts: 0, isActive: false },
+        submit: { failedAttempts: 0, passedAttempts: 0, isActive: false }
+      }
+    };
+    passedField = params.initValues[fieldName];
+    if (params.validationEvents) {
+      isFieldHavingPassedValidations = true;
+      fieldValidationEvents = {
+        ...fieldValidationEvents,
+        ...params.validationEvents
+      };
+    }
+    fields[fieldName] = {
+      value: passedField,
+      isUpdatingValueOnError: isUpdatingFieldsValueOnError,
+      valueFromFieldToStore: valuesFromFieldsToStore?.[fieldName] ? valuesFromFieldsToStore[fieldName] : void 0,
+      valueFromStoreToField: valuesFromStoreToFields?.[fieldName] ? valuesFromStoreToFields[fieldName] : void 0
+    };
+    if (isFieldHavingPassedValidations) {
+      for (fieldValidationEventKey in fieldValidationEvents) {
+        validation.events[fieldValidationEventKey].isActive = !!typeof fieldValidationEvents[fieldValidationEventKey];
+      }
+    }
+    fields[fieldName] = {
+      ...fields[fieldName],
+      errors: null,
+      isDirty: false,
+      metadata: {
+        id: `${baseId}field-${String(fieldName)}`,
+        name: fieldName,
+        initialValue: fields[fieldName].value
+      },
+      validation
+    };
+  }
+  return (0, import_zustand.createStore)((set, get) => ({
+    fields,
+    errors,
+    metadata,
+    submitCounter,
+    isTrackingValidationHistory: trackValidationHistory,
+    validations: { history: [] },
+    utils: {
+      handleOnInputChange: (name, value) => {
+        const currentStore = get();
+        const _value = currentStore.utils.handleFieldValidation({
+          name,
+          value,
+          validationEvent: "change"
+        });
+        currentStore.utils.setFieldValue(name, _value);
+      },
+      errorFormatter: (error) => {
+        if (isZodError(error))
+          return error.format()._errors;
+        if (error instanceof Error)
+          return [error.message];
+        return ["Something went wrong!"];
+      },
+      reInitFieldsValues: () => set((currentState) => {
+        const fieldsNames = currentState.metadata.fieldsNames;
+        const fields2 = currentState.fields;
+        let fieldName;
+        for (fieldName of fieldsNames) {
+          fields2[fieldName] = {
+            ...fields2[fieldName],
+            value: fields2[fieldName].metadata.initialValue
+          };
+        }
+        return { fields: fields2 };
+      }),
+      setFieldValue: (name, value) => set((currentState) => {
+        return {
+          fields: {
+            ...currentState.fields,
+            [name]: {
+              ...currentState.fields[name],
+              value: typeof value === "function" ? (
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                value(
+                  currentState.fields[name].value
+                )
+              ) : value
+            }
+          }
+        };
+      }),
+      setFieldErrors: (params2) => set((currentState) => {
+        const hasError = !!params2.errors;
+        let field = currentState.fields[params2.name];
+        field = {
+          ...field,
+          isDirty: hasError,
+          errors: params2.errors,
+          validation: {
+            ...field.validation,
+            events: {
+              ...field.validation.events,
+              [params2.validationEvent]: {
+                ...field.validation.events[params2.validationEvent],
+                failedAttempts: hasError ? field.validation.events[params2.validationEvent].failedAttempts : field.validation.events[params2.validationEvent].failedAttempts + 1,
+                passedAttempts: hasError ? field.validation.events[params2.validationEvent].passedAttempts : field.validation.events[params2.validationEvent].passedAttempts + 1
+              }
+            }
+          }
+        };
+        return {
+          fields: { ...currentState.fields, [params2.name]: field },
+          errors
+        };
+      }),
+      createValidationHistoryRecord: ({
+        fields: fields2,
+        validationEvent,
+        validationEventPhase,
+        validationEventState
+      }) => {
+        const logs = [];
+        if (validationEventPhase === "start") {
+          logs.push(
+            `Starting the validation for fields: [${Object.keys(fields2).join(
+              ", "
+            )}]`
+          );
+        }
+        if (validationEventPhase === "end") {
+          logs.push(
+            `Ending the validation for fields: [${Object.keys(fields2).join(
+              ", "
+            )}]`
+          );
+        }
+        logs.push(
+          `Validation ${validationEventState[0].toUpperCase() + validationEventState.slice(1)}!`
+        );
+        fields2.forEach((field) => {
+          logs.push(
+            `Field: ${String(field.metadata.name)}, Failed Attempts: ${field.validation.events[validationEvent].failedAttempts}, Passed Attempt: ${field.validation.events[validationEvent].passedAttempts}`
+          );
+        });
+      },
+      handleFieldValidation: ({ name, validationEvent, value }) => {
+        const currentState = get();
+        if (!currentState.fields[name].validation.events[validationEvent].isActive)
+          return value;
+        const validationHandler2 = currentState.fields[name].validation.handler;
+        if (!validationHandler2)
+          return value;
+        const valueFromFieldToStore = currentState.fields[name].valueFromFieldToStore;
+        let validatedValue = valueFromFieldToStore ? valueFromFieldToStore(value) : value;
+        const isUpdatingValueOnError = currentState.fields[name].isUpdatingValueOnError;
+        const handleSetError = (error) => {
+          currentState.utils.setFieldErrors({
+            name,
+            errors: currentState.utils.errorFormatter(error, validationEvent),
+            validationEvent
+          });
+          return isUpdatingValueOnError ? validatedValue : currentState.fields[name].value;
+        };
+        if (currentState.isTrackingValidationHistory) {
+          try {
+            currentState.utils.createValidationHistoryRecord({
+              fields: [currentState.fields[name]],
+              validationEvent,
+              validationEventPhase: "start",
+              validationEventState: "processing"
+            });
+            validatedValue = validationHandler2(
+              validatedValue,
+              validationEvent
+            );
+            if (currentState.fields[name].isDirty)
+              currentState.utils.setFieldErrors({
+                name,
+                errors: null,
+                validationEvent
+              });
+            currentState.utils.createValidationHistoryRecord({
+              fields: [currentState.fields[name]],
+              validationEvent,
+              validationEventPhase: "end",
+              validationEventState: "passed"
+            });
+          } catch (error) {
+            validatedValue = handleSetError(error);
+            currentState.utils.createValidationHistoryRecord({
+              fields: [currentState.fields[name]],
+              validationEvent,
+              validationEventPhase: "end",
+              validationEventState: "failed"
+            });
+          }
+        } else {
+          try {
+            validatedValue = validationHandler2(
+              validatedValue,
+              validationEvent
+            );
+            if (currentState.fields[name].isDirty)
+              currentState.utils.setFieldErrors({
+                name,
+                errors: null,
+                validationEvent
+              });
+          } catch (error) {
+            validatedValue = handleSetError(error);
+          }
+        }
+        return validatedValue;
+      },
+      handlePreSubmit: (cb) => (event) => {
+        event.preventDefault();
+        if (!cb)
+          return;
+        const currentStore = get();
+        const fields2 = currentStore.fields;
+        const values = {};
+        const validatedValues = {};
+        const errors2 = {};
+        let hasError = false;
+        let fieldName;
+        for (fieldName in fields2) {
+          try {
+            const validationHandler2 = fields2[fieldName].validation.handler;
+            if (fields2[fieldName].validation.events.submit.isActive && typeof validationHandler2 === "function") {
+              validatedValues[fieldName] = validationHandler2(fields2[fieldName].value, "submit");
+            }
+            values[fieldName] = fields2[fieldName].value;
+            errors2[fieldName] = {
+              name: fieldName,
+              errors: null,
+              validationEvent: "submit"
+            };
+          } catch (error) {
+            errors2[fieldName] = {
+              name: fieldName,
+              errors: currentStore.utils.errorFormatter(error, "submit"),
+              validationEvent: "submit"
+            };
+            hasError = true;
+          }
+        }
+        let errorKey;
+        for (errorKey in errors2) {
+          currentStore.utils.setFieldErrors(errors2[errorKey]);
+        }
+        if (!hasError)
+          cb(event, {
+            values,
+            validatedValues,
+            hasError,
+            errors: errors2
+          });
+      }
+    }
+  }));
+};
+var useFormStore = (store, cb) => (0, import_zustand.useStore)(store, cb);
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  createFormStore,
+  inputDateHelpers,
+  useFormStore
+});
 //# sourceMappingURL=index.js.map

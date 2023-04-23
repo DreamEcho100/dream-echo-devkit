@@ -8,9 +8,8 @@ import type {
 	HandleValidation,
 } from '../src';
 import { createFormStore, useFormStore } from '../src';
-import type { ValidationHandler } from '../src';
 
-const t = {} as CreateCreateFormStore<
+const ee = {} as CreateCreateFormStore<
 	{
 		username: string | undefined;
 		age: number;
@@ -20,10 +19,10 @@ const t = {} as CreateCreateFormStore<
 	}
 >;
 
-t.fields.username.value;
-t.fields.username.validation.handler;
+ee.fields.username.value;
+ee.fields.username.validation.handler;
 
-const ttt = createFormStore({
+const eee = createFormStore({
 	initValues: {
 		username: undefined,
 		age: 0,
@@ -34,11 +33,11 @@ const ttt = createFormStore({
 	},
 });
 
-ttt.getState().fields.username.value;
-ttt.getState().fields.username.validation.handler;
+eee.getState().fields.username.value;
+eee.getState().fields.username.validation.handler;
 
 const Comp = () => {
-	const username = useFormStore(ttt, (store) => store.fields.username);
+	const username = useFormStore(eee, (store) => store.fields.username);
 
 	if (typeof username !== 'string') username;
 	if (typeof username === 'string') username;
@@ -46,7 +45,7 @@ const Comp = () => {
 	return (
 		<>
 			<Form
-				store={ttt}
+				store={eee}
 				handlePreSubmitCB={(event, { values, validatedValues }) => {
 					event.preventDefault();
 					values.username;
@@ -55,7 +54,7 @@ const Comp = () => {
 				}}
 			/>
 			<Form2
-				store={ttt}
+				store={eee}
 				handleOnSubmit={(event, { values, validatedValues }) => {
 					event.preventDefault();
 					values.username;
@@ -67,13 +66,13 @@ const Comp = () => {
 	);
 };
 
-const Form = <
-	Fields extends Record<string, unknown>,
-	ValidatedFields extends ValidationHandler<Fields> | undefined,
->({}: {
+const Form = <Fields extends Record<string, unknown>, ValidatedFields>({
+	store,
+}: {
 	store: FormStoreApi<Fields, ValidatedFields>;
 	handlePreSubmitCB: HandlePreSubmitCB<Fields, ValidatedFields>;
 }) => {
+	store.getState().fields.sa.errors;
 	return <></>;
 };
 
@@ -130,3 +129,49 @@ const Form2 = <Fields extends Record<string, unknown>, ValidatedFields>({
 };
 
 Form2;
+
+const validationHandlerSchema = {
+	username: z.string(), //.optional(),
+	age: (val: unknown) => z.number().parse(val),
+};
+
+const t = createFormStore({
+	initValues: { username: null, age: '0' } as {
+		username?: null | string;
+		age: string;
+	},
+	validationHandler: validationHandlerSchema,
+});
+
+t.getState().utils.handlePreSubmit((_event, { validatedValues, values }) => {
+	validatedValues.username;
+	validatedValues.age;
+	values;
+});
+
+t.getState().fields.username.value;
+t.getState().fields.username.validation.handler;
+
+t.getState().fields.age.value;
+t.getState().fields.age.validation.handler;
+
+type IV = { username: null | string; age: string };
+
+type FF = CreateCreateFormStore<IV, typeof validationHandlerSchema>;
+
+const tt = {} as FF;
+
+// tt.___?.username;
+// tt._?.username;
+
+tt.fields.username.value;
+tt.fields.username.validation.handler;
+type _ttUsername = typeof tt.fields.username.validation.handler;
+const rUsername = tt.fields.username.validation.handler('', 'change');
+rUsername;
+
+tt.fields.age.value;
+tt.fields.age.validation.handler;
+type _ttAge = ReturnType<typeof tt.fields.age.validation.handler>;
+const rAge = tt.fields.age.validation.handler('', 'change');
+rAge;

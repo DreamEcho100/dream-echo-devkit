@@ -98,30 +98,40 @@ const Example = () => {
 				initValues: {
 					username: 'Test',
 					counter: 1,
-					dateOfBirth: new Date(),
+					dateOfBirth: null, // new Date(),
+				} as {
+					username: string;
+					counter: number;
+					dateOfBirth: null | Date;
 				},
 				validationHandler: {
 					counter: z.number().nonnegative(),
 					dateOfBirth: z.date(),
-					username: z.string().min(1).max(4),
+					username: (val: unknown) => z.string().min(1).max(4).parse(val),
 				},
 				valuesFromFieldsToStore: {
 					counter: (value) => Number(value),
 					dateOfBirth: (value) => inputDateHelpers.parseDate(value, 'date'),
 				},
 				valuesFromStoreToFields: {
-					dateOfBirth: (value) => inputDateHelpers.formatDate(value, 'date'),
+					dateOfBirth: (value) =>
+						value ? inputDateHelpers.formatDate(value, 'date') : '',
 				},
 				validationEvents: { change: true },
 			}),
 		[baseId],
 	);
+	type t = ReturnType<
+		(typeof formStore)['getState']
+	>['fields']['counter']['validation']['handler'];
+	type tt = ReturnType<t> extends number ? number : never;
 
 	return (
 		<Form
 			store={formStore}
-			handleOnSubmit={(event, { values }) => {
+			handleOnSubmit={(event, { values, validatedValues }) => {
 				console.log('values', values);
+				console.log('validatedValues', validatedValues.counter);
 			}}
 			className='flex w-fit flex-col gap-2 bg-neutral-500 p-4 text-white'
 		>
