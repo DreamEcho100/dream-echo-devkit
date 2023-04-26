@@ -7,7 +7,7 @@ import {
 	useFormStore,
 	createFormStore,
 	inputDateHelpers,
-} from 'form-echo';
+} from '@de100/form-echo';
 
 export type FormProps<Fields, ValidatedField> =
 	FormHTMLAttributes<HTMLFormElement> & {

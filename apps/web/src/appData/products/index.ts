@@ -1,4 +1,11 @@
+export interface Rating {
+	[key: string]: unknown;
+	rate: number;
+	count: number;
+}
+
 export interface Product {
+	[key: string]: unknown;
 	id: number;
 	title: string;
 	price: number;
@@ -6,9 +13,4 @@ export interface Product {
 	category: string;
 	image: string;
 	rating: Rating;
-}
-
-export interface Rating {
-	rate: number;
-	count: number;
 }

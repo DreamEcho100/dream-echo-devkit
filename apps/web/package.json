@@ -9,26 +9,30 @@
 		"lint": "next lint"
 	},
 	"dependencies": {
+		"@de100/form-echo": "workspace:*",
+		"@de100/react-table-query": "workspace:*",
+		"@tanstack/react-query": "^4.29.5",
+		"@tanstack/react-table": "^8.8.5",
 		"config": "workspace:*",
 		"docs": "0.3.2-canary.0",
-		"next": "^13.2.4",
+		"next": "^13.3.1",
 		"react": "18.2.0",
 		"react-dom": "18.2.0",
 		"ui": "workspace:*",
-		"form-echo": "workspace:*",
-		"zod": "^3.21.4"
+		"zod": "^3.21.4",
+		"zustand": "^4.3.7"
 	},
 	"devDependencies": {
-		"@babel/core": "^7.0.0",
-		"@types/node": "^18.15.5",
-		"@types/react": "^18.0.22",
-		"@types/react-dom": "^18.0.7",
+		"@babel/core": "^7.21.4",
+		"@types/node": "^18.16.1",
+		"@types/react": "^18.2.0",
+		"@types/react-dom": "^18.2.1",
 		"autoprefixer": "^10.4.14",
-		"eslint": "8.36.0",
+		"eslint": "8.39.0",
 		"eslint-config-custom": "workspace:*",
-		"postcss": "^8.4.21",
-		"tailwindcss": "^3.2.7",
+		"postcss": "^8.4.23",
+		"tailwindcss": "^3.3.2",
 		"tsconfig": "workspace:*",
-		"typescript": "^5.0.2"
+		"typescript": "^5.0.4"
 	}
 }
