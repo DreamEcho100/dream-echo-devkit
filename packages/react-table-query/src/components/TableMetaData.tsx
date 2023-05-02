@@ -10,13 +10,10 @@ const TableMetaData = <TData extends Record<string, unknown>>({
 	infiniteQuery,
 	store,
 	classNames = {
-		container: 'flex flex-wrap gap-2',
-		refetchButton:
-			'bg-transparent capitalize text-current disabled:cursor-not-allowed disabled:brightness-50 disabled:grayscale',
-		previousPageButton:
-			'bg-transparent capitalize text-current disabled:cursor-not-allowed disabled:brightness-50 disabled:grayscale',
-		nextPageButton:
-			'bg-transparent capitalize text-current disabled:cursor-not-allowed disabled:brightness-50 disabled:grayscale',
+		container: '',
+		refetchButton: '',
+		previousPageButton: '',
+		nextPageButton: '',
 	},
 }: {
 	infiniteQuery: InfiniteQuery<TData>;
@@ -38,18 +35,18 @@ const TableMetaData = <TData extends Record<string, unknown>>({
 
 	const {
 		isLastPageEmpty,
-		isInLastPage,
+		// isInLastPage,
 		isInBeforeLastPage,
-		isInFirstPage,
+		// isInFirstPage,
 		pagesLength,
 	} = useMemo(() => {
 		const isLastPageEmpty =
 			infiniteQuery?.data?.pages?.[infiniteQuery.data.pages.length - 1]?.items
 				.length === 0;
 
-		const isInFirstPage = currentPageIndex === 0;
-		const isInLastPage =
-			currentPageIndex + 1 === infiniteQuery?.data?.pages?.length;
+		// const isInFirstPage = currentPageIndex === 0;
+		// const isInLastPage =
+		// 	currentPageIndex + 1 === infiniteQuery?.data?.pages?.length;
 		const isInBeforeLastPage =
 			typeof infiniteQuery?.data?.pages?.length === 'number' &&
 			infiniteQuery.data.pages.length !== 0 &&
@@ -60,19 +57,11 @@ const TableMetaData = <TData extends Record<string, unknown>>({
 		return {
 			isLastPageEmpty,
 			isInBeforeLastPage,
-			isInLastPage,
-			isInFirstPage,
+			// isInLastPage,
+			// isInFirstPage,
 			pagesLength,
 		};
 	}, [currentPageIndex, infiniteQuery?.data?.pages]);
-
-	if (process.env!.NODE_ENV! === 'development') {
-		console.log('isLastPageEmpty', isLastPageEmpty);
-		console.log('isInLastPage', isInLastPage);
-		console.log('isInBeforeLastPage', isInBeforeLastPage);
-		console.log('isInFirstPage', isInFirstPage);
-		console.log('pagesLength', pagesLength);
-	}
 
 	const isNextPageDisabled = useMemo(
 		() =>

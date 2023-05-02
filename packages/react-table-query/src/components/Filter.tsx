@@ -108,7 +108,7 @@ function Filter<TData extends Record<string, unknown>>({
 						column.setFilterValue((old: [number, number]) => [value, old?.[1]])
 					}
 					placeholder={`Min`}
-					className='w-24 border shadow rounded px-2 py-1'
+					className='w-24 px-2 py-1 border rounded shadow'
 					name={`${column.id}-min`}
 				/>
 				<DebouncedInput
@@ -120,7 +120,7 @@ function Filter<TData extends Record<string, unknown>>({
 						column.setFilterValue((old: [number, number]) => [old?.[0], value])
 					}
 					placeholder={`Max`}
-					className='w-24 border shadow rounded px-2 py-1'
+					className='w-24 px-2 py-1 border rounded shadow'
 					name={`${column.id}-max`}
 				/>
 			</div>
@@ -133,7 +133,7 @@ function Filter<TData extends Record<string, unknown>>({
 				value={(columnFilterValue ?? '') as string}
 				onChange={(value) => column.setFilterValue(value)}
 				placeholder={`Search...`}
-				className='w-36 border shadow rounded px-2 py-1'
+				className='px-2 py-1 border rounded shadow w-36'
 				list={column.id + 'list'}
 				name={column.id}
 			/>
@@ -167,7 +167,6 @@ const StringFilter = <TData extends Record<string, unknown>>({
 
 	const onChange = useCallback(
 		(value: string) => {
-			console.log('remoteFilter', remoteFilter);
 			if (remoteFilter)
 				return setFilterByFormValues((prevData) => {
 					const filter = prevData[column.id as DeepKeys<TData>];
@@ -193,7 +192,7 @@ const StringFilter = <TData extends Record<string, unknown>>({
 			type='text'
 			value={value}
 			onChange={onChange}
-			className='w-36 rounded border px-2 py-1 shadow'
+			className='px-2 py-1 border rounded shadow w-36'
 			list={column.id + 'list'}
 			name={column.id}
 		/>

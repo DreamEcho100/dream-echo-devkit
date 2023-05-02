@@ -127,12 +127,12 @@ export const CustomTable = <TData extends Record<string, unknown>>({
 	]);
 
 	const currentPage = useMemo(() => {
-		if (pageViewMode === 'PAGING')
-			return infiniteQuery?.data?.pages?.[currentPageIndex]?.items || [];
-		else
+		if (pageViewMode === 'INFINITE_SCROLL')
 			return (infiniteQuery?.data?.pages || [])
 				.map((page) => page.items)
 				.flat(1);
+
+		return infiniteQuery?.data?.pages?.[currentPageIndex]?.items || [];
 	}, [currentPageIndex, infiniteQuery.data?.pages, pageViewMode]);
 
 	const table = useReactTable({

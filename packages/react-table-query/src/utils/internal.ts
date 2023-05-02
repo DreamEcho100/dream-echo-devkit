@@ -7,3 +7,23 @@ export const cx = (...classesArr: (string | undefined)[]) => {
 
 	return classesStr.trimEnd();
 };
+
+/*
+function flattenArray<T>(arr: T[]): T[] {
+  const flattened: T[] = [];
+  let i = 0;
+
+  while (i < arr.length) {
+    const item = arr[i];
+    if (Array.isArray(item)) {
+      arr.splice(i, 1, ...item);
+      i--;
+    } else {
+      flattened.push(item);
+    }
+    i++;
+  }
+
+  return flattened;
+}
+*/

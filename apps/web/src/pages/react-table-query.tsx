@@ -195,7 +195,7 @@ const Home = () => {
 			},
 		],
 		[],
-	);
+	) as ColumnDef<Product>[];
 
 	return (
 		<>

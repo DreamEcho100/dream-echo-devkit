@@ -7,9 +7,8 @@ const TableLoadMore = <TData extends Record<string, unknown>>({
 	infiniteQuery,
 	store,
 	classNames = {
-		container: 'flex items-center justify-center p-4',
-		loadMoreButton:
-			'bg-transparent capitalize text-current disabled:cursor-not-allowed disabled:brightness-50 disabled:grayscale',
+		container: '',
+		loadMoreButton: '',
 	},
 }: {
 	infiniteQuery: InfiniteQuery<TData>;
@@ -47,7 +46,7 @@ const TableLoadMore = <TData extends Record<string, unknown>>({
 		};
 	}, [currentPageIndex, infiniteQuery?.data?.pages]);
 
-	const isNextPageDisabled = useMemo(
+	const isLoadMoreButtonDisabled = useMemo(
 		() =>
 			(!infiniteQuery.hasNextPage &&
 				currentPageIndex + 1 === infiniteQuery.data?.pages.length) ||
@@ -63,14 +62,18 @@ const TableLoadMore = <TData extends Record<string, unknown>>({
 		],
 	);
 
+	if (!infiniteQuery.hasNextPage) return <></>;
+
 	return (
 		<div className={cx(classNames?.container)}>
 			<button
-				title={isNextPageDisabled ? 'There is no more next page' : 'Next page'}
-				disabled={isNextPageDisabled}
+				title={
+					isLoadMoreButtonDisabled ? 'There is no more next page' : 'Next page'
+				}
+				disabled={isLoadMoreButtonDisabled}
 				// eslint-disable-next-line @typescript-eslint/no-misused-promises
 				onClick={async () => {
-					if (isNextPageDisabled) return;
+					if (isLoadMoreButtonDisabled) return;
 
 					await infiniteQuery.fetchNextPage().then((res) => {
 						if (res.data && Array.isArray(res.data?.pages)) {
