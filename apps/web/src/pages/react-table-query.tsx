@@ -12,6 +12,7 @@ import {
 	TableMetaData,
 	CustomTable,
 	handleCreateStore,
+	TableLoadMore,
 } from '@de100/react-table-query';
 
 const initialCursor: {
@@ -80,6 +81,7 @@ const initialFilterByFormValues = {
 const tableStore = handleCreateStore<ProductsAPIOutput['products']>({
 	filterByFormValues: initialFilterByFormValues,
 	classNames: tableClassNames,
+	pageViewMode: 'INFINITE_SCROLL',
 });
 
 const Home = () => {
@@ -88,7 +90,7 @@ const Home = () => {
 		(state) => state.filterByFormValues,
 	);
 
-	const { infiniteQuery, setOnQueryKeyChange } = useCustomInfiniteQuery<
+	const { infiniteQuery } = useCustomInfiniteQuery<
 		ProductsAPIOutput['products'],
 		[
 			'products',
@@ -148,38 +150,49 @@ const Home = () => {
 		filterBy: filterByFormValues as any,
 	});
 
-	const columns: ColumnDef<Product, any>[] = useMemo(
-		() => [
-			columnHelper.accessor('id', {
+	const columns = useMemo(
+		(): [
+			ColumnDef<Product, Product['id']>,
+			ColumnDef<Product, Product['title']>,
+			ColumnDef<Product, Product['description']>,
+			ColumnDef<Product, Product['category']>,
+			ColumnDef<Product, Product['price']>,
+		] => [
+			{
+				accessorKey: 'id',
 				cell: (info) => info.getValue(),
 				header: (info) => <span className='capitalize'>{info.column.id}</span>,
 				footer: (info) => <span className='capitalize'>{info.column.id}</span>,
 				enableColumnFilter: false,
-			}),
-			columnHelper.accessor('title', {
+			},
+			{
+				accessorKey: 'title',
 				cell: (info) => info.getValue(),
 				header: (info) => <span className='capitalize'>{info.column.id}</span>,
 				footer: (info) => <span className='capitalize'>{info.column.id}</span>,
-			}),
-			columnHelper.accessor('description', {
+			},
+			{
+				accessorKey: 'description',
 				cell: (info) => (
 					<div className='aspect-video w-64 max-w-fit'>{info.getValue()}</div>
 				),
 				header: (info) => <span className='capitalize'>{info.column.id}</span>,
 				footer: (info) => <span className='capitalize'>{info.column.id}</span>,
-			}),
-			columnHelper.accessor('category', {
+			},
+			{
+				accessorKey: 'category',
 				cell: (info) => info.getValue(),
 				header: (info) => <span className='capitalize'>{info.column.id}</span>,
 				footer: (info) => <span className='capitalize'>{info.column.id}</span>,
-			}),
-			columnHelper.accessor('price', {
+			},
+			{
+				accessorKey: 'price',
 				cell: (info) => info.getValue(),
 				header: (info) => {
 					return <span className='capitalize'>{info.column.id}</span>;
 				},
 				footer: (info) => <span className='capitalize'>{info.column.id}</span>,
-			}),
+			},
 		],
 		[],
 	);
@@ -208,16 +221,24 @@ const Home = () => {
 			<main
 				className={`max-w-full bg-white p-8 text-black dark:bg-black dark:text-white`}
 			>
-				<div className='max-w-full overflow-auto'>
+				{/* <div className='max-w-full overflow-auto'>
 					<TableMetaData infiniteQuery={infiniteQuery} store={tableStore} />
 					<CustomTable
 						columns={columns}
-						setOnQueryKeyChange={setOnQueryKeyChange}
 						infiniteQuery={infiniteQuery}
 						store={tableStore}
 						canMultiRowSelect
 					/>
 					<TableMetaData infiniteQuery={infiniteQuery} store={tableStore} />
+				</div> */}
+				<div className='max-w-full overflow-auto'>
+					<CustomTable
+						columns={columns}
+						infiniteQuery={infiniteQuery}
+						store={tableStore}
+						canMultiRowSelect
+					/>
+					<TableLoadMore infiniteQuery={infiniteQuery} store={tableStore} />
 				</div>
 			</main>
 		</>

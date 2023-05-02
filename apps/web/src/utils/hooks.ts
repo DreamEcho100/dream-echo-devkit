@@ -66,9 +66,6 @@ export const useCustomInfiniteQuery = <
 		  >
 		| undefined;
 }) => {
-	const [onQueryKeyChange, setOnQueryKeyChange] = useState<null | (() => void)>(
-		null,
-	);
 	const queryKey = useMemo(
 		() => [queryMainKey, { initialCursor, filterBy }] as const,
 		[initialCursor, filterBy, queryMainKey],
@@ -106,8 +103,8 @@ export const useCustomInfiniteQuery = <
 		const configCurrent = config.current;
 		let timeoutId: NodeJS.Timeout;
 		if (configCurrent.queryKey !== queryKey) {
-			if (onQueryKeyChange)
-				timeoutId = setTimeout(() => onQueryKeyChange?.(), 0);
+			// if (onQueryKeyChange)
+			// 	timeoutId = setTimeout(() => onQueryKeyChange?.(), 0);
 			configCurrent.queryKey = queryKey;
 		}
 
@@ -115,7 +112,7 @@ export const useCustomInfiniteQuery = <
 			configCurrent.queryKey = null;
 			timeoutId && clearTimeout(timeoutId);
 		};
-	}, [onQueryKeyChange, queryKey]);
+	}, [queryKey]);
 
 	return {
 		infiniteQuery,
@@ -124,7 +121,6 @@ export const useCustomInfiniteQuery = <
 		// currentIndex,
 		// setCurrentIndex,
 		queryKey,
-		setOnQueryKeyChange,
 	};
 };
 

@@ -126,11 +126,6 @@ export type GetPassedValidationFieldsValues<PV> = {
 		? ReturnType<PV[Key]>
 		: undefined;
 };
-export type GetPassedValidationFields2<PV> = {
-	[Key in keyof PV]: PV[Key] extends HandleValidation<unknown>
-		? ReturnType<PV[Key]>
-		: undefined;
-};
 
 export type HandlePreSubmitCB<Fields, ValidatedField> = THandlePreSubmitCB<
 	Fields,
@@ -198,8 +193,12 @@ export type FormStoreErrors<
 export type ValidationHandler<PassedFields = TPassedFieldsShape> = {
 	[Key in keyof PassedFields]?: HandleValidation<PassedFields[Key]>;
 };
-export type CreateStoreValidationHandler<PassedFields = TPassedFieldsShape> = {
-	[Key in keyof PassedFields]?: ZodSchema<unknown> | HandleValidation<unknown>;
+export type CreateStoreValidationHandler<
+	PassedFields = TPassedFieldsShape,
+	PassedValidationHandler = unknown,
+> = {
+	[Key in keyof PassedFields &
+		keyof PassedValidationHandler]?: PassedValidationHandler[Key];
 };
 
 export type GetFieldsValueFromValidationHandler<

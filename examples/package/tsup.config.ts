@@ -1,3 +1,4 @@
+/*
 // Credit to <https://stackoverflow.com/a/73883783/13961420>
 
 import { defineConfig } from 'tsup';
@@ -15,7 +16,7 @@ export default defineConfig([
 		entry: ['./src/index.ts'],
 		// Credit to: <https://stackoverflow.com/a/74604287/13961420>
 		esbuildOptions(options) {
-			options.external = ['use-sync-external-store', 'zod', 'zustand'];
+			options.external = [];
 		},
 		format: ['esm', 'cjs'],
 		sourcemap: true,
@@ -23,3 +24,4 @@ export default defineConfig([
 		outDir: 'dist',
 	},
 ]);
+*/

@@ -13,10 +13,10 @@ export default defineConfig([
 		dts: true,
 		minify: NODE_ENV === 'production',
 		entry: ['./src/index.ts'],
-		// Credit to: <https://stackoverflow.com/a/74604287/13961420>
-		esbuildOptions(options) {
-			options.external = ['use-sync-external-store', 'zod', 'zustand'];
-		},
+		// // Credit to: <https://stackoverflow.com/a/74604287/13961420>
+		// esbuildOptions(options) {
+		// 	options.external = [];
+		// },
 		format: ['esm', 'cjs'],
 		sourcemap: true,
 		tsconfig: path.resolve(__dirname, './tsconfig.build.json'),

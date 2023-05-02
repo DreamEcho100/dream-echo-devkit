@@ -87,9 +87,6 @@ interface FormStoreShape<PassedFields = TPassedFieldsShape, PassedValidatedField
 type GetPassedValidationFieldsValues<PV> = {
     [Key in keyof PV]: PV[Key] extends ZodSchema<unknown> ? ReturnType<PV[Key]['parse']> : PV[Key] extends HandleValidation<unknown> ? ReturnType<PV[Key]> : undefined;
 };
-type GetPassedValidationFields2<PV> = {
-    [Key in keyof PV]: PV[Key] extends HandleValidation<unknown> ? ReturnType<PV[Key]> : undefined;
-};
 type HandlePreSubmitCB<Fields, ValidatedField> = THandlePreSubmitCB<Fields, GetPassedValidationFieldsValues<ValidatedField>>;
 type THandlePreSubmitCB<PassedFields = TPassedFieldsShape, PassedValidatedFields = Record<keyof PassedFields, unknown>> = (event: FormEvent<HTMLFormElement>, params: {
     validatedValues: PassedValidatedFields;
@@ -116,8 +113,8 @@ type FormStoreErrors<Fields = AllFieldsShape<TPassedFieldsShape, Record<string, 
 type ValidationHandler<PassedFields = TPassedFieldsShape> = {
     [Key in keyof PassedFields]?: HandleValidation<PassedFields[Key]>;
 };
-type CreateStoreValidationHandler<PassedFields = TPassedFieldsShape> = {
-    [Key in keyof PassedFields]?: ZodSchema<unknown> | HandleValidation<unknown>;
+type CreateStoreValidationHandler<PassedFields = TPassedFieldsShape, PassedValidationHandler = unknown> = {
+    [Key in keyof PassedFields & keyof PassedValidationHandler]?: PassedValidationHandler[Key];
 };
 type GetFieldsValueFromValidationHandler<PassedFields = TPassedFieldsShape, PassedValidationHandler = CreateStoreValidationHandler<PassedFields>> = {
     [Key in keyof PassedValidationHandler]: PassedValidationHandler[Key] extends ZodSchema<unknown> ? ReturnType<PassedValidationHandler[Key]['parse']> : PassedValidationHandler[Key] extends HandleValidation<unknown> ? ReturnType<PassedValidationHandler[Key]> : never;
@@ -206,4 +203,4 @@ declare const inputDateHelpers: {
 declare const createFormStore: <PassedFields = Record<string, unknown>, PassedValidationHandler = Record<keyof PassedFields, unknown>>({ isUpdatingFieldsValueOnError, trackValidationHistory, valuesFromFieldsToStore, valuesFromStoreToFields, validationHandler, ...params }: CreateFormStoreProps<PassedFields, PassedValidationHandler>) => zustand.StoreApi<CreateCreateFormStore<PassedFields, PassedValidationHandler>>;
 declare const useFormStore: <fields extends Record<string, unknown>, PassedValidatedFields, U>(store: FormStoreApi<fields, PassedValidatedFields>, cb: (state: CreateCreateFormStore<fields, PassedValidatedFields>) => U) => U;
 
-export { AllFieldsShape, CreateCreateFormStore, CreateFormStoreProps, CreateStoreValidationHandler, FieldIsDirtyErrorsAndValidation, FieldMetadata, FieldShape, FieldValidation, FormMetadata, FormStoreApi, FormStoreErrors, FormStoreShape, FormStoreValues, GetFieldsValueFromValidationHandler, GetPassedValidationFields2, GetPassedValidationFieldsValues, HandlePreSubmitCB, HandleValidation, InputDateTypes, THandlePreSubmitCB, ValidationEvents, ValidationHandler, createFormStore, inputDateHelpers, useFormStore };
+export { AllFieldsShape, CreateCreateFormStore, CreateFormStoreProps, CreateStoreValidationHandler, FieldIsDirtyErrorsAndValidation, FieldMetadata, FieldShape, FieldValidation, FormMetadata, FormStoreApi, FormStoreErrors, FormStoreShape, FormStoreValues, GetFieldsValueFromValidationHandler, GetPassedValidationFieldsValues, HandlePreSubmitCB, HandleValidation, InputDateTypes, THandlePreSubmitCB, ValidationEvents, ValidationHandler, createFormStore, inputDateHelpers, useFormStore };

@@ -1,11 +1,10 @@
 {
-	"name": "@de100/form-echo",
-	"version": "0.0.8",
-	"description": "A form state management for fields validations and errors",
+	"name": "@de100/react-table-query",
+	"version": "0.0.6",
+	"description": "",
 	"keywords": [
-		"form",
-		"store",
-		"manage"
+		"table",
+		"query"
 	],
 	"author": {
 		"name": "Mazen Mohamed",
@@ -13,7 +12,6 @@
 		"url": "https://github.com/DreamEcho100/"
 	},
 	"license": "ISC",
-	"readme": "./README.md",
 	"sideEffects": false,
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
@@ -25,18 +23,23 @@
 		"build": "cross-env NODE_ENV=production tsup",
 		"dev": "pnpm run build -- --watch"
 	},
+	"dependencies": {
+		"@tanstack/react-query": "^4.29.5",
+		"@tanstack/react-table": "^8.9.0",
+		"@trpc/react-query": "^10.23.0",
+		"react": "^18.2.0",
+		"zustand": "^4.3.7"
+	},
 	"devDependencies": {
-		"@types/node": "^18.15.13",
-		"@types/react": "^18.0.38",
+		"@types/node": "^18.16.3",
+		"@types/react": "^18.2.0",
+		"@types/react-dom": "^18.2.1",
 		"cross-env": "^7.0.3",
 		"esbuild-plugin-external-global": "^1.0.1",
 		"eslint": "^8.39.0",
 		"eslint-config-custom": "workspace:*",
-		"react": "^18.2.0",
 		"tsconfig": "workspace:*",
 		"tsup": "^6.7.0",
-		"typescript": "^5.0.4",
-		"zod": "^3.21.4",
-		"zustand": "^4.3.7"
+		"typescript": "^5.0.4"
 	}
 }
