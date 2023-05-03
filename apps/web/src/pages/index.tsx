@@ -1,5 +1,11 @@
 import { Button } from 'ui';
-import { FormHTMLAttributes, InputHTMLAttributes, useId, useMemo } from 'react';
+import {
+	FormHTMLAttributes,
+	InputHTMLAttributes,
+	useEffect,
+	useId,
+	useMemo,
+} from 'react';
 import { z } from 'zod';
 import {
 	FormStoreApi,
@@ -99,10 +105,12 @@ const Example = () => {
 					username: 'Test',
 					counter: 1,
 					dateOfBirth: null, // new Date(),
+					testArr: [],
 				} as {
 					username: string;
 					counter: number;
 					dateOfBirth: null | Date;
+					testArr: string[];
 				},
 				validationHandler: {
 					counter: z.number().nonnegative(),
@@ -126,6 +134,19 @@ const Example = () => {
 	>['fields']['counter']['validation']['handler'];
 	type tt = ReturnType<t> extends number ? number : never;
 
+	const setFieldValue = useFormStore(
+		formStore,
+		(store) => store.utils.setFieldValue,
+	);
+	const testArr = useFormStore(
+		formStore,
+		(store) => store.fields.testArr.value,
+	);
+
+	useEffect(() => {
+		setFieldValue('username', (prev) => prev + ' 1?');
+	}, [setFieldValue]);
+
 	return (
 		<Form
 			store={formStore}
@@ -141,6 +162,35 @@ const Example = () => {
 			<FieldErrors store={formStore} name='counter' />
 			<InputField store={formStore} name='dateOfBirth' type='date' />
 			<FieldErrors store={formStore} name='dateOfBirth' />
+
+			<button
+				type='button'
+				onClick={() => {
+					setFieldValue('testArr', (prev) => [
+						Math.random().toString(36).slice(2),
+						...prev,
+					]);
+				}}
+			>
+				Add To Test Arr List
+			</button>
+			<ul>
+				{testArr.map((item) => (
+					<li key={item} className='flex justify-between gap-1'>
+						{item}{' '}
+						<button
+							type='button'
+							onClick={() => {
+								setFieldValue('testArr', (prev) =>
+									prev.filter((_item) => _item !== item),
+								);
+							}}
+						>
+							x
+						</button>
+					</li>
+				))}
+			</ul>
 			<button type='submit'>Submit</button>
 		</Form>
 	);
