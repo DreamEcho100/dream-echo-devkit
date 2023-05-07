@@ -3,7 +3,13 @@ import { type StoreApi, useStore } from 'zustand';
 import type { InfiniteQuery, TableStore } from '../utils/types';
 import { cx } from '../utils/internal';
 
-const TableLoadMore = <TData extends Record<string, unknown>>({
+const TableLoadMore = <
+	QueryItem extends Record<string, unknown>,
+	TableItem extends Record<
+		Exclude<string, keyof QueryItem> | keyof QueryItem,
+		unknown
+	>,
+>({
 	infiniteQuery,
 	store,
 	classNames = {
@@ -11,8 +17,8 @@ const TableLoadMore = <TData extends Record<string, unknown>>({
 		loadMoreButton: '',
 	},
 }: {
-	infiniteQuery: InfiniteQuery<TData>;
-	store: StoreApi<TableStore<TData>>;
+	infiniteQuery: InfiniteQuery<QueryItem>;
+	store: StoreApi<TableStore<TableItem>>;
 	classNames?: {
 		container: string;
 		loadMoreButton: string;

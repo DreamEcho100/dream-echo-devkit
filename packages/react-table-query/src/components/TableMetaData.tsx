@@ -6,7 +6,13 @@ import IoIosArrowBack from './icons/IoIosArrowBack';
 import IoMdRefresh from './icons/IoMdRefresh';
 import IoIosArrowForward from './icons/IoIosArrowForward';
 
-const TableMetaData = <TData extends Record<string, unknown>>({
+const TableMetaData = <
+	QueryItem extends Record<string, unknown>,
+	TableItem extends Record<
+		Exclude<string, keyof QueryItem> | keyof QueryItem,
+		unknown
+	>,
+>({
 	infiniteQuery,
 	store,
 	classNames = {
@@ -16,8 +22,8 @@ const TableMetaData = <TData extends Record<string, unknown>>({
 		nextPageButton: '',
 	},
 }: {
-	infiniteQuery: InfiniteQuery<TData>;
-	store: StoreApi<TableStore<TData>>;
+	infiniteQuery: InfiniteQuery<QueryItem>;
+	store: StoreApi<TableStore<TableItem>>;
 	classNames?: {
 		container: string;
 		refetchButton: string;

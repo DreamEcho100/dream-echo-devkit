@@ -2,16 +2,16 @@ import { createStore } from 'zustand';
 
 import type { TableStore, TableClassNames, PageViewMode } from './types';
 
-export const handleCreateStore = <TData extends Record<string, unknown>[]>({
+export const handleCreateStore = <TData extends Record<string, unknown>>({
 	filterByFormValues = {},
 	classNames,
 	pageViewMode = 'PAGING',
 }: {
-	filterByFormValues?: TableStore<TData[number]>['filterByFormValues'];
+	filterByFormValues?: TableStore<TData>['filterByFormValues'];
 	classNames?: TableClassNames;
 	pageViewMode?: PageViewMode;
 }) =>
-	createStore<TableStore<TData[number]>>((set) => ({
+	createStore<TableStore<TData>>((set) => ({
 		classNames,
 		table: null,
 		columnFilters: [],
@@ -24,22 +24,22 @@ export const handleCreateStore = <TData extends Record<string, unknown>[]>({
 
 		utils: {
 			incrementCurrentPageIndex: () =>
-				set((state: TableStore<TData[number]>) => ({
+				set((state: TableStore<TData>) => ({
 					currentPageIndex: state.currentPageIndex + 1,
 				})),
 			decrementCurrentPageIndex: () =>
-				set((state: TableStore<TData[number]>) => ({
+				set((state: TableStore<TData>) => ({
 					currentPageIndex: state.currentPageIndex - 1,
 				})),
 			setRowSelection: (updaterOrValue) =>
-				set((prevData: TableStore<TData[number]>) => ({
+				set((prevData: TableStore<TData>) => ({
 					rowSelection:
 						typeof updaterOrValue === 'function'
 							? updaterOrValue(prevData.rowSelection)
 							: updaterOrValue,
 				})),
 			setColumnFilters: (updaterOrValue) =>
-				set((prevData: TableStore<TData[number]>) => ({
+				set((prevData: TableStore<TData>) => ({
 					columnFilters:
 						typeof updaterOrValue === 'function'
 							? updaterOrValue(prevData.columnFilters)

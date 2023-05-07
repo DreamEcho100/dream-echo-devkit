@@ -43,14 +43,14 @@ function DebouncedInput({
 const isAFilter = (item: unknown): item is { [key: string]: TFilters } =>
 	!!(item && typeof item === 'object');
 
-function Filter<TData extends Record<string, unknown>>({
+function Filter<TableItem extends Record<string, unknown>>({
 	column,
 	// table,
 	store,
 }: {
-	column: Column<TData, unknown>;
-	table: Table<TData>;
-	store: StoreApi<TableStore<TData>>;
+	column: Column<TableItem, unknown>;
+	table: Table<TableItem>;
+	store: StoreApi<TableStore<TableItem>>;
 }) {
 	// const firstValue = useMemo(
 	// 	() => table.getPreFilteredRowModel().flatRows[0]?.getValue(column.id),
@@ -58,17 +58,17 @@ function Filter<TData extends Record<string, unknown>>({
 	// );
 	const filterByFormValues = useStore(
 		store,
-		(state: TableStore<TData>) => state.filterByFormValues,
+		(state: TableStore<TableItem>) => state.filterByFormValues,
 	);
 
 	const columnFilterValue = useMemo(() => column.getFilterValue(), [column]);
 	const remoteFilter = useStore(
 		store,
-		(state: TableStore<TData>) => state.remoteFilter,
+		(state: TableStore<TableItem>) => state.remoteFilter,
 	);
 	const { setFilterByFormValues } = useStore(
 		store,
-		(state: TableStore<TData>) => state.utils,
+		(state: TableStore<TableItem>) => state.utils,
 	);
 
 	const _filterByFormValues = isAFilter(filterByFormValues)
@@ -143,7 +143,7 @@ function Filter<TData extends Record<string, unknown>>({
 	*/
 }
 
-const StringFilter = <TData extends Record<string, unknown>>({
+const StringFilter = <TableItem extends Record<string, unknown>>({
 	column,
 	filterByFormValues,
 	// store,
@@ -151,12 +151,12 @@ const StringFilter = <TData extends Record<string, unknown>>({
 	remoteFilter,
 	setFilterByFormValues,
 }: {
-	column: Column<TData, unknown>;
+	column: Column<TableItem, unknown>;
 	filterByFormValues: TStringFilter;
-	store: StoreApi<TableStore<TData>>;
+	store: StoreApi<TableStore<TableItem>>;
 	columnFilterValue: unknown;
-	remoteFilter: TableStore<TData>['remoteFilter'];
-	setFilterByFormValues: TableStore<TData>['utils']['setFilterByFormValues'];
+	remoteFilter: TableStore<TableItem>['remoteFilter'];
+	setFilterByFormValues: TableStore<TableItem>['utils']['setFilterByFormValues'];
 } & Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange'>) => {
 	// const columnFilterValue = useMemo(() => column.getFilterValue(), [column]);
 	// const columnFilterValue = useMemo(() => column.getFilterValue(), [column]);
@@ -169,7 +169,7 @@ const StringFilter = <TData extends Record<string, unknown>>({
 		(value: string) => {
 			if (remoteFilter)
 				return setFilterByFormValues((prevData) => {
-					const filter = prevData[column.id as DeepKeys<TData>];
+					const filter = prevData[column.id as DeepKeys<TableItem>];
 
 					if (!filter) return prevData;
 

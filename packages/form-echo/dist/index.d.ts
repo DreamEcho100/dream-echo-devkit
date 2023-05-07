@@ -14,7 +14,6 @@ interface FieldMetadata<Name, Value> {
 }
 interface FieldValidation<Value> {
     handler: HandleValidation<Value>;
-    val?: Value;
     events: {
         [key in ValidationEvents]: {
             isActive: boolean;
@@ -64,7 +63,7 @@ interface FormStoreShape<PassedFields = TPassedFieldsShape, PassedValidatedField
         handleOnInputChange: (name: keyof PassedFields, value: unknown) => void;
         errorFormatter: (error: unknown, validationEvent: ValidationEvents) => string[];
         reInitFieldsValues: () => void;
-        setFieldValue: (name: keyof PassedFields, value: ((value: PassedFields[typeof name]) => PassedFields[typeof name]) | PassedFields[typeof name]) => void;
+        setFieldValue: <Name extends keyof PassedFields>(name: Name, value: ((value: PassedFields[Name]) => PassedFields[Name]) | Exclude<PassedFields[Name], (...args: any[]) => any>) => void;
         setFieldErrors: (params: {
             name: keyof PassedFields;
             errors: string[] | null;
@@ -76,11 +75,11 @@ interface FormStoreShape<PassedFields = TPassedFieldsShape, PassedValidatedField
             validationEventState: 'processing' | 'failed' | 'passed';
             fields: AllFieldsShape<PassedFields, PassedValidatedFields>[keyof PassedFields][];
         }) => unknown;
-        handleFieldValidation: (params: {
-            name: keyof PassedFields;
-            value: unknown;
+        handleFieldValidation: <Name extends keyof PassedFields>(params: {
+            name: Name;
+            value: unknown | ((value: PassedFields[Name]) => PassedFields[Name]);
             validationEvent: ValidationEvents;
-        }) => PassedFields[keyof PassedFields];
+        }) => Exclude<PassedFields[keyof PassedFields], (...args: any[]) => any>;
         handlePreSubmit: (cb?: THandlePreSubmitCB<PassedFields, PassedValidatedFields>) => (event: FormEvent<HTMLFormElement>) => void;
     };
 }

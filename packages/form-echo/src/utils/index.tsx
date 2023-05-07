@@ -267,17 +267,24 @@ export const createFormStore = <
 					);
 				});
 			},
-			handleFieldValidation: ({ name, validationEvent, value }) => {
+			handleFieldValidation: ({ name, validationEvent, value: _value }) => {
 				const currentState = get();
+
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				type DV = Exclude<PassedFields[typeof name], (...args: any[]) => any>;
+				const value =
+					typeof _value === 'function'
+						? (_value(currentState.fields[name].value) as DV)
+						: (_value as DV);
 
 				if (
 					!currentState.fields[name].validation.events[validationEvent].isActive
 				)
-					return value as PassedFields[typeof name];
+					return value;
 
 				const validationHandler = currentState.fields[name].validation.handler;
 
-				if (!validationHandler) return value as PassedFields[typeof name];
+				if (!validationHandler) return value;
 
 				const valueFromFieldToStore =
 					currentState.fields[name].valueFromFieldToStore;
@@ -302,7 +309,7 @@ export const createFormStore = <
 				if (currentState.isTrackingValidationHistory) {
 					try {
 						currentState.utils.createValidationHistoryRecord({
-							fields: [currentState.fields[name]],
+							fields: [currentState.fields[name as keyof PassedFields]],
 							validationEvent,
 							validationEventPhase: 'start',
 							validationEventState: 'processing',
@@ -320,7 +327,7 @@ export const createFormStore = <
 							});
 
 						currentState.utils.createValidationHistoryRecord({
-							fields: [currentState.fields[name]],
+							fields: [currentState.fields[name as keyof PassedFields]],
 							validationEvent,
 							validationEventPhase: 'end',
 							validationEventState: 'passed',
@@ -328,7 +335,7 @@ export const createFormStore = <
 					} catch (error) {
 						validatedValue = handleSetError(error);
 						currentState.utils.createValidationHistoryRecord({
-							fields: [currentState.fields[name]],
+							fields: [currentState.fields[name as keyof PassedFields]],
 							validationEvent,
 							validationEventPhase: 'end',
 							validationEventState: 'failed',
@@ -351,7 +358,7 @@ export const createFormStore = <
 					}
 				}
 
-				return validatedValue as PassedFields[typeof name];
+				return validatedValue as DV;
 			},
 			handlePreSubmit: (cb) => (event) => {
 				event.preventDefault();

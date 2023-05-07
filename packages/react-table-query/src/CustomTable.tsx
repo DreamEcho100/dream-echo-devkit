@@ -15,7 +15,7 @@ import type { HTMLProps } from 'react';
 
 import type { StoreApi } from 'zustand/vanilla';
 
-import { useEffect, useRef, useMemo, useLayoutEffect } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 
 import { useStore } from 'zustand';
 
@@ -43,15 +43,29 @@ function IndeterminateCheckbox({
 	return <input type='checkbox' ref={ref} className={className} {...props} />;
 }
 
-export const CustomTable = <TData extends Record<string, unknown>>({
+// reactTable?: Omit<
+// 	Table<QueryItem & TExtraData>,
+// 	| 'data'
+// 	| 'columns'
+// 	| 'state'
+// 	| 'onRowSelectionChange'
+// 	| 'onColumnFiltersChange'
+// 	| 'getCoreRowModel'
+// 	| 'getFilteredRowModel'
+// 	| 'columnResizeMode'
+// >;
+export const CustomTable = <
+	QueryItem extends Record<string, unknown>,
+	TableItem extends Record<Exclude<string, keyof QueryItem> | keyof QueryItem, unknown>,
+>({
 	infiniteQuery,
 	store,
 	canMultiRowSelect,
 	...props
 }: {
-	infiniteQuery: InfiniteQuery<TData>;
-	columns: ColumnDef<TData>[];
-	store: StoreApi<TableStore<TData>>;
+	infiniteQuery: InfiniteQuery<QueryItem>;
+	columns: ColumnDef<TableItem>[];
+	store: StoreApi<TableStore<TableItem>>;
 	canMultiRowSelect?: boolean;
 }) => {
 	const currentPageIndex = useStore(store, (state) => state.currentPageIndex);
@@ -77,11 +91,20 @@ export const CustomTable = <TData extends Record<string, unknown>>({
 		(state) => state.utils,
 	);
 
-	const columns: ColumnDef<TData>[] = useMemo(() => {
-		const columns: ColumnDef<TData>[] = [];
+	const columns: ColumnDef<TableItem>[] = useMemo(() => {
+		const columns: ColumnDef<TableItem>[] = [
+			...(props.columns.map((column) => ({
+				...column,
+				enableColumnFilter: !!(
+					(column as { accessorKey?: string }).accessorKey &&
+					filterersKeysMap[(column as { accessorKey: string }).accessorKey]
+				),
+			})) as ColumnDef<TableItem>[]),
+		];
 
 		if (canMultiRowSelect)
-			columns.push({
+			columns.unshift({
+				accessorKey: 'ROW_SELECT',
 				id: ROW_SELECT,
 				enableHiding: true,
 				header: ({ table }) => (
@@ -106,16 +129,7 @@ export const CustomTable = <TData extends Record<string, unknown>>({
 				),
 			});
 
-		return [
-			...columns,
-			...props.columns.map((column) => ({
-				...column,
-				enableColumnFilter: !!(
-					(column as { accessorKey?: string }).accessorKey &&
-					filterersKeysMap[(column as { accessorKey: string }).accessorKey]
-				),
-			})),
-		];
+		return columns;
 	}, [
 		canMultiRowSelect,
 		classNames?.tbody?.td?.checkboxContainer?._,
@@ -136,7 +150,7 @@ export const CustomTable = <TData extends Record<string, unknown>>({
 	}, [currentPageIndex, infiniteQuery.data?.pages, pageViewMode]);
 
 	const table = useReactTable({
-		data: currentPage,
+		data: currentPage as unknown as TableItem[],
 		columns,
 		state: { columnFilters, rowSelection },
 		onRowSelectionChange: setRowSelection,
@@ -145,14 +159,9 @@ export const CustomTable = <TData extends Record<string, unknown>>({
 		getFilteredRowModel: getFilteredRowModel(),
 		enableColumnResizing: true,
 		columnResizeMode: 'onChange',
-		debugAll: process.env!.NODE_ENV! === 'development',
-		// debugTable: process.env!.NODE_ENV! === 'development',
-		// debugHeaders: process.env!.NODE_ENV! === 'development',
-		// debugColumns: process.env!.NODE_ENV! === 'development',
-		// debugRows: process.env!.NODE_ENV! === 'development',
 	});
 
-	useLayoutEffect(() => {
+	useMemo(() => {
 		store.setState({ table });
 	}, [store, table]);
 
@@ -199,7 +208,7 @@ export const CustomTable = <TData extends Record<string, unknown>>({
 											)}
 											{header.column.getCanFilter() ? (
 												<div>
-													<Filter<TData>
+													<Filter<TableItem>
 														column={header.column}
 														table={table}
 														store={store}
@@ -229,7 +238,13 @@ export const CustomTable = <TData extends Record<string, unknown>>({
 			</thead>
 			<tbody
 				className={cx(classNames?.tbody?._)}
-				style={{ position: 'relative', isolation: 'isolate' }}
+				style={
+					infiniteQuery.isLoading ||
+					infiniteQuery.isFetchingNextPage ||
+					infiniteQuery.isFetchingPreviousPage
+						? { position: 'relative', isolation: 'isolate' }
+						: {}
+				}
 			>
 				{table.getHeaderGroups()[0] && (
 					<tr
