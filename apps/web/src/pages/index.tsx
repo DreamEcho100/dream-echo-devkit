@@ -10,10 +10,11 @@ import { z } from 'zod';
 import {
 	FormStoreApi,
 	HandlePreSubmitCB,
-	useFormStore,
-	createFormStore,
+	// useStore,
+	useCreateFormStore,
 	inputDateHelpers,
 } from '@de100/form-echo';
+import { useStore } from 'zustand';
 
 export type FormProps<Fields, ValidatedField> =
 	FormHTMLAttributes<HTMLFormElement> & {
@@ -26,7 +27,7 @@ export const Form = <Fields extends Record<string, unknown>, ValidatedField>({
 	handleOnSubmit,
 	...props
 }: FormProps<Fields, ValidatedField>) => {
-	const handlePreSubmit = useFormStore(
+	const handlePreSubmit = useStore(
 		store,
 		(state) => state.utils.handlePreSubmit,
 	);
@@ -43,8 +44,8 @@ const FieldErrors = <Fields extends Record<string, unknown>, ValidatedField>({
 	store,
 	name,
 }: FieldProps<Fields, ValidatedField>) => {
-	const isDirty = useFormStore(store, (store) => store.fields[name].isDirty);
-	const errors = useFormStore(store, (store) => store.fields[name].errors);
+	const isDirty = useStore(store, (store) => store.fields[name].isDirty);
+	const errors = useStore(store, (store) => store.fields[name].errors);
 
 	if (!isDirty) return <></>;
 
@@ -67,17 +68,17 @@ const InputField = <Fields extends Record<string, unknown>, ValidatedField>({
 	store,
 	...props
 }: InputFieldProps<Fields, ValidatedField>) => {
-	const value = useFormStore(store, (store) => {
+	const value = useStore(store, (store) => {
 		const field = store.fields[props.name];
 		return field.valueFromStoreToField
 			? field.valueFromStoreToField(field.value)
 			: field.value;
 	}) as string;
-	const metadata = useFormStore(
+	const metadata = useStore(
 		store,
 		(store) => store.fields[props.name].metadata,
 	);
-	const handleOnInputChange = useFormStore(
+	const handleOnInputChange = useStore(
 		store,
 		(store) => store.utils.handleOnInputChange,
 	);
@@ -97,51 +98,44 @@ const InputField = <Fields extends Record<string, unknown>, ValidatedField>({
 
 const Example = () => {
 	const baseId = useId();
-	const formStore = useMemo(
-		() =>
-			createFormStore({
-				baseId,
-				initValues: {
-					username: 'Test',
-					counter: 1,
-					dateOfBirth: null, // new Date(),
-					testArr: [],
-				} as {
-					username: string;
-					counter: number;
-					dateOfBirth: null | Date;
-					testArr: string[];
-				},
-				validationHandler: {
-					counter: z.number().nonnegative(),
-					dateOfBirth: z.date(),
-					username: (val: unknown) => z.string().min(1).max(4).parse(val),
-				},
-				valuesFromFieldsToStore: {
-					counter: (value) => Number(value),
-					dateOfBirth: (value) => inputDateHelpers.parseDate(value, 'date'),
-				},
-				valuesFromStoreToFields: {
-					dateOfBirth: (value) =>
-						value ? inputDateHelpers.formatDate(value, 'date') : '',
-				},
-				validationEvents: { change: true },
-			}),
-		[baseId],
-	);
+	const formStore = useCreateFormStore({
+		baseId,
+		initValues: {
+			username: 'Test',
+			counter: 1,
+			dateOfBirth: null, // new Date(),
+			testArr: [],
+		} as {
+			username: string;
+			counter: number;
+			dateOfBirth: null | Date;
+			testArr: string[];
+		},
+		validationHandler: {
+			counter: z.number().nonnegative(),
+			dateOfBirth: z.date(),
+			username: (val: unknown) => z.string().min(1).max(4).parse(val),
+		},
+		valuesFromFieldsToStore: {
+			counter: (value) => Number(value),
+			dateOfBirth: (value) => inputDateHelpers.parseDate(value, 'date'),
+		},
+		valuesFromStoreToFields: {
+			dateOfBirth: (value) =>
+				value ? inputDateHelpers.formatDate(value, 'date') : '',
+		},
+		validationEvents: { change: true },
+	});
 	type t = ReturnType<
 		(typeof formStore)['getState']
 	>['fields']['counter']['validation']['handler'];
 	type tt = ReturnType<t> extends number ? number : never;
 
-	const setFieldValue = useFormStore(
+	const setFieldValue = useStore(
 		formStore,
 		(store) => store.utils.setFieldValue,
 	);
-	const testArr = useFormStore(
-		formStore,
-		(store) => store.fields.testArr.value,
-	);
+	const testArr = useStore(formStore, (store) => store.fields.testArr.value);
 
 	useEffect(() => {
 		setFieldValue('username', (prev) => prev + ' 1?');

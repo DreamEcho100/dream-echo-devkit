@@ -11,7 +11,7 @@ import {
 	TableStore,
 	TableMetaData,
 	CustomTable,
-	handleCreateStore,
+	handleCreateTableStore,
 	TableLoadMore,
 } from '@de100/react-table-query';
 
@@ -86,7 +86,7 @@ const initialFilterByFormValues = {
 	// }
 } satisfies TableStore<Columns>['filterByFormValues'];
 
-const tableStore = handleCreateStore<Columns>({
+const tableStore = handleCreateTableStore<Columns>({
 	filterByFormValues: initialFilterByFormValues,
 	classNames: tableClassNames,
 	pageViewMode: 'INFINITE_SCROLL',
@@ -159,44 +159,59 @@ const Home = () => {
 	});
 
 	const columns = useMemo(
-		(): [
-			ColumnDef<Columns, Columns['id']>,
-			ColumnDef<Columns, Columns['title']>,
-			ColumnDef<Columns, Columns['description']>,
-			ColumnDef<Columns, Columns['category']>,
-			ColumnDef<Columns, Columns['price']>,
-		] => [
-			columnHelper.accessor('id', {
-				cell: (info) => info.getValue(),
-				header: (info) => <span className='capitalize'>{info.column.id}</span>,
-				footer: (info) => <span className='capitalize'>{info.column.id}</span>,
-				enableColumnFilter: false,
-			}),
-			columnHelper.accessor('title', {
-				cell: (info) => info.getValue(),
-				header: (info) => <span className='capitalize'>{info.column.id}</span>,
-				footer: (info) => <span className='capitalize'>{info.column.id}</span>,
-			}),
-			columnHelper.accessor('description', {
-				cell: (info) => (
-					<div className='aspect-video w-64 max-w-fit'>{info.getValue()}</div>
-				),
-				header: (info) => <span className='capitalize'>{info.column.id}</span>,
-				footer: (info) => <span className='capitalize'>{info.column.id}</span>,
-			}),
-			columnHelper.accessor('category', {
-				cell: (info) => info.getValue(),
-				header: (info) => <span className='capitalize'>{info.column.id}</span>,
-				footer: (info) => <span className='capitalize'>{info.column.id}</span>,
-			}),
-			columnHelper.accessor('price', {
-				cell: (info) => info.getValue(),
-				header: (info) => <span className='capitalize'>{info.column.id}</span>,
-				footer: (info) => <span className='capitalize'>{info.column.id}</span>,
-			}),
-		],
+		() =>
+			[
+				columnHelper.accessor('id', {
+					cell: (info) => info.getValue(),
+					header: (info) => (
+						<span className='capitalize'>{info.column.id}</span>
+					),
+					footer: (info) => (
+						<span className='capitalize'>{info.column.id}</span>
+					),
+					enableColumnFilter: false,
+				}),
+				columnHelper.accessor('title', {
+					cell: (info) => info.getValue(),
+					header: (info) => (
+						<span className='capitalize'>{info.column.id}</span>
+					),
+					footer: (info) => (
+						<span className='capitalize'>{info.column.id}</span>
+					),
+				}),
+				columnHelper.accessor('description', {
+					cell: (info) => (
+						<div className='aspect-video w-64 max-w-fit'>{info.getValue()}</div>
+					),
+					header: (info) => (
+						<span className='capitalize'>{info.column.id}</span>
+					),
+					footer: (info) => (
+						<span className='capitalize'>{info.column.id}</span>
+					),
+				}),
+				columnHelper.accessor('category', {
+					cell: (info) => info.getValue(),
+					header: (info) => (
+						<span className='capitalize'>{info.column.id}</span>
+					),
+					footer: (info) => (
+						<span className='capitalize'>{info.column.id}</span>
+					),
+				}),
+				columnHelper.accessor('price', {
+					cell: (info) => info.getValue(),
+					header: (info) => (
+						<span className='capitalize'>{info.column.id}</span>
+					),
+					footer: (info) => (
+						<span className='capitalize'>{info.column.id}</span>
+					),
+				}),
+			] as ColumnDef<Columns>[],
 		[],
-	) as ColumnDef<Product>[];
+	);
 
 	return (
 		<>
