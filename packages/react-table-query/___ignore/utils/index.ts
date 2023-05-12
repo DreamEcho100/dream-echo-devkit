@@ -4,29 +4,27 @@ import type { TableStore, TableClassNames, PageViewMode } from './types';
 import { useRef, useEffect } from 'react';
 
 export const handleCreateTableStore = <TData extends Record<string, unknown>>({
+	filterByFormValues = {},
 	classNames = {},
 	pageViewMode = 'PAGING',
-	canMultiRowSelect = false,
 	tableAutoToFixedOnLoad = false,
 }: {
+	filterByFormValues?: TableStore<TData>['filterByFormValues'];
 	classNames?: TableClassNames;
 	pageViewMode?: PageViewMode;
 	tableAutoToFixedOnLoad?: boolean;
-	canMultiRowSelect?: boolean;
 }) =>
 	createStore<TableStore<TData>>((set) => ({
-		table: null,
-
-		currentPageIndex: 0,
 		classNames,
-		pageViewMode,
-		canMultiRowSelect,
-		tableAutoToFixedOnLoad,
-
+		table: null,
 		columnFilters: [],
 		rowSelection: {},
-		columnVisibility: {},
-		sorting: [],
+		filterByFormValues,
+		debouncedValue: {},
+		currentPageIndex: 0,
+		remoteFilter: true,
+		pageViewMode,
+		tableAutoToFixedOnLoad,
 
 		utils: {
 			incrementCurrentPageIndex: () =>
@@ -51,19 +49,13 @@ export const handleCreateTableStore = <TData extends Record<string, unknown>>({
 							? updaterOrValue(prevData.columnFilters)
 							: updaterOrValue,
 				})),
-			setColumnVisibility: (updaterOrValue) =>
-				set((prevData: TableStore<TData>) => ({
-					columnVisibility:
-						typeof updaterOrValue === 'function'
-							? updaterOrValue(prevData.columnVisibility)
-							: updaterOrValue,
-				})),
-			setSorting: (updaterOrValue) =>
-				set((prevData: TableStore<TData>) => ({
-					sorting:
-						typeof updaterOrValue === 'function'
-							? updaterOrValue(prevData.sorting)
-							: updaterOrValue,
+			setFilterByFormValues: (updaterOrValue) =>
+				set((prevData) => ({
+					filterByFormValues: !prevData.filterByFormValues
+						? prevData.filterByFormValues
+						: typeof updaterOrValue === 'function'
+						? updaterOrValue(prevData.filterByFormValues)
+						: updaterOrValue,
 				})),
 		},
 	}));
