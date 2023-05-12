@@ -30,7 +30,7 @@ const isZodError = (error: unknown): error is ZodError => {
 	return error instanceof Object && 'errors' in error;
 };
 
-export const createFormStore = <
+export const handleCreateFormStore = <
 	PassedFields = Record<string, unknown>,
 	PassedValidationHandler = Record<keyof PassedFields, unknown>,
 >({
@@ -435,10 +435,10 @@ export const useCreateFormStore = <
 	PassedValidationHandler = Record<keyof PassedFields, unknown>,
 >(
 	props: Parameters<
-		typeof createFormStore<PassedFields, PassedValidationHandler>
+		typeof handleCreateFormStore<PassedFields, PassedValidationHandler>
 	>[0],
 ) => {
-	const formStoreRef = useRef(createFormStore(props));
+	const formStoreRef = useRef(handleCreateFormStore(props));
 	const configRef = useRef({
 		counter: 0,
 	});
@@ -447,7 +447,7 @@ export const useCreateFormStore = <
 		configRef.current.counter++;
 
 		if (configRef.current.counter === 1) return;
-		formStoreRef.current = createFormStore(props);
+		formStoreRef.current = handleCreateFormStore(props);
 	}, [props]);
 
 	return formStoreRef.current;

@@ -3,7 +3,7 @@ import { createStore } from 'zustand';
 import type { TableStore, TableClassNames, PageViewMode } from './types';
 import { useRef, useEffect } from 'react';
 
-export const handleCreateStore = <TData extends Record<string, unknown>>({
+export const handleCreateTableStore = <TData extends Record<string, unknown>>({
 	filterByFormValues = {},
 	classNames = {},
 	pageViewMode = 'PAGING',
@@ -61,16 +61,16 @@ export const handleCreateStore = <TData extends Record<string, unknown>>({
 	}));
 
 export const useCreateTableStore = <TData extends Record<string, unknown>>(
-	props: Parameters<typeof handleCreateStore<TData>>[0],
+	props: Parameters<typeof handleCreateTableStore<TData>>[0],
 ) => {
-	const formStoreRef = useRef(handleCreateStore(props));
+	const formStoreRef = useRef(handleCreateTableStore(props));
 	const configRef = useRef({ counter: 0 });
 
 	useEffect(() => {
 		configRef.current.counter++;
 
 		if (configRef.current.counter === 1) return;
-		formStoreRef.current = handleCreateStore(props);
+		formStoreRef.current = handleCreateTableStore(props);
 	}, [props]);
 
 	return formStoreRef.current;
