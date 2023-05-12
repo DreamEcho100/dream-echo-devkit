@@ -2,14 +2,14 @@ export { default as inputDateHelpers } from './inputDateHelpers';
 
 import type { ZodSchema, ZodError } from 'zod';
 
-import { useStore, createStore } from 'zustand';
+import { createStore } from 'zustand';
 
 import type {
-	FormStoreApi,
 	ValidationEvents,
 	CreateFormStoreProps,
 	CreateCreateFormStore,
 } from '../types';
+import { useRef, useEffect } from 'react';
 
 const generateUUIDV4 = () =>
 	'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -430,17 +430,25 @@ export const createFormStore = <
 	}));
 };
 
-export const useFormStore = <
-	fields extends Record<string, unknown>,
-	PassedValidatedFields,
-	U,
+export const useCreateFormStore = <
+	PassedFields = Record<string, unknown>,
+	PassedValidationHandler = Record<keyof PassedFields, unknown>,
 >(
-	store: FormStoreApi<fields, PassedValidatedFields>,
-	cb: (
-		state: FormStoreApi<fields, PassedValidatedFields> extends {
-			getState: () => infer T;
-		}
-			? T
-			: never,
-	) => U,
-) => useStore(store, cb);
+	props: Parameters<
+		typeof createFormStore<PassedFields, PassedValidationHandler>
+	>[0],
+) => {
+	const formStoreRef = useRef(createFormStore(props));
+	const configRef = useRef({
+		counter: 0,
+	});
+
+	useEffect(() => {
+		configRef.current.counter++;
+
+		if (configRef.current.counter === 1) return;
+		formStoreRef.current = createFormStore(props);
+	}, [props]);
+
+	return formStoreRef.current;
+};

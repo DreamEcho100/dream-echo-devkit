@@ -1,17 +1,22 @@
 {
 	"name": "@de100/react-table-query",
-	"version": "0.0.9",
+	"version": "0.0.9-canary.2",
 	"description": "",
 	"keywords": [
 		"table",
 		"query"
 	],
+	"license": "MIT",
 	"author": {
 		"name": "Mazen Mohamed",
 		"email": "maze6572198@gmail.com",
 		"url": "https://github.com/DreamEcho100/"
 	},
-	"license": "ISC",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/DreamEcho100/dream-echo-devkit.git",
+		"directory": "packages/react-table-query"
+	},
 	"sideEffects": false,
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",

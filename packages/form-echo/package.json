@@ -1,18 +1,23 @@
 {
 	"name": "@de100/form-echo",
-	"version": "0.0.8-canary.3",
+	"version": "0.0.8-canary.5",
 	"description": "A form state management for fields validations and errors",
 	"keywords": [
 		"form",
 		"store",
 		"manage"
 	],
+	"license": "MIT",
 	"author": {
 		"name": "Mazen Mohamed",
 		"email": "maze6572198@gmail.com",
 		"url": "https://github.com/DreamEcho100/"
 	},
-	"license": "ISC",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/DreamEcho100/dream-echo-devkit.git",
+		"directory": "packages/form-echo"
+	},
 	"readme": "./README.md",
 	"sideEffects": false,
 	"main": "./dist/index.js",

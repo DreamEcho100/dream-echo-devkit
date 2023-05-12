@@ -56,7 +56,10 @@ function IndeterminateCheckbox({
 // >;
 export const CustomTable = <
 	QueryItem extends Record<string, unknown>,
-	TableItem extends Record<Exclude<string, keyof QueryItem> | keyof QueryItem, unknown>,
+	TableItem extends Record<
+		Exclude<string, keyof QueryItem> | keyof QueryItem,
+		unknown
+	>,
 >({
 	infiniteQuery,
 	store,
@@ -73,6 +76,11 @@ export const CustomTable = <
 	const columnFilters = useStore(store, (state) => state.columnFilters);
 	const classNames = useStore(store, (state) => state.classNames);
 	const pageViewMode = useStore(store, (state) => state.pageViewMode);
+	const tableAutoToFixedOnLoad = useStore(
+		store,
+		(state) => state.tableAutoToFixedOnLoad,
+	);
+
 	const filterByFormValues = useStore(
 		store,
 		(state) => state.filterByFormValues,
@@ -92,7 +100,7 @@ export const CustomTable = <
 	);
 
 	const columns: ColumnDef<TableItem>[] = useMemo(() => {
-		const columns: ColumnDef<TableItem>[] = [
+		const columns = [
 			...(props.columns.map((column) => ({
 				...column,
 				enableColumnFilter: !!(
@@ -108,22 +116,22 @@ export const CustomTable = <
 				id: ROW_SELECT,
 				enableHiding: true,
 				header: ({ table }) => (
-					<div className={cx(classNames?.thead?.th?.checkboxContainer?._)}>
+					<div className={cx(classNames.thead?.th?.checkboxContainer?._)}>
 						<IndeterminateCheckbox
 							checked={table.getIsAllRowsSelected()}
 							indeterminate={table.getIsSomeRowsSelected()}
 							onChange={table.getToggleAllRowsSelectedHandler()}
-							className={cx(classNames?.thead?.th?.checkboxContainer?.checkBox)}
+							className={cx(classNames.thead?.th?.checkboxContainer?.checkBox)}
 						/>
 					</div>
 				),
 				cell: ({ row }) => (
-					<div className={cx(classNames?.tbody?.td?.checkboxContainer?._)}>
+					<div className={cx(classNames.tbody?.td?.checkboxContainer?._)}>
 						<IndeterminateCheckbox
 							checked={row.getIsSelected()}
 							indeterminate={row.getIsSomeSelected()}
 							onChange={row.getToggleSelectedHandler()}
-							className={cx(classNames?.tbody?.td?.checkboxContainer?.checkBox)}
+							className={cx(classNames.tbody?.td?.checkboxContainer?.checkBox)}
 						/>
 					</div>
 				),
@@ -132,10 +140,10 @@ export const CustomTable = <
 		return columns;
 	}, [
 		canMultiRowSelect,
-		classNames?.tbody?.td?.checkboxContainer?._,
-		classNames?.tbody?.td?.checkboxContainer?.checkBox,
-		classNames?.thead?.th?.checkboxContainer?._,
-		classNames?.thead?.th?.checkboxContainer?.checkBox,
+		classNames.tbody?.td?.checkboxContainer?._,
+		classNames.tbody?.td?.checkboxContainer?.checkBox,
+		classNames.thead?.th?.checkboxContainer?._,
+		classNames.thead?.th?.checkboxContainer?.checkBox,
 		filterersKeysMap,
 		props.columns,
 	]);
@@ -161,31 +169,44 @@ export const CustomTable = <
 		columnResizeMode: 'onChange',
 	});
 
+	const isLoading = useMemo(
+		() =>
+			infiniteQuery.isInitialLoading ||
+			infiniteQuery.isFetchingNextPage ||
+			infiniteQuery.isFetchingPreviousPage,
+		[
+			infiniteQuery.isFetchingNextPage,
+			infiniteQuery.isFetchingPreviousPage,
+			infiniteQuery.isInitialLoading,
+		],
+	);
+
 	useMemo(() => {
 		store.setState({ table });
 	}, [store, table]);
 
 	useEffect(() => {
-		if (infiniteQuery.isFetching && !infiniteQuery.isFetchingNextPage)
-			setRowSelection({});
-	}, [
-		infiniteQuery.isFetching,
-		infiniteQuery.isFetchingNextPage,
-		setRowSelection,
-	]);
+		if (infiniteQuery.isInitialLoading) setRowSelection({});
+	}, [infiniteQuery.isInitialLoading, setRowSelection]);
 
 	return (
 		<table
-			className={cx(classNames?.table)}
-			style={{ tableLayout: infiniteQuery.isLoading ? 'auto' : 'fixed' }}
+			className={cx(classNames.table)}
+			style={{
+				tableLayout: tableAutoToFixedOnLoad
+					? isLoading
+						? 'auto'
+						: 'fixed'
+					: undefined,
+			}}
 		>
-			<thead className={cx(classNames?.thead?._)}>
+			<thead className={cx(classNames.thead?._)}>
 				{table.getHeaderGroups().map((headerGroup) => (
-					<tr key={headerGroup.id} className={cx(classNames?.thead?.tr)}>
+					<tr key={headerGroup.id} className={cx(classNames.thead?.tr)}>
 						{headerGroup.headers.map((header) => (
 							<th
 								key={header.id}
-								className={cx(classNames?.thead?.th?._)}
+								className={cx(classNames.thead?.th?._)}
 								// header.column.getCanFilter() ? "px-8 py-6" : "px-8 py-4"
 								style={{
 									width:
@@ -197,7 +218,7 @@ export const CustomTable = <
 								}}
 							>
 								<div
-									className={cx(classNames?.thead?.th?.container)}
+									className={cx(classNames.thead?.th?.container)}
 									// header.column.getCanFilter() ? "gap-2" : ""
 								>
 									{header.isPlaceholder ? null : (
@@ -222,7 +243,7 @@ export const CustomTable = <
 									<div
 										onMouseDown={header.getResizeHandler()}
 										onTouchStart={header.getResizeHandler()}
-										className={cx(classNames?.thead?.th?.resizeController)}
+										className={cx(classNames.thead?.th?.resizeController)}
 										style={{
 											backgroundColor: header.column.getIsResizing()
 												? 'rgb(67 56 202 / var(--tw-bg-opacity, 1))'
@@ -237,22 +258,16 @@ export const CustomTable = <
 				))}
 			</thead>
 			<tbody
-				className={cx(classNames?.tbody?._)}
-				style={
-					infiniteQuery.isLoading ||
-					infiniteQuery.isFetchingNextPage ||
-					infiniteQuery.isFetchingPreviousPage
-						? { position: 'relative', isolation: 'isolate' }
-						: {}
-				}
+				className={cx(classNames.tbody?._)}
+				style={isLoading ? { position: 'relative', isolation: 'isolate' } : {}}
 			>
 				{table.getHeaderGroups()[0] && (
 					<tr
-						className={cx(classNames?.tbody?.loadingTr?._)}
+						className={cx(classNames.tbody?.loadingTr?._)}
 						style={
 							infiniteQuery.isFetching
 								? {
-										...(!infiniteQuery.isLoading
+										...(!infiniteQuery.isInitialLoading
 											? {
 													display: 'flex',
 													position: 'absolute',
@@ -275,7 +290,7 @@ export const CustomTable = <
 						{table.getHeaderGroups()[0]!.headers.map((headers) => (
 							<td
 								key={headers.id}
-								className={cx(classNames?.tbody?.loadingTr?.td)}
+								className={cx(classNames.tbody?.loadingTr?.td)}
 								style={
 									infiniteQuery.isFetching
 										? {
@@ -290,11 +305,11 @@ export const CustomTable = <
 					</tr>
 				)}
 				{table.getRowModel().rows.map((row) => (
-					<tr key={row.id} className={cx(classNames?.tbody?.tr)}>
+					<tr key={row.id} className={cx(classNames.tbody?.tr)}>
 						{row.getVisibleCells().map((cell) => (
 							<td
 								key={cell.id}
-								className={cx(classNames?.tbody?.td?._)}
+								className={cx(classNames.tbody?.td?._)}
 								style={{
 									width:
 										cell.column.id === ROW_SELECT
@@ -310,13 +325,13 @@ export const CustomTable = <
 					</tr>
 				))}
 			</tbody>
-			<tfoot className={cx(classNames?.tfoot?._)}>
+			<tfoot className={cx(classNames.tfoot?._)}>
 				{table.getFooterGroups().map((footerGroup) => (
-					<tr key={footerGroup.id} className={cx(classNames?.tfoot?.tr)}>
+					<tr key={footerGroup.id} className={cx(classNames.tfoot?.tr)}>
 						{footerGroup.headers.map((header) => (
 							<th
 								key={header.id}
-								className={cx(classNames?.tfoot?.th)}
+								className={cx(classNames.tfoot?.th)}
 								style={{ width: header.column.getSize() }}
 							>
 								{header.isPlaceholder

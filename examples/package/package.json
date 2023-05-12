@@ -6,12 +6,17 @@
 		"table",
 		"query"
 	],
+	"license": "MIT",
 	"author": {
 		"name": "Mazen Mohamed",
 		"email": "maze6572198@gmail.com",
 		"url": "https://github.com/DreamEcho100/"
 	},
-	"license": "ISC",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/DreamEcho100/dream-echo-devkit.git",
+		"directory": "packages/"
+	},
 	"sideEffects": false,
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",

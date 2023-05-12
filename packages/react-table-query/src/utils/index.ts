@@ -1,15 +1,18 @@
 import { createStore } from 'zustand';
 
 import type { TableStore, TableClassNames, PageViewMode } from './types';
+import { useRef, useEffect } from 'react';
 
 export const handleCreateStore = <TData extends Record<string, unknown>>({
 	filterByFormValues = {},
-	classNames,
+	classNames = {},
 	pageViewMode = 'PAGING',
+	tableAutoToFixedOnLoad = false,
 }: {
 	filterByFormValues?: TableStore<TData>['filterByFormValues'];
 	classNames?: TableClassNames;
 	pageViewMode?: PageViewMode;
+	tableAutoToFixedOnLoad?: boolean;
 }) =>
 	createStore<TableStore<TData>>((set) => ({
 		classNames,
@@ -21,6 +24,7 @@ export const handleCreateStore = <TData extends Record<string, unknown>>({
 		currentPageIndex: 0,
 		remoteFilter: true,
 		pageViewMode,
+		tableAutoToFixedOnLoad,
 
 		utils: {
 			incrementCurrentPageIndex: () =>
@@ -56,22 +60,18 @@ export const handleCreateStore = <TData extends Record<string, unknown>>({
 		},
 	}));
 
-/*
-function flattenArray<T>(arr: T[]): T[] {
-  const flattened: T[] = [];
-  let i = 0;
+export const useCreateTableStore = <TData extends Record<string, unknown>>(
+	props: Parameters<typeof handleCreateStore<TData>>[0],
+) => {
+	const formStoreRef = useRef(handleCreateStore(props));
+	const configRef = useRef({ counter: 0 });
 
-  while (i < arr.length) {
-    const item = arr[i];
-    if (Array.isArray(item)) {
-      arr.splice(i, 1, ...item);
-      i--;
-    } else {
-      flattened.push(item);
-    }
-    i++;
-  }
+	useEffect(() => {
+		configRef.current.counter++;
 
-  return flattened;
-}
-*/
+		if (configRef.current.counter === 1) return;
+		formStoreRef.current = handleCreateStore(props);
+	}, [props]);
+
+	return formStoreRef.current;
+};

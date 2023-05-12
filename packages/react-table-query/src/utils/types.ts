@@ -80,16 +80,17 @@ export type TableClassNames = {
 	tfoot?: { _?: string; tr?: string; th?: string };
 };
 
-export type PageViewMode = "PAGING" | "INFINITE_SCROLL"
+export type PageViewMode = 'PAGING' | 'INFINITE_SCROLL';
 
 export type TableStore<TData extends Record<string, unknown>> = {
 	table: Table<TData> | null;
-	classNames?: TableClassNames;
+	classNames: TableClassNames;
 	rowSelection: RowSelectionState;
 	columnFilters: ColumnFiltersState;
 	filterByFormValues: Partial<Record<DeepKeys<TData>, TFilters>>;
 	remoteFilter: boolean;
-	pageViewMode: PageViewMode
+	pageViewMode: PageViewMode;
+	tableAutoToFixedOnLoad: boolean;
 
 	debouncedValue: Record<string, unknown>;
 	currentPageIndex: number;
