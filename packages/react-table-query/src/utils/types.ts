@@ -1,3 +1,4 @@
+import { type UseInfiniteQueryResult } from '@tanstack/react-query';
 import {
 	type Table,
 	type RowSelectionState,
@@ -6,8 +7,29 @@ import {
 	type VisibilityState,
 	type ColumnDef,
 } from '@tanstack/react-table';
+import { type UseTRPCInfiniteQueryResult } from '@trpc/react-query/shared';
 import { type StoreApi } from 'zustand';
-import { type InfiniteQuery } from '../../dist';
+// import { type InfiniteQuery } from '../../dist';
+
+export type InfiniteQuery<TData> =
+	| UseInfiniteQueryResult<
+			{
+				items: TData[];
+			} & Record<string, unknown>,
+			{
+				message: string;
+			} & Record<string, unknown>
+	  >
+	| UseTRPCInfiniteQueryResult<
+			{
+				items: TData[];
+				nextCursor: unknown;
+			},
+			unknown
+			// {
+			//   message: string;
+			// } & Record<string, unknown>
+	  >;
 
 export type StoreUpdaterOrValue<TData, TableKey> =
 	TableKey extends keyof TableStore<TData>
@@ -47,12 +69,13 @@ export type TableClassNames = {
 			};
 		};
 	};
-	tfoot?: { _?: string; tr?: string; th?: string };
+	// tfoot?: { _?: string; tr?: string; th?: string };
 };
 
 export type TableStore<TData> = {
 	table: Table<TData> | null;
 
+	baseId: string;
 	currentPageIndex: number;
 	classNames: TableClassNames;
 	pageViewMode: PageViewMode;

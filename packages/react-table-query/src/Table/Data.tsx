@@ -24,14 +24,17 @@ import {
 
 const CustomTableHeader = <TData,>({
 	table,
+	store,
 }: CustomTableHeaderProps<TData>) => {
+	const classNames = useStore(store, (store) => store.classNames.thead);
+
 	return (
-		<TableHeader>
+		<TableHeader className={classNames?._}>
 			{table.getHeaderGroups().map((headerGroup) => (
-				<TableRow key={headerGroup.id}>
+				<TableRow key={headerGroup.id} className={classNames?.tr}>
 					{headerGroup.headers.map((header) => {
 						return (
-							<TableHead key={header.id}>
+							<TableHead key={header.id} className={classNames?.th?._}>
 								{header.isPlaceholder
 									? null
 									: flexRender(
@@ -50,22 +53,36 @@ const CustomTableHeader = <TData,>({
 const CustomTableBody = <TData,>({
 	table,
 	columnsLength,
+	store,
 }: CustomTableBodyProps<TData>) => {
+	const classNames = useStore(store, (store) => store.classNames.tbody);
+
 	return (
-		<TableBody>
-			{table.getRowModel().rows?.length ? (
+		<TableBody
+			className={classNames?._}
+			data-state={table.getRowModel().rows?.length > 0 ? undefined : 'empty'}
+		>
+			{table.getRowModel().rows?.length > 0 ? (
 				table.getRowModel().rows.map((row) => (
-					<TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+					<TableRow
+						key={row.id}
+						data-state={row.getIsSelected() && 'selected'}
+						className={classNames?.tr}
+					>
 						{row.getVisibleCells().map((cell) => (
-							<TableCell key={cell.id}>
+							<TableCell key={cell.id} className={classNames?.td?._}>
 								{flexRender(cell.column.columnDef.cell, cell.getContext())}
 							</TableCell>
 						))}
 					</TableRow>
 				))
 			) : (
-				<TableRow>
-					<TableCell colSpan={columnsLength} className='h-24 text-center'>
+				<TableRow data-state='empty'>
+					<TableCell
+						colSpan={columnsLength}
+						data-state='empty'
+						className='h-24 text-center'
+					>
 						No results.
 					</TableCell>
 				</TableRow>

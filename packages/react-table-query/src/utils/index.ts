@@ -1,21 +1,26 @@
 import { createStore } from 'zustand';
 
 import type { TableStore, TableClassNames, PageViewMode } from './types';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useId } from 'react';
+
+type HandleCreateTableStoreProps = {
+	classNames?: TableClassNames;
+	pageViewMode?: PageViewMode;
+	tableAutoToFixedOnLoad?: boolean;
+	canMultiRowSelect?: boolean;
+	baseId: string;
+};
 
 export const handleCreateTableStore = <TData extends Record<string, unknown>>({
 	classNames = {},
 	pageViewMode = 'PAGING',
 	canMultiRowSelect = false,
 	tableAutoToFixedOnLoad = false,
-}: {
-	classNames?: TableClassNames;
-	pageViewMode?: PageViewMode;
-	tableAutoToFixedOnLoad?: boolean;
-	canMultiRowSelect?: boolean;
-}) =>
+	baseId,
+}: HandleCreateTableStoreProps) =>
 	createStore<TableStore<TData>>((set) => ({
 		table: null,
+		baseId,
 
 		currentPageIndex: 0,
 		classNames,
@@ -69,17 +74,26 @@ export const handleCreateTableStore = <TData extends Record<string, unknown>>({
 	}));
 
 export const useCreateTableStore = <TData extends Record<string, unknown>>(
-	props: Parameters<typeof handleCreateTableStore<TData>>[0],
+	props: Omit<HandleCreateTableStoreProps, 'baseId'> & {
+		baseId?: HandleCreateTableStoreProps['baseId'];
+	},
 ) => {
-	const formStoreRef = useRef(handleCreateTableStore(props));
+	const baseId = useId();
+
+	const formStoreRef = useRef(
+		handleCreateTableStore<TData>({ ...props, baseId: props.baseId || baseId }),
+	);
 	const configRef = useRef({ counter: 0 });
 
 	useEffect(() => {
 		configRef.current.counter++;
 
 		if (configRef.current.counter === 1) return;
-		formStoreRef.current = handleCreateTableStore(props);
-	}, [props]);
+		formStoreRef.current = handleCreateTableStore<TData>({
+			...props,
+			baseId: props.baseId || baseId,
+		});
+	}, [baseId, props]);
 
 	return formStoreRef.current;
 };
