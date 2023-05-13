@@ -1,28 +1,27 @@
 import { createStore } from 'zustand';
 
-import type { TableStore, TableClassNames, PageViewMode } from './types';
-import { useRef, useEffect, useId } from 'react';
-
-type HandleCreateTableStoreProps = {
-	classNames?: TableClassNames;
-	pageViewMode?: PageViewMode;
-	tableAutoToFixedOnLoad?: boolean;
-	canMultiRowSelect?: boolean;
-	baseId: string;
-};
+import type { TableStore, HandleCreateTableStoreProps } from './types';
+import {
+	useRef,
+	// useEffect,
+	useId,
+} from 'react';
 
 export const handleCreateTableStore = <TData extends Record<string, unknown>>({
 	classNames = {},
 	pageViewMode = 'PAGING',
 	canMultiRowSelect = false,
 	tableAutoToFixedOnLoad = false,
-	baseId,
+	columnVisibility = {},
+	baseId = '',
+	pageSize,
 }: HandleCreateTableStoreProps) =>
 	createStore<TableStore<TData>>((set) => ({
 		table: null,
 		baseId,
 
-		currentPageIndex: 0,
+		pageIndex: 0,
+		pageSize,
 		classNames,
 		pageViewMode,
 		canMultiRowSelect,
@@ -30,41 +29,49 @@ export const handleCreateTableStore = <TData extends Record<string, unknown>>({
 
 		columnFilters: [],
 		rowSelection: {},
-		columnVisibility: {},
+		columnVisibility,
 		sorting: [],
 
 		utils: {
-			incrementCurrentPageIndex: () =>
-				set((state: TableStore<TData>) => ({
-					currentPageIndex: state.currentPageIndex + 1,
+			setPagination: (updaterOrValue) =>
+				set((prevData) => ({
+					...(typeof updaterOrValue === 'function'
+						? updaterOrValue({
+								pageIndex: prevData.pageIndex,
+								pageSize: prevData.pageSize,
+						  })
+						: updaterOrValue),
 				})),
-			decrementCurrentPageIndex: () =>
-				set((state: TableStore<TData>) => ({
-					currentPageIndex: state.currentPageIndex - 1,
+			setPageIndex: (updaterOrValue) =>
+				set((prevData) => ({
+					pageIndex:
+						typeof updaterOrValue === 'function'
+							? updaterOrValue(prevData.pageIndex)
+							: updaterOrValue,
 				})),
 			setRowSelection: (updaterOrValue) =>
-				set((prevData: TableStore<TData>) => ({
+				set((prevData) => ({
 					rowSelection:
 						typeof updaterOrValue === 'function'
 							? updaterOrValue(prevData.rowSelection)
 							: updaterOrValue,
 				})),
 			setColumnFilters: (updaterOrValue) =>
-				set((prevData: TableStore<TData>) => ({
+				set((prevData) => ({
 					columnFilters:
 						typeof updaterOrValue === 'function'
 							? updaterOrValue(prevData.columnFilters)
 							: updaterOrValue,
 				})),
 			setColumnVisibility: (updaterOrValue) =>
-				set((prevData: TableStore<TData>) => ({
+				set((prevData) => ({
 					columnVisibility:
 						typeof updaterOrValue === 'function'
 							? updaterOrValue(prevData.columnVisibility)
 							: updaterOrValue,
 				})),
 			setSorting: (updaterOrValue) =>
-				set((prevData: TableStore<TData>) => ({
+				set((prevData) => ({
 					sorting:
 						typeof updaterOrValue === 'function'
 							? updaterOrValue(prevData.sorting)
@@ -80,20 +87,20 @@ export const useCreateTableStore = <TData extends Record<string, unknown>>(
 ) => {
 	const baseId = useId();
 
-	const formStoreRef = useRef(
+	const storeRef = useRef(
 		handleCreateTableStore<TData>({ ...props, baseId: props.baseId || baseId }),
 	);
-	const configRef = useRef({ counter: 0 });
+	// const configRef = useRef({ counter: 0 });
 
-	useEffect(() => {
-		configRef.current.counter++;
+	// useEffect(() => {
+	// 	configRef.current.counter++;
 
-		if (configRef.current.counter === 1) return;
-		formStoreRef.current = handleCreateTableStore<TData>({
-			...props,
-			baseId: props.baseId || baseId,
-		});
-	}, [baseId, props]);
+	// 	if (configRef.current.counter === 1) return;
+	// 	storeRef.current = handleCreateTableStore<TData>({
+	// 		...props,
+	// 		baseId: props.baseId || baseId,
+	// 	});
+	// }, [baseId, props]);
 
-	return formStoreRef.current;
+	return storeRef.current;
 };

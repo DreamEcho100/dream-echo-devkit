@@ -9,7 +9,7 @@ import type {
 	CreateFormStoreProps,
 	CreateCreateFormStore,
 } from '../types';
-import { useRef, useEffect } from 'react';
+import { useRef, useId } from 'react';
 
 const generateUUIDV4 = () =>
 	'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -434,21 +434,20 @@ export const useCreateFormStore = <
 	PassedFields = Record<string, unknown>,
 	PassedValidationHandler = Record<keyof PassedFields, unknown>,
 >(
-	props: Parameters<
-		typeof handleCreateFormStore<PassedFields, PassedValidationHandler>
-	>[0],
+	props: Omit<
+		CreateFormStoreProps<PassedFields, PassedValidationHandler>,
+		'baseId'
+	> & {
+		baseId?: CreateFormStoreProps<
+			PassedFields,
+			PassedValidationHandler
+		>['baseId'];
+	},
 ) => {
-	const formStoreRef = useRef(handleCreateFormStore(props));
-	const configRef = useRef({
-		counter: 0,
-	});
-
-	useEffect(() => {
-		configRef.current.counter++;
-
-		if (configRef.current.counter === 1) return;
-		formStoreRef.current = handleCreateFormStore(props);
-	}, [props]);
+	const baseId = useId();
+	const formStoreRef = useRef(
+		handleCreateFormStore({ ...props, baseId: props.baseId || baseId }),
+	);
 
 	return formStoreRef.current;
 };

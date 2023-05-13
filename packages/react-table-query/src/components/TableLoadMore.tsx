@@ -3,13 +3,7 @@ import { type StoreApi, useStore } from 'zustand';
 import type { InfiniteQuery, TableStore } from '../utils/types';
 import { cx } from '../utils/internal';
 
-const TableLoadMore = <
-	QueryItem extends Record<string, unknown>,
-	TableItem extends Record<
-		Exclude<string, keyof QueryItem> | keyof QueryItem,
-		unknown
-	>,
->({
+const TableLoadMore = <TData, TValue>({
 	infiniteQuery,
 	store,
 	classNames = {
@@ -17,8 +11,8 @@ const TableLoadMore = <
 		loadMoreButton: '',
 	},
 }: {
-	infiniteQuery: InfiniteQuery<QueryItem>;
-	store: StoreApi<TableStore<TableItem>>;
+	infiniteQuery: InfiniteQuery<TData>;
+	store: StoreApi<TableStore<TValue>>;
 	classNames?: {
 		container: string;
 		loadMoreButton: string;
@@ -26,7 +20,7 @@ const TableLoadMore = <
 }) => {
 	const pageIndex = useStore(store, (state) => state.pageIndex);
 
-	const { incrementCurrentPageIndex } = useStore(store, (state) => state.utils);
+	const storeUtils = useStore(store, (state) => state.utils);
 
 	const { isLastPageEmpty, isInBeforeLastPage } = useMemo(() => {
 		const isLastPageEmpty =
@@ -90,7 +84,7 @@ const TableLoadMore = <
 								return;
 						}
 
-						incrementCurrentPageIndex();
+						storeUtils.setPageIndex((pageIndex) => pageIndex + 1);
 					});
 				}}
 				className={cx(classNames?.loadMoreButton)}

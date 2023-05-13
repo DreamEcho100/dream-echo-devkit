@@ -93,7 +93,7 @@ export type TableStore<TData extends Record<string, unknown>> = {
 	tableAutoToFixedOnLoad: boolean;
 
 	debouncedValue: Record<string, unknown>;
-	currentPageIndex: number;
+	pageIndex: number;
 
 	utils: {
 		incrementCurrentPageIndex: () => unknown;

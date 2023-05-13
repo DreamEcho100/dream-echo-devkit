@@ -1,39 +1,20 @@
 import * as zustand from 'zustand';
 import { StoreApi } from 'zustand';
 import { UseInfiniteQueryResult } from '@tanstack/react-query';
+import { Table, RowSelectionState, SortingState, ColumnFiltersState, VisibilityState, ColumnDef } from '@tanstack/react-table';
 import { UseTRPCInfiniteQueryResult } from '@trpc/react-query/shared';
-import * as _tanstack_react_table from '@tanstack/react-table';
-import { Table, RowSelectionState, ColumnFiltersState, DeepKeys, ColumnDef } from '@tanstack/react-table';
 import * as react_jsx_runtime from 'react/jsx-runtime';
-import { StoreApi as StoreApi$1 } from 'zustand/vanilla';
 
-type TStringFilter = {
-    dataType: 'text';
-    filterType: 'CONTAINS';
-    value?: string;
-    constraints?: {
-        min?: number;
-        max?: number;
-    };
-};
-type TNumberFilter = {
-    dataType: 'number';
-    constraints?: {
-        min?: number;
-        max?: number;
-    };
-} & ({
-    filterType: 'EQUAL' | 'NOT_EQUAL' | 'GREATER_THAN' | 'GREATER_THAN_OR_EQUAL' | 'LESS_THAN' | 'LESS_THAN_OR_EQUAL';
-    value?: number;
-} | {
-    filterType: 'RANGE';
-    value?: {
-        min?: number;
-        max?: number;
-    };
-});
-type TFilters = TStringFilter | TNumberFilter;
-type StoreUpdaterOrValue<TData extends Record<string, unknown>, TableKey extends keyof TableStore<TData>> = TableStore<TData>[TableKey] | ((prevData: TableStore<TData>[TableKey]) => TableStore<TData>[TableKey]);
+type InfiniteQuery<TData> = UseInfiniteQueryResult<{
+    items: TData[];
+} & Record<string, unknown>, {
+    message: string;
+} & Record<string, unknown>> | UseTRPCInfiniteQueryResult<{
+    items: TData[];
+    nextCursor: unknown;
+}, unknown>;
+type StoreUpdaterOrValue<TData, TableKey> = TableKey extends keyof TableStore<TData> ? TableStore<TData>[TableKey] | ((prevData: TableStore<TData>[TableKey]) => TableStore<TData>[TableKey]) : never;
+type PageViewMode = 'PAGING' | 'INFINITE_SCROLL';
 type TableClassNames = {
     table?: string;
     thead?: {
@@ -64,79 +45,73 @@ type TableClassNames = {
             };
         };
     };
-    tfoot?: {
-        _?: string;
-        tr?: string;
-        th?: string;
-    };
 };
-type PageViewMode = 'PAGING' | 'INFINITE_SCROLL';
-type TableStore<TData extends Record<string, unknown>> = {
+type TableStore<TData> = {
     table: Table<TData> | null;
+    baseId: string;
+    pageIndex: number;
+    pageSize: number;
     classNames: TableClassNames;
-    rowSelection: RowSelectionState;
-    columnFilters: ColumnFiltersState;
-    filterByFormValues: Partial<Record<DeepKeys<TData>, TFilters>>;
-    remoteFilter: boolean;
     pageViewMode: PageViewMode;
     tableAutoToFixedOnLoad: boolean;
-    debouncedValue: Record<string, unknown>;
-    currentPageIndex: number;
+    canMultiRowSelect: boolean;
+    rowSelection: RowSelectionState;
+    sorting: SortingState;
+    columnFilters: ColumnFiltersState;
+    columnVisibility: VisibilityState;
     utils: {
-        incrementCurrentPageIndex: () => unknown;
-        decrementCurrentPageIndex: () => unknown;
+        setPageIndex: (updaterOrValue: StoreUpdaterOrValue<TData, 'pageIndex'>) => void;
+        setPagination: (updaterOrValue: {
+            pageIndex: number;
+            pageSize: number;
+        } | ((pagination: {
+            pageIndex: number;
+            pageSize: number;
+        }) => void)) => void;
         setRowSelection: (updaterOrValue: StoreUpdaterOrValue<TData, 'rowSelection'>) => void;
+        setSorting: (updaterOrValue: StoreUpdaterOrValue<TData, 'sorting'>) => void;
         setColumnFilters: (updaterOrValue: StoreUpdaterOrValue<TData, 'columnFilters'>) => void;
-        setFilterByFormValues: (updaterOrValue: StoreUpdaterOrValue<TData, 'filterByFormValues'>) => void;
+        setColumnVisibility: (updaterOrValue: StoreUpdaterOrValue<TData, 'columnVisibility'>) => void;
     };
 };
-type InfiniteQuery<TData> = UseInfiniteQueryResult<{
-    items: TData[];
-} & Record<string, unknown>, {
-    message: string;
-} & Record<string, unknown>> | UseTRPCInfiniteQueryResult<{
-    items: TData[];
-    nextCursor: unknown;
-}, unknown>;
+type HandleCreateTableStoreProps = {
+    classNames?: TableClassNames;
+    pageViewMode?: PageViewMode;
+    columnVisibility?: VisibilityState;
+    tableAutoToFixedOnLoad?: boolean;
+    canMultiRowSelect?: boolean;
+    baseId?: string;
+    pageSize: number;
+};
+interface DataTableProps<TData, TValue> {
+    columns: ColumnDef<TData, TValue>[];
+    infiniteQuery: InfiniteQuery<TData>;
+    store: StoreApi<TableStore<TData>>;
+}
+type CustomTableBodyProps<TData> = {
+    table: Table<TData>;
+    columnsLength: number;
+    store: StoreApi<TableStore<TData>>;
+};
+type CustomTableHeaderProps<TData> = {
+    table: Table<TData>;
+    store: StoreApi<TableStore<TData>>;
+};
 
-declare const handleCreateTableStore: <TData extends Record<string, unknown>>({ filterByFormValues, classNames, pageViewMode, tableAutoToFixedOnLoad, }: {
-    filterByFormValues?: Partial<Record<_tanstack_react_table.DeepKeys<TData>, TFilters>> | undefined;
-    classNames?: TableClassNames | undefined;
-    pageViewMode?: PageViewMode | undefined;
-    tableAutoToFixedOnLoad?: boolean | undefined;
+declare const handleCreateTableStore: <TData extends Record<string, unknown>>({ classNames, pageViewMode, canMultiRowSelect, tableAutoToFixedOnLoad, columnVisibility, baseId, pageSize, }: HandleCreateTableStoreProps) => zustand.StoreApi<TableStore<TData>>;
+declare const useCreateTableStore: <TData extends Record<string, unknown>>(props: Omit<HandleCreateTableStoreProps, 'baseId'> & {
+    baseId?: HandleCreateTableStoreProps['baseId'];
 }) => zustand.StoreApi<TableStore<TData>>;
-declare const useCreateTableStore: <TData extends Record<string, unknown>>(props: {
-    filterByFormValues?: Partial<Record<_tanstack_react_table.DeepKeys<TData>, TFilters>> | undefined;
-    classNames?: TableClassNames | undefined;
-    pageViewMode?: PageViewMode | undefined;
-    tableAutoToFixedOnLoad?: boolean | undefined;
-}) => zustand.StoreApi<TableStore<TData>>;
 
-declare const TableMetaData: <QueryItem extends Record<string, unknown>, TableItem extends Record<keyof QueryItem | Exclude<string, keyof QueryItem>, unknown>>({ infiniteQuery, store, classNames, }: {
-    infiniteQuery: InfiniteQuery<QueryItem>;
-    store: StoreApi<TableStore<TableItem>>;
-    classNames?: {
-        container: string;
-        refetchButton: string;
-        previousPageButton: string;
-        nextPageButton: string;
-    } | undefined;
-}) => react_jsx_runtime.JSX.Element;
-
-declare const TableLoadMore: <QueryItem extends Record<string, unknown>, TableItem extends Record<keyof QueryItem | Exclude<string, keyof QueryItem>, unknown>>({ infiniteQuery, store, classNames, }: {
-    infiniteQuery: InfiniteQuery<QueryItem>;
-    store: StoreApi<TableStore<TableItem>>;
+declare const TableLoadMore: <TData, TValue>({ infiniteQuery, store, classNames, }: {
+    infiniteQuery: InfiniteQuery<TData>;
+    store: StoreApi<TableStore<TValue>>;
     classNames?: {
         container: string;
         loadMoreButton: string;
     } | undefined;
 }) => react_jsx_runtime.JSX.Element;
 
-declare const CustomTable: <QueryItem extends Record<string, unknown>, TableItem extends Record<keyof QueryItem | Exclude<string, keyof QueryItem>, unknown>>({ infiniteQuery, store, canMultiRowSelect, ...props }: {
-    infiniteQuery: InfiniteQuery<QueryItem>;
-    columns: ColumnDef<TableItem>[];
-    store: StoreApi$1<TableStore<TableItem>>;
-    canMultiRowSelect?: boolean | undefined;
-}) => react_jsx_runtime.JSX.Element;
+declare const QueryTable: <TData, TValue>({ columns, store, infiniteQuery, }: DataTableProps<TData, TValue>) => react_jsx_runtime.JSX.Element;
 
-export { CustomTable, InfiniteQuery, PageViewMode, StoreUpdaterOrValue, TFilters, TStringFilter, TableClassNames, TableLoadMore, TableMetaData, TableStore, handleCreateTableStore, useCreateTableStore };
+export { CustomTableBodyProps, CustomTableHeaderProps, DataTableProps, HandleCreateTableStoreProps, InfiniteQuery, PageViewMode, QueryTable, StoreUpdaterOrValue, TableClassNames, TableLoadMore, TableStore, handleCreateTableStore, useCreateTableStore };

@@ -31,7 +31,7 @@ const TableMetaData = <
 		nextPageButton: string;
 	};
 }) => {
-	const currentPageIndex = useStore(store, (state) => state.currentPageIndex);
+	const pageIndex = useStore(store, (state) => state.pageIndex);
 
 	const {
 		incrementCurrentPageIndex,
@@ -50,13 +50,13 @@ const TableMetaData = <
 			infiniteQuery?.data?.pages?.[infiniteQuery.data.pages.length - 1]?.items
 				.length === 0;
 
-		// const isInFirstPage = currentPageIndex === 0;
+		// const isInFirstPage = pageIndex === 0;
 		// const isInLastPage =
-		// 	currentPageIndex + 1 === infiniteQuery?.data?.pages?.length;
+		// 	pageIndex + 1 === infiniteQuery?.data?.pages?.length;
 		const isInBeforeLastPage =
 			typeof infiniteQuery?.data?.pages?.length === 'number' &&
 			infiniteQuery.data.pages.length !== 0 &&
-			currentPageIndex + 1 === infiniteQuery.data.pages.length - 1;
+			pageIndex + 1 === infiniteQuery.data.pages.length - 1;
 
 		let pagesLength = infiniteQuery?.data?.pages?.length || 0;
 		if (isLastPageEmpty && pagesLength !== 0) pagesLength--;
@@ -67,16 +67,16 @@ const TableMetaData = <
 			// isInFirstPage,
 			pagesLength,
 		};
-	}, [currentPageIndex, infiniteQuery?.data?.pages]);
+	}, [pageIndex, infiniteQuery?.data?.pages]);
 
 	const isNextPageDisabled = useMemo(
 		() =>
 			(!infiniteQuery.hasNextPage &&
-				currentPageIndex + 1 === infiniteQuery.data?.pages.length) ||
+				pageIndex + 1 === infiniteQuery.data?.pages.length) ||
 			infiniteQuery.isFetching ||
 			(isInBeforeLastPage && isLastPageEmpty),
 		[
-			currentPageIndex,
+			pageIndex,
 			infiniteQuery.data?.pages.length,
 			infiniteQuery.hasNextPage,
 			infiniteQuery.isFetching,
@@ -86,8 +86,8 @@ const TableMetaData = <
 	);
 
 	const isPreviousPageDisabled = useMemo(
-		() => currentPageIndex === 0 || infiniteQuery.isFetching,
-		[currentPageIndex, infiniteQuery.isFetching],
+		() => pageIndex === 0 || infiniteQuery.isFetching,
+		[pageIndex, infiniteQuery.isFetching],
 	);
 
 	const onPageChange = useCallback(() => {
@@ -109,7 +109,7 @@ const TableMetaData = <
 				<IoMdRefresh style={{ background: 'transparent', fontSize: '120%' }} />
 			</button>
 			<p title='page/Loaded Pages'>
-				{currentPageIndex + 1}/{pagesLength}
+				{pageIndex + 1}/{pagesLength}
 			</p>
 			<button
 				title={

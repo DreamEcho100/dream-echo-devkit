@@ -200,6 +200,8 @@ declare const inputDateHelpers: {
 };
 
 declare const handleCreateFormStore: <PassedFields = Record<string, unknown>, PassedValidationHandler = Record<keyof PassedFields, unknown>>({ isUpdatingFieldsValueOnError, trackValidationHistory, valuesFromFieldsToStore, valuesFromStoreToFields, validationHandler, ...params }: CreateFormStoreProps<PassedFields, PassedValidationHandler>) => zustand.StoreApi<CreateCreateFormStore<PassedFields, PassedValidationHandler>>;
-declare const useCreateFormStore: <PassedFields = Record<string, unknown>, PassedValidationHandler = Record<keyof PassedFields, unknown>>(props: CreateFormStoreProps<PassedFields, PassedValidationHandler>) => zustand.StoreApi<CreateCreateFormStore<PassedFields, PassedValidationHandler>>;
+declare const useCreateFormStore: <PassedFields = Record<string, unknown>, PassedValidationHandler = Record<keyof PassedFields, unknown>>(props: Omit<CreateFormStoreProps<PassedFields, PassedValidationHandler>, "baseId"> & {
+    baseId?: string | boolean | undefined;
+}) => zustand.StoreApi<CreateCreateFormStore<PassedFields, PassedValidationHandler>>;
 
 export { AllFieldsShape, CreateCreateFormStore, CreateFormStoreProps, CreateStoreValidationHandler, FieldIsDirtyErrorsAndValidation, FieldMetadata, FieldShape, FieldValidation, FormMetadata, FormStoreApi, FormStoreErrors, FormStoreShape, FormStoreValues, GetFieldsValueFromValidationHandler, GetPassedValidationFieldsValues, HandlePreSubmitCB, HandleValidation, InputDateTypes, THandlePreSubmitCB, ValidationEvents, ValidationHandler, handleCreateFormStore, inputDateHelpers, useCreateFormStore };

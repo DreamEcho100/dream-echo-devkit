@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { type HTMLProps, useEffect, useMemo, useRef } from 'react';
 import {
 	flexRender,
 	getCoreRowModel,
@@ -20,7 +20,8 @@ import {
 	type CustomTableHeaderProps,
 	type CustomTableBodyProps,
 	type DataTableProps,
-} from '../utils/types';
+} from '../../utils/types';
+import { cx } from '../../utils/internal';
 
 const CustomTableHeader = <TData,>({
 	table,
@@ -34,7 +35,15 @@ const CustomTableHeader = <TData,>({
 				<TableRow key={headerGroup.id} className={classNames?.tr}>
 					{headerGroup.headers.map((header) => {
 						return (
-							<TableHead key={header.id} className={classNames?.th?._}>
+							<TableHead
+								key={header.id}
+								className={cx(
+									header.id === 'select'
+										? 'data-[select-th="true"]'
+										: undefined,
+									classNames?.th?._,
+								)}
+							>
 								{header.isPlaceholder
 									? null
 									: flexRender(
@@ -70,7 +79,13 @@ const CustomTableBody = <TData,>({
 						className={classNames?.tr}
 					>
 						{row.getVisibleCells().map((cell) => (
-							<TableCell key={cell.id} className={classNames?.td?._}>
+							<TableCell
+								key={cell.id}
+								className={cx(
+									cell.id === 'select' ? 'data-[select-th="true"]' : undefined,
+									classNames?.td?._,
+								)}
+							>
 								{flexRender(cell.column.columnDef.cell, cell.getContext())}
 							</TableCell>
 						))}
@@ -91,11 +106,29 @@ const CustomTableBody = <TData,>({
 	);
 };
 
-export function DataTable<TData, TValue>({
+const IndeterminateCheckbox = ({
+	indeterminate,
+	className = '',
+	...props
+}: { indeterminate?: boolean } & HTMLProps<HTMLInputElement>) => {
+	const ref = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		if (!ref.current) return;
+
+		if (typeof indeterminate === 'boolean') {
+			ref.current.indeterminate = !props.checked && indeterminate;
+		}
+	}, [indeterminate, props.checked]);
+
+	return <input type='checkbox' ref={ref} className={className} {...props} />;
+};
+
+const QueryTable = <TData, TValue>({
 	columns,
 	store,
 	infiniteQuery,
-}: DataTableProps<TData, TValue>) {
+}: DataTableProps<TData, TValue>) => {
 	//
 	const sorting = useStore(store, (store) => store.sorting);
 	const columnFilters = useStore(store, (store) => store.columnFilters);
@@ -104,7 +137,7 @@ export function DataTable<TData, TValue>({
 	const storeUtils = useStore(store, (store) => store.utils);
 	const pageViewMode = useStore(store, (state) => state.pageViewMode);
 	//
-	const currentPageIndex = useStore(store, (state) => state.currentPageIndex);
+	const pageIndex = useStore(store, (state) => state.pageIndex);
 	const canMultiRowSelect = useStore(store, (state) => state.canMultiRowSelect);
 
 	const modifiedColumns: typeof columns = useMemo(() => {
@@ -112,21 +145,19 @@ export function DataTable<TData, TValue>({
 			{
 				id: 'select',
 				header: ({ table }) => (
-					<input
-						type='checkbox'
-						checked={table.getIsAllPageRowsSelected()}
-						onChange={(event) =>
-							table.toggleAllPageRowsSelected(!!event.target.checked)
-						}
-						aria-label='Select all'
+					<IndeterminateCheckbox
+						checked={table.getIsAllRowsSelected()}
+						indeterminate={table.getIsSomeRowsSelected()}
+						onChange={table.getToggleAllRowsSelectedHandler()}
+						// className={cx(classNames.thead?.th?.checkboxContainer?.checkBox)}
 					/>
 				),
 				cell: ({ row }) => (
-					<input
-						type='checkbox'
+					<IndeterminateCheckbox
 						checked={row.getIsSelected()}
-						onChange={(event) => row.toggleSelected(!!event.target.checked)}
-						aria-label='Select row'
+						indeterminate={row.getIsSomeSelected()}
+						onChange={row.getToggleSelectedHandler()}
+						// className={cx(classNames.tbody?.td?.checkboxContainer?.checkBox)}
 					/>
 				),
 				enableSorting: false,
@@ -136,14 +167,23 @@ export function DataTable<TData, TValue>({
 		];
 	}, [columns, canMultiRowSelect]);
 
+	const defaultPage = useMemo(() => [], []);
 	const currentPage = useMemo(() => {
 		if (pageViewMode === 'INFINITE_SCROLL')
-			return (infiniteQuery?.data?.pages || [])
+			return (infiniteQuery?.data?.pages || defaultPage)
 				.map((page) => page.items)
 				.flat(1);
 
-		return infiniteQuery?.data?.pages?.[currentPageIndex]?.items || [];
-	}, [currentPageIndex, infiniteQuery.data?.pages, pageViewMode]);
+		return infiniteQuery?.data?.pages?.[pageIndex]?.items || defaultPage;
+	}, [pageIndex, infiniteQuery.data?.pages, pageViewMode, defaultPage]);
+
+	const pagination = useMemo(
+		() => ({
+			pageIndex,
+			pageSize: infiniteQuery?.data?.pages.length || 0,
+		}),
+		[pageIndex, infiniteQuery?.data?.pages.length],
+	);
 
 	const table = useReactTable({
 		data: currentPage,
@@ -154,9 +194,14 @@ export function DataTable<TData, TValue>({
 		getPaginationRowModel: getPaginationRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		getFilteredRowModel: getFilteredRowModel(),
+		onPaginationChange: storeUtils.setPagination,
 		onColumnVisibilityChange: storeUtils.setColumnVisibility,
 		onRowSelectionChange: storeUtils.setRowSelection,
+		manualPagination: true,
+		manualFiltering: true,
+		manualSorting: true,
 		state: {
+			pagination,
 			sorting,
 			columnFilters,
 			columnVisibility,
@@ -176,71 +221,6 @@ export function DataTable<TData, TValue>({
 			/>
 		</Table>
 	);
-}
-/*
-    <div className="w-full">
-      <div className="flex items-center justify-end py-4 space-x-2">
-        <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
-        </div>
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
-</div>
-		*/
+};
 
-/*
-<div className="flex items-center py-4">
-        <Input
-          placeholder="Filter emails..."
-          value={(table.getColumn("email")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("email")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Columns <ChevronDown className="w-4 h-4 ml-2" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                )
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-*/
+export default QueryTable;

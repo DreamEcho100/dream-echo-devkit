@@ -5,21 +5,20 @@ import type { ProductsAPIInput, ProductsAPIOutput } from './api/products';
 import { useCustomInfiniteQuery } from '~/utils/hooks';
 import { createColumnHelper } from '@tanstack/react-table';
 import Head from 'next/head';
-import { useStore } from 'zustand';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import {
-	TableStore,
-	TableMetaData,
-	CustomTable,
-	handleCreateTableStore,
+	QueryTable,
 	TableLoadMore,
+	handleCreateTableStore,
+	useCreateTableStore,
 } from '@de100/react-table-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 
 const initialCursor: {
 	offset: ProductsAPIInput['offset'];
 	limit: ProductsAPIInput['limit'];
 } = {
-	limit: 5,
+	limit: 1,
 	offset: 0,
 };
 
@@ -75,88 +74,122 @@ const tableClassNames = {
 	},
 };
 
-const initialFilterByFormValues = {
-	category: { dataType: 'text', filterType: 'CONTAINS', value: '' },
-	title: { dataType: 'text', filterType: 'CONTAINS', value: '' },
-	// price: {
-	// 	dataType: 'number',
-	// 	filterType: 'RANGE',
-	// 	value: { min: 0 },
-	// 	constraints: { min: 0 }
-	// }
-} satisfies TableStore<Columns>['filterByFormValues'];
+// const initialFilterByFormValues = {
+// 	category: { dataType: 'text', filterType: 'CONTAINS', value: '' },
+// 	title: { dataType: 'text', filterType: 'CONTAINS', value: '' },
+// 	// price: {
+// 	// 	dataType: 'number',
+// 	// 	filterType: 'RANGE',
+// 	// 	value: { min: 0 },
+// 	// 	constraints: { min: 0 }
+// 	// }
+// } satisfies TableStore<Columns>['filterByFormValues'];
 
-const tableStore = handleCreateTableStore<Columns>({
-	filterByFormValues: initialFilterByFormValues,
-	classNames: tableClassNames,
-	pageViewMode: 'INFINITE_SCROLL',
-});
+const filterByFormValues = {};
 
-const Home = () => {
-	const filterByFormValues = useStore(
-		tableStore,
-		(state) => state.filterByFormValues,
-	);
-
-	const { infiniteQuery } = useCustomInfiniteQuery<
+const QData: Parameters<
+	typeof useCustomInfiniteQuery<
 		ProductsAPIOutput['products'],
 		[
 			'products',
 			{
 				cursor: typeof initialCursor;
-				filterBy?: typeof initialFilterByFormValues;
+				filterBy?: typeof filterByFormValues;
 			},
 		]
-	>({
-		initialCursor,
-		queryMainKey: 'products',
-		fetchFn: async (query): Promise<ProductsAPIOutput['products']> => {
-			let filterBy: ProductsAPIInput['filterBy'] = {};
+	>
+>[0] = {
+	initialCursor,
+	queryMainKey: 'products',
+	fetchFn: async (query): Promise<ProductsAPIOutput['products']> => {
+		let filterBy: ProductsAPIInput['filterBy'] = {};
 
-			if (query.filterBy) {
-				let key: keyof typeof query.filterBy;
-				for (key in query.filterBy) {
-					switch (key) {
-						case 'title':
-						case 'category': {
-							const element = query.filterBy[key];
-							if (element.value.trim()) filterBy[key] = element.value;
-						}
-					}
-				}
-			}
+		// if (query.filterBy) {
+		// 	let key: keyof typeof query.filterBy;
+		// 	for (key in query.filterBy) {
+		// 		switch (key) {
+		// 			case 'title':
+		// 			case 'category': {
+		// 				const element = query.filterBy[key];
+		// 				if (element.value.trim()) filterBy[key] = element.value;
+		// 			}
+		// 		}
+		// 	}
+		// }
 
-			return await fetch(
-				`/api/products/?limit=${query.cursor.limit}&offset=${
-					query.cursor.offset
-				}${
-					Object.keys(filterBy).length === 0
-						? ''
-						: `&filterBy=${JSON.stringify(filterBy)}`
-				}`,
-			)
-				.then((response) => {
-					if (response.status === 404) throw new Error('Not Found');
-					if (response.status === 400) throw new Error('Bad Request');
+		return await fetch(
+			`/api/products/?limit=${query.cursor.limit}&offset=${
+				query.cursor.offset
+			}${
+				Object.keys(filterBy).length === 0
+					? ''
+					: `&filterBy=${JSON.stringify(filterBy)}`
+			}`,
+		)
+			.then((response) => {
+				if (response.status === 404) throw new Error('Not Found');
+				if (response.status === 400) throw new Error('Bad Request');
 
-					return response.json();
-				})
-				.then((result: ProductsAPIOutput) => result.products);
-		},
-		getNextPageParam: (lastPage, allPages) => {
-			if (lastPage?.cursor) {
-				if (lastPage.items.length < lastPage.cursor.limit) return undefined;
+				return response.json();
+			})
+			.then((result: ProductsAPIOutput) => result.products);
+	},
+	filterBy: filterByFormValues as any,
+};
 
-				return {
-					...lastPage.cursor,
-					offset: lastPage.cursor.offset + lastPage.cursor.limit,
-				};
-			}
-
-			return initialCursor;
-		},
-		filterBy: filterByFormValues as any,
+const Home = () => {
+	const tableStore = useCreateTableStore<Columns>({
+		classNames: tableClassNames,
+		pageViewMode: 'INFINITE_SCROLL',
+		canMultiRowSelect: false,
+		pageSize: initialCursor.limit,
+		// columnVisibility: { select: false },
 	});
+	const infiniteQuery = useInfiniteQuery<
+		{
+			items: Product[];
+			cursor: typeof initialCursor;
+			filterBy?: typeof filterByFormValues;
+		},
+		[
+			'products',
+			{
+				cursor: typeof initialCursor;
+				filterBy?: typeof filterByFormValues;
+			},
+		]
+	>(
+		[QData.queryMainKey],
+		async ({ pageParam }) => {
+			const cursor: typeof initialCursor = pageParam || initialCursor;
+
+			const query = { cursor, filterBy: filterByFormValues } as {
+				cursor: typeof initialCursor;
+				filterBy?: typeof filterByFormValues;
+			};
+
+			return {
+				items: await QData.fetchFn(query),
+				cursor: query.cursor,
+				filterBy: query.filterBy,
+			};
+		},
+		{
+			// ...QData.options,
+			getNextPageParam: (lastPage, allPages) => {
+				if (lastPage?.cursor) {
+					if (lastPage.items.length < lastPage.cursor.limit) return undefined;
+
+					return {
+						...lastPage.cursor,
+						offset: lastPage.cursor.offset + lastPage.cursor.limit,
+					};
+				}
+
+				return initialCursor;
+			},
+		},
+	);
 
 	const columns = useMemo(
 		() =>
@@ -213,6 +246,12 @@ const Home = () => {
 		[],
 	);
 
+	const config = useRef({
+		rerenderCounter: 0,
+	});
+
+	config.current.rerenderCounter++;
+
 	return (
 		<>
 			<Head>
@@ -221,6 +260,7 @@ const Home = () => {
 				<meta name='viewport' content='width=device-width, initial-scale=1' />
 				<link rel='icon' href='/favicon.ico' />
 			</Head>
+			<p>{config.current.rerenderCounter}</p>
 			<button
 				onClick={() =>
 					console.log(
@@ -239,7 +279,7 @@ const Home = () => {
 			>
 				{/* <div className='max-w-full overflow-auto'>
 					<TableMetaData infiniteQuery={infiniteQuery} store={tableStore} />
-					<CustomTable
+					<QueryTable
 						columns={columns}
 						infiniteQuery={infiniteQuery}
 						store={tableStore}
@@ -248,13 +288,17 @@ const Home = () => {
 					<TableMetaData infiniteQuery={infiniteQuery} store={tableStore} />
 				</div> */}
 				<div className='max-w-full overflow-auto'>
-					<CustomTable
+					<QueryTable
 						columns={columns}
+						// @ts-ignore
 						infiniteQuery={infiniteQuery}
 						store={tableStore}
-						canMultiRowSelect
 					/>
-					<TableLoadMore infiniteQuery={infiniteQuery} store={tableStore} />
+					<TableLoadMore
+						// @ts-ignore
+						infiniteQuery={infiniteQuery}
+						store={tableStore}
+					/>
 				</div>
 			</main>
 		</>

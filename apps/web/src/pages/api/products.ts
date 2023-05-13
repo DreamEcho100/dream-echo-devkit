@@ -11,11 +11,11 @@ const queryValidator = (item: unknown) =>
 		.object({
 			offset: z.number().min(0).optional().default(0),
 			limit: z
-				.literal(5)
+				.literal(1)
 				.or(z.literal(10))
 				.or(z.literal(20))
 				.optional()
-				.default(5),
+				.default(1),
 			filterBy: z
 				.object({
 					category: z.string().optional(),
