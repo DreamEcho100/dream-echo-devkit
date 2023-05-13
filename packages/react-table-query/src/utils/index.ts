@@ -1,11 +1,7 @@
 import { createStore } from 'zustand';
 
 import type { TableStore, HandleCreateTableStoreProps } from './types';
-import {
-	useRef,
-	// useEffect,
-	useId,
-} from 'react';
+import { useRef, useId, useMemo } from 'react';
 
 export const handleCreateTableStore = <TData extends Record<string, unknown>>({
 	classNames = {},
@@ -90,17 +86,17 @@ export const useCreateTableStore = <TData extends Record<string, unknown>>(
 	const storeRef = useRef(
 		handleCreateTableStore<TData>({ ...props, baseId: props.baseId || baseId }),
 	);
-	// const configRef = useRef({ counter: 0 });
 
-	// useEffect(() => {
-	// 	configRef.current.counter++;
-
-	// 	if (configRef.current.counter === 1) return;
-	// 	storeRef.current = handleCreateTableStore<TData>({
-	// 		...props,
-	// 		baseId: props.baseId || baseId,
-	// 	});
-	// }, [baseId, props]);
+	useMemo(() => {
+		if (
+			storeRef.current.getState().pageSize !== props.pageSize ||
+			storeRef.current.getState().baseId !== props.baseId
+		)
+			storeRef.current.setState(() => ({
+				pageSize: props.pageSize,
+				baseId: props.baseId,
+			}));
+	}, [props.baseId, props.pageSize]);
 
 	return storeRef.current;
 };

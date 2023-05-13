@@ -1,9 +1,6 @@
 // src/utils/index.ts
 import { createStore } from "zustand";
-import {
-  useRef,
-  useId
-} from "react";
+import { useRef, useId, useMemo } from "react";
 var handleCreateTableStore = ({
   classNames = {},
   pageViewMode = "PAGING",
@@ -54,11 +51,18 @@ var useCreateTableStore = (props) => {
   const storeRef = useRef(
     handleCreateTableStore({ ...props, baseId: props.baseId || baseId })
   );
+  useMemo(() => {
+    if (storeRef.current.getState().pageSize !== props.pageSize || storeRef.current.getState().baseId !== props.baseId)
+      storeRef.current.setState(() => ({
+        pageSize: props.pageSize,
+        baseId: props.baseId
+      }));
+  }, [props.baseId, props.pageSize]);
   return storeRef.current;
 };
 
 // src/components/TableLoadMore.tsx
-import { useMemo } from "react";
+import { useMemo as useMemo2 } from "react";
 import { useStore } from "zustand";
 
 // src/utils/internal.ts
@@ -84,7 +88,7 @@ var TableLoadMore = ({
 }) => {
   const pageIndex = useStore(store, (state) => state.pageIndex);
   const storeUtils = useStore(store, (state) => state.utils);
-  const { isLastPageEmpty, isInBeforeLastPage } = useMemo(() => {
+  const { isLastPageEmpty, isInBeforeLastPage } = useMemo2(() => {
     const isLastPageEmpty2 = infiniteQuery?.data?.pages?.[infiniteQuery.data.pages.length - 1]?.items.length === 0;
     const isInFirstPage = pageIndex === 0;
     const isInLastPage = pageIndex + 1 === infiniteQuery?.data?.pages?.length;
@@ -100,7 +104,7 @@ var TableLoadMore = ({
       pagesLength
     };
   }, [pageIndex, infiniteQuery?.data?.pages]);
-  const isLoadMoreButtonDisabled = useMemo(
+  const isLoadMoreButtonDisabled = useMemo2(
     () => !infiniteQuery.hasNextPage && pageIndex + 1 === infiniteQuery.data?.pages.length || infiniteQuery.isFetching || isInBeforeLastPage && isLastPageEmpty,
     [
       pageIndex,
@@ -138,7 +142,7 @@ var TableLoadMore = ({
 var TableLoadMore_default = TableLoadMore;
 
 // src/components/Table/Data.tsx
-import { useEffect, useMemo as useMemo2, useRef as useRef2 } from "react";
+import { useEffect, useMemo as useMemo3, useRef as useRef2 } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -309,7 +313,7 @@ var QueryTable = ({
   const pageViewMode = useStore2(store, (state) => state.pageViewMode);
   const pageIndex = useStore2(store, (state) => state.pageIndex);
   const canMultiRowSelect = useStore2(store, (state) => state.canMultiRowSelect);
-  const modifiedColumns = useMemo2(() => {
+  const modifiedColumns = useMemo3(() => {
     return [
       {
         id: "select",
@@ -335,13 +339,13 @@ var QueryTable = ({
       ...columns
     ];
   }, [columns, canMultiRowSelect]);
-  const defaultPage = useMemo2(() => [], []);
-  const currentPage = useMemo2(() => {
+  const defaultPage = useMemo3(() => [], []);
+  const currentPage = useMemo3(() => {
     if (pageViewMode === "INFINITE_SCROLL")
       return (infiniteQuery?.data?.pages || defaultPage).map((page) => page.items).flat(1);
     return infiniteQuery?.data?.pages?.[pageIndex]?.items || defaultPage;
   }, [pageIndex, infiniteQuery.data?.pages, pageViewMode, defaultPage]);
-  const pagination = useMemo2(
+  const pagination = useMemo3(
     () => ({
       pageIndex,
       pageSize: infiniteQuery?.data?.pages.length || 0
@@ -371,7 +375,7 @@ var QueryTable = ({
       rowSelection
     }
   });
-  useMemo2(() => store.setState({ table }), [store, table]);
+  useMemo3(() => store.setState({ table }), [store, table]);
   return /* @__PURE__ */ jsxs(Table, { children: [
     /* @__PURE__ */ jsx3(CustomTableHeader, { table, store }),
     /* @__PURE__ */ jsx3(

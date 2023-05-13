@@ -80,6 +80,13 @@ var useCreateTableStore = (props) => {
   const storeRef = (0, import_react.useRef)(
     handleCreateTableStore({ ...props, baseId: props.baseId || baseId })
   );
+  (0, import_react.useMemo)(() => {
+    if (storeRef.current.getState().pageSize !== props.pageSize || storeRef.current.getState().baseId !== props.baseId)
+      storeRef.current.setState(() => ({
+        pageSize: props.pageSize,
+        baseId: props.baseId
+      }));
+  }, [props.baseId, props.pageSize]);
   return storeRef.current;
 };
 
