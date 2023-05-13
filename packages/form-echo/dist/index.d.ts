@@ -5,7 +5,7 @@ import { StoreApi } from 'zustand';
 
 type TPassedFieldsShape = Record<string, unknown>;
 type InputDateTypes = 'date' | 'time' | 'datetime-local' | 'week' | 'month';
-type ValidationEvents = 'submit' | 'change' | 'mount' | 'blur';
+type ValidationEvents = 'submit' | 'change';
 type HandleValidation<Value> = (value: unknown, validationEvent: ValidationEvents) => Value;
 interface FieldMetadata<Name, Value> {
     name: Name & string;
@@ -33,39 +33,41 @@ type FieldIsDirtyErrorsAndValidation = {
 };
 type FieldShape<Name, Value, ValidatedValue> = {
     validation: FieldValidation<ValidatedValue>;
-    value: Exclude<Value, Function>;
+    value: Exclude<Value, (value: Value) => Value>;
     isDirty: boolean;
     errors: string[];
     isUpdatingValueOnError: boolean;
     metadata: FieldMetadata<Name, Value>;
-    valueFromFieldToStore?: (fieldValue: unknown) => Value;
+    valueFromFieldToStore?: (fieldValue: unknown) => Exclude<Value, (value: Value) => Value>;
     valueFromStoreToField?: (StoreValue: Value) => string;
 };
-type AllFieldsShape<PassedFields = TPassedFieldsShape, PassedValidatedFields = undefined> = {
-    [FieldName in NonNullable<keyof PassedFields>]: FieldShape<FieldName, PassedFields[FieldName], PassedValidatedFields extends Record<FieldName, unknown> ? PassedValidatedFields[FieldName] : never>;
+type AllFieldsShape<Fields, // = TPassedFieldsShape,
+ValidatedFields> = {
+    [FieldName in NonNullable<keyof Fields>]: FieldShape<FieldName, Fields[FieldName], ValidatedFields extends Record<FieldName, unknown> ? ValidatedFields[FieldName] : never>;
 };
-interface FormMetadata<PassedFields = TPassedFieldsShape> {
+interface FormMetadata<Fields> {
     formId: string;
-    fieldsNames: (keyof PassedFields)[];
+    fieldsNames: (keyof Fields)[];
 }
-interface FormStoreShape<PassedFields = TPassedFieldsShape, PassedValidatedFields = Record<keyof PassedFields, unknown>> {
-    fields: AllFieldsShape<PassedFields, PassedValidatedFields>;
+interface FormStoreShape<Fields, // = TPassedFieldsShape,
+ValidatedFields> {
+    fields: AllFieldsShape<Fields, ValidatedFields>;
     errors: {
-        [Key in keyof PassedFields]?: string[] | null;
+        [Key in keyof Fields]?: string[] | null;
     };
-    metadata: FormMetadata<PassedFields>;
+    metadata: FormMetadata<Fields>;
     isTrackingValidationHistory: boolean;
     validations: {
         history: unknown[];
     };
     submitCounter: number;
     utils: {
-        handleOnInputChange: (name: keyof PassedFields, value: unknown) => void;
+        handleOnInputChange: (name: keyof Fields, value: unknown) => void;
         errorFormatter: (error: unknown, validationEvent: ValidationEvents) => string[];
         reInitFieldsValues: () => void;
-        setFieldValue: <Name extends keyof PassedFields>(name: Name, value: ((value: PassedFields[Name]) => PassedFields[Name]) | Exclude<PassedFields[Name], (...args: any[]) => any>) => void;
+        setFieldValue: <Name extends keyof Fields>(name: Name, value: ((value: Fields[Name]) => Fields[Name]) | Exclude<Fields[Name], (...args: any[]) => any>) => void;
         setFieldErrors: (params: {
-            name: keyof PassedFields;
+            name: keyof Fields;
             errors: string[] | null;
             validationEvent: ValidationEvents;
         }) => void;
@@ -73,67 +75,72 @@ interface FormStoreShape<PassedFields = TPassedFieldsShape, PassedValidatedField
             validationEvent: ValidationEvents;
             validationEventPhase: 'start' | 'end';
             validationEventState: 'processing' | 'failed' | 'passed';
-            fields: AllFieldsShape<PassedFields, PassedValidatedFields>[keyof PassedFields][];
+            fields: AllFieldsShape<Fields, ValidatedFields>[keyof Fields][];
         }) => unknown;
-        handleFieldValidation: <Name extends keyof PassedFields>(params: {
+        handleFieldValidation: <Name extends keyof Fields, ValueToCheck>(params: {
             name: Name;
-            value: unknown | ((value: PassedFields[Name]) => PassedFields[Name]);
+            value: ValueToCheck extends (value: Fields[Name]) => Fields[Name] ? (value: Fields[Name]) => Fields[Name] : ValueToCheck;
             validationEvent: ValidationEvents;
-        }) => Exclude<PassedFields[keyof PassedFields], (...args: any[]) => any>;
-        handlePreSubmit: (cb?: THandlePreSubmitCB<PassedFields, PassedValidatedFields>) => (event: FormEvent<HTMLFormElement>) => void;
+        }) => Exclude<Fields[Name], (value: Fields[Name]) => Fields[Name]>;
+        handlePreSubmit: (cb?: THandlePreSubmitCB<Fields, ValidatedFields>) => (event: FormEvent<HTMLFormElement>) => void;
     };
 }
 type GetPassedValidationFieldsValues<PV> = {
     [Key in keyof PV]: PV[Key] extends ZodSchema<unknown> ? ReturnType<PV[Key]['parse']> : PV[Key] extends HandleValidation<unknown> ? ReturnType<PV[Key]> : undefined;
 };
 type HandlePreSubmitCB<Fields, ValidatedField> = THandlePreSubmitCB<Fields, GetPassedValidationFieldsValues<ValidatedField>>;
-type THandlePreSubmitCB<PassedFields = TPassedFieldsShape, PassedValidatedFields = Record<keyof PassedFields, unknown>> = (event: FormEvent<HTMLFormElement>, params: {
-    validatedValues: PassedValidatedFields;
-    values: PassedFields;
+type THandlePreSubmitCB<Fields, // = TPassedFieldsShape,
+ValidatedFields = Record<keyof Fields, unknown>> = (event: FormEvent<HTMLFormElement>, params: {
+    validatedValues: ValidatedFields;
+    values: Fields;
     hasError: boolean;
     errors: {
-        [Key in keyof PassedFields]: {
+        [Key in keyof Fields]: {
             name: Key;
             errors: string[] | null;
             validationEvent: ValidationEvents;
         };
     };
 }) => void;
-type CreateCreateFormStore<PassedFields = TPassedFieldsShape, PassedValidatedFields = Record<keyof PassedFields, unknown>> = FormStoreShape<{
-    [Key in keyof PassedFields]: PassedFields[Key];
-}, PassedValidatedFields extends NonNullable<PassedValidatedFields> ? GetPassedValidationFieldsValues<PassedValidatedFields> : never>;
-type FormStoreApi<Fields = TPassedFieldsShape, ValidatedFields = Record<keyof Fields, unknown>> = StoreApi<CreateCreateFormStore<Fields, ValidatedFields>>;
+type CreateCreateFormStore<Fields, // = TPassedFieldsShape,
+ValidatedFields = Record<keyof Fields, unknown>> = FormStoreShape<{
+    [Key in keyof Fields]: Fields[Key];
+}, ValidatedFields extends NonNullable<ValidatedFields> ? GetPassedValidationFieldsValues<ValidatedFields> : never>;
+type FormStoreApi<Fields, // = TPassedFieldsShape,
+ValidatedFields = Record<keyof Fields, unknown>> = StoreApi<CreateCreateFormStore<Fields, ValidatedFields>>;
 type FormStoreValues<Fields = AllFieldsShape<TPassedFieldsShape, Record<string, unknown>>> = {
     [Key in keyof Fields]: Fields extends AllFieldsShape<TPassedFieldsShape, Record<string, unknown>> ? Fields[Key]['value'] : never;
 };
 type FormStoreErrors<Fields = AllFieldsShape<TPassedFieldsShape, Record<string, unknown>>> = {
     [Key in keyof Fields]: Fields extends AllFieldsShape<TPassedFieldsShape, Record<string, unknown>> ? Fields[Key]['errors'] : never;
 };
-type ValidationHandler<PassedFields = TPassedFieldsShape> = {
-    [Key in keyof PassedFields]?: HandleValidation<PassedFields[Key]>;
+type ValidationHandler<Fields = TPassedFieldsShape> = {
+    [Key in keyof Fields]?: HandleValidation<Fields[Key]>;
 };
-type CreateStoreValidationHandler<PassedFields = TPassedFieldsShape, PassedValidationHandler = unknown> = {
-    [Key in keyof PassedFields & keyof PassedValidationHandler]?: PassedValidationHandler[Key];
+type CreateStoreValidationHandler<Fields = TPassedFieldsShape, PassedValidationHandler = unknown> = {
+    [Key in keyof Fields & keyof PassedValidationHandler]?: PassedValidationHandler[Key];
 };
-type GetFieldsValueFromValidationHandler<PassedFields = TPassedFieldsShape, PassedValidationHandler = CreateStoreValidationHandler<PassedFields>> = {
+type GetFieldsValueFromValidationHandler<Fields, // = TPassedFieldsShape,
+PassedValidationHandler = CreateStoreValidationHandler<Fields>> = {
     [Key in keyof PassedValidationHandler]: PassedValidationHandler[Key] extends ZodSchema<unknown> ? ReturnType<PassedValidationHandler[Key]['parse']> : PassedValidationHandler[Key] extends HandleValidation<unknown> ? ReturnType<PassedValidationHandler[Key]> : never;
 };
-type CreateFormStoreProps<PassedFields = TPassedFieldsShape, StorePassedValidationHandler = Record<keyof PassedFields, unknown>> = {
-    initValues: PassedFields;
+type CreateFormStoreProps<Fields, // = TPassedFieldsShape,
+StorePassedValidationHandler = Record<keyof Fields, unknown>> = {
+    initValues: Fields;
     isUpdatingFieldsValueOnError?: boolean;
     baseId?: string | boolean;
     trackValidationHistory?: boolean;
     validationEvents?: {
         [key in ValidationEvents]?: boolean;
     };
-    validationHandler: {
+    validationSchema: {
         [Key in keyof StorePassedValidationHandler]: StorePassedValidationHandler[Key] extends ZodSchema<unknown> | HandleValidation<unknown> ? StorePassedValidationHandler[Key] : never;
     };
     valuesFromFieldsToStore?: {
-        [Key in keyof PassedFields]?: (fieldValue: string) => PassedFields[Key];
+        [Key in keyof Fields]?: (fieldValue: string) => Fields[Key];
     };
     valuesFromStoreToFields?: {
-        [Key in keyof PassedFields]?: (storeValue: PassedFields[Key]) => string;
+        [Key in keyof Fields]?: (storeValue: Fields[Key]) => string;
     };
     errorFormatter?: (error: unknown, validationEvent: ValidationEvents) => string[];
 };
@@ -199,9 +206,9 @@ declare const inputDateHelpers: {
     getFirstDateOfWeek: typeof getFirstDateOfWeek;
 };
 
-declare const handleCreateFormStore: <PassedFields = Record<string, unknown>, PassedValidationHandler = Record<keyof PassedFields, unknown>>({ isUpdatingFieldsValueOnError, trackValidationHistory, valuesFromFieldsToStore, valuesFromStoreToFields, validationHandler, ...params }: CreateFormStoreProps<PassedFields, PassedValidationHandler>) => zustand.StoreApi<CreateCreateFormStore<PassedFields, PassedValidationHandler>>;
-declare const useCreateFormStore: <PassedFields = Record<string, unknown>, PassedValidationHandler = Record<keyof PassedFields, unknown>>(props: Omit<CreateFormStoreProps<PassedFields, PassedValidationHandler>, "baseId"> & {
+declare const handleCreateFormStore: <Fields, ValidationSchema>({ isUpdatingFieldsValueOnError, trackValidationHistory, valuesFromFieldsToStore, valuesFromStoreToFields, validationSchema, ...params }: CreateFormStoreProps<Fields, ValidationSchema>) => zustand.StoreApi<CreateCreateFormStore<Fields, ValidationSchema>>;
+declare const useCreateFormStore: <Fields, ValidationSchema>(props: Omit<CreateFormStoreProps<Fields, ValidationSchema>, "baseId"> & {
     baseId?: string | boolean | undefined;
-}) => zustand.StoreApi<CreateCreateFormStore<PassedFields, PassedValidationHandler>>;
+}) => zustand.StoreApi<CreateCreateFormStore<Fields, ValidationSchema>>;
 
 export { AllFieldsShape, CreateCreateFormStore, CreateFormStoreProps, CreateStoreValidationHandler, FieldIsDirtyErrorsAndValidation, FieldMetadata, FieldShape, FieldValidation, FormMetadata, FormStoreApi, FormStoreErrors, FormStoreShape, FormStoreValues, GetFieldsValueFromValidationHandler, GetPassedValidationFieldsValues, HandlePreSubmitCB, HandleValidation, InputDateTypes, THandlePreSubmitCB, ValidationEvents, ValidationHandler, handleCreateFormStore, inputDateHelpers, useCreateFormStore };

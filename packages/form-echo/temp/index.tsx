@@ -27,7 +27,7 @@ const eee = createFormStore({
 		username: undefined,
 		age: 0,
 	},
-	validationHandler: {
+	validationSchema: {
 		username: z.string(),
 		age: z.number(),
 	},
@@ -140,7 +140,7 @@ const t = createFormStore({
 		username?: null | string;
 		age: string;
 	},
-	validationHandler: validationHandlerSchema,
+	validationSchema: validationHandlerSchema,
 });
 
 t.getState().utils.handlePreSubmit((_event, { validatedValues, values }) => {

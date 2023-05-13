@@ -19,7 +19,7 @@
 		// // "preserveWatchOutput": true,
 		// // "skipLibCheck": true,
 		// // "strict": true,
-		// "jsx": "react-jsx",
+		"jsx": "react-jsx",
 		// "target": "ESNext",
 		// "composite": false,
 		// "declaration": true,

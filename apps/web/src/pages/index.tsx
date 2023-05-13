@@ -16,15 +16,17 @@ import {
 } from '@de100/form-echo';
 import { useStore } from 'zustand';
 
-export type FormProps<Fields, ValidatedField> =
-	FormHTMLAttributes<HTMLFormElement> & {
-		store: FormStoreApi<Fields, ValidatedField>;
-		handleOnSubmit?: HandlePreSubmitCB<Fields, ValidatedField>;
-	};
+type FormProps<Fields, ValidatedField> = Omit<
+	FormHTMLAttributes<HTMLFormElement>,
+	'onSubmit'
+> & {
+	store: FormStoreApi<Fields, ValidatedField>;
+	onSubmit: HandlePreSubmitCB<Fields, ValidatedField>;
+};
 
-export const Form = <Fields extends Record<string, unknown>, ValidatedField>({
+const Form = <Fields, ValidatedField>({
 	store,
-	handleOnSubmit,
+	onSubmit,
 	...props
 }: FormProps<Fields, ValidatedField>) => {
 	const handlePreSubmit = useStore(
@@ -32,15 +34,15 @@ export const Form = <Fields extends Record<string, unknown>, ValidatedField>({
 		(state) => state.utils.handlePreSubmit,
 	);
 
-	return <form onSubmit={handlePreSubmit(handleOnSubmit)} {...props} />;
+	return <form onSubmit={handlePreSubmit(onSubmit)} {...(props as any)} />;
 };
 
-export type FieldProps<Fields, ValidatedField> = {
+type FieldProps<Fields, ValidatedField> = {
 	store: FormStoreApi<Fields, ValidatedField>;
 	name: keyof Fields;
 };
 
-const FieldErrors = <Fields extends Record<string, unknown>, ValidatedField>({
+const FieldErrors = <Fields, ValidatedField>({
 	store,
 	name,
 }: FieldProps<Fields, ValidatedField>) => {
@@ -58,13 +60,13 @@ const FieldErrors = <Fields extends Record<string, unknown>, ValidatedField>({
 	);
 };
 
-export type InputFieldProps<Fields, ValidatedField> = Omit<
+type InputFieldProps<Fields, ValidatedField> = Omit<
 	InputHTMLAttributes<HTMLInputElement>,
 	'name'
 > &
 	FieldProps<Fields, ValidatedField>;
 
-const InputField = <Fields extends Record<string, unknown>, ValidatedField>({
+const InputField = <Fields, ValidatedField>({
 	store,
 	...props
 }: InputFieldProps<Fields, ValidatedField>) => {
@@ -73,7 +75,7 @@ const InputField = <Fields extends Record<string, unknown>, ValidatedField>({
 		return field.valueFromStoreToField
 			? field.valueFromStoreToField(field.value)
 			: field.value;
-	}) as string;
+	});
 	const metadata = useStore(
 		store,
 		(store) => store.fields[props.name].metadata,
@@ -87,7 +89,7 @@ const InputField = <Fields extends Record<string, unknown>, ValidatedField>({
 		<input
 			type='text'
 			className='px-2 py-1 text-black'
-			{...props}
+			{...(props as any)}
 			name={metadata.name}
 			id={metadata.id}
 			value={value}
@@ -96,55 +98,52 @@ const InputField = <Fields extends Record<string, unknown>, ValidatedField>({
 	);
 };
 
-const Example = () => {
-	const baseId = useId();
-	const formStore = useCreateFormStore({
-		baseId,
-		initValues: {
-			username: 'Test',
-			counter: 1,
-			dateOfBirth: null, // new Date(),
-			testArr: [],
-		} as {
-			username: string;
-			counter: number;
-			dateOfBirth: null | Date;
-			testArr: string[];
-		},
-		validationHandler: {
-			counter: z.number().nonnegative(),
-			dateOfBirth: z.date(),
-			username: (val: unknown) => z.string().min(1).max(4).parse(val),
-		},
-		valuesFromFieldsToStore: {
-			counter: (value) => Number(value),
-			dateOfBirth: (value) => inputDateHelpers.parseDate(value, 'date'),
-		},
-		valuesFromStoreToFields: {
-			dateOfBirth: (value) =>
-				value ? inputDateHelpers.formatDate(value, 'date') : '',
-		},
-		validationEvents: { change: true },
-	});
-	type t = ReturnType<
-		(typeof formStore)['getState']
-	>['fields']['counter']['validation']['handler'];
-	type tt = ReturnType<t> extends number ? number : never;
+type FormFields = {
+	username: string;
+	counter: number;
+	dateOfBirth: null | Date;
+	testArr: string[];
+};
 
-	const setFieldValue = useStore(
-		formStore,
-		(store) => store.utils.setFieldValue,
+const FormValidationSchema = {
+	username: (val: unknown) => z.string().min(1).max(4).parse(val),
+	counter: z.number().nonnegative(),
+	dateOfBirth: z.date(),
+};
+
+const Example = () => {
+	const formStore = useCreateFormStore<FormFields, typeof FormValidationSchema>(
+		{
+			initValues: {
+				username: 'Test',
+				counter: 1,
+				dateOfBirth: null, // new Date(),
+				testArr: [],
+			},
+			validationSchema: FormValidationSchema,
+			valuesFromFieldsToStore: {
+				counter: (value) => Number(value),
+				dateOfBirth: (value) => inputDateHelpers.parseDate(value, 'date'),
+			},
+			valuesFromStoreToFields: {
+				dateOfBirth: (value) =>
+					value ? inputDateHelpers.formatDate(value, 'date') : '',
+			},
+			validationEvents: { change: true },
+		},
 	);
+
+	const formStoreUtils = useStore(formStore, (store) => store.utils);
 	const testArr = useStore(formStore, (store) => store.fields.testArr.value);
 
 	useEffect(() => {
-		setFieldValue('username', (prev) => prev + ' 1?');
-	}, [setFieldValue]);
+		formStoreUtils.setFieldValue('username', (prev) => prev + ' 1?');
+	}, [formStoreUtils]);
 
 	return (
 		<Form
 			store={formStore}
-			handleOnSubmit={(event, { values, validatedValues }) => {
+			onSubmit={(event, { values, validatedValues }) => {
 				console.log('values', values);
 				console.log('validatedValues', validatedValues.counter);
 			}}
@@ -160,13 +159,13 @@ const Example = () => {
 			<button
 				type='button'
 				onClick={() => {
-					setFieldValue('testArr', (prev) => [
+					formStoreUtils.setFieldValue('testArr', (prev) => [
 						Math.random().toString(36).slice(2),
 						...prev,
 					]);
 				}}
 			>
-				Add To Test Arr List
+				Add To Random String Arr List
 			</button>
 			<ul>
 				{testArr.map((item) => (
@@ -175,7 +174,7 @@ const Example = () => {
 						<button
 							type='button'
 							onClick={() => {
-								setFieldValue('testArr', (prev) =>
+								formStoreUtils.setFieldValue('testArr', (prev) =>
 									prev.filter((_item) => _item !== item),
 								);
 							}}
