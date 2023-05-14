@@ -1,107 +1,127 @@
 import {
-	forwardRef,
 	type HTMLAttributes,
 	type ThHTMLAttributes,
 	type TdHTMLAttributes,
+	type HTMLProps,
+	useEffect,
+	useRef,
 } from 'react';
-import { cx } from '../../utils/internal';
+import { useStore, type StoreApi } from 'zustand';
+import { type TableStore } from '../../utils/types';
 
-const Table = forwardRef<HTMLTableElement, HTMLAttributes<HTMLTableElement>>(
-	(props, ref) => (
+const Table = <TData,>({
+	store,
+	...props
+}: HTMLAttributes<HTMLTableElement> & {
+	store: StoreApi<TableStore<TData>>;
+}) => {
+	const className = useStore(store, (store) => store.classNames?.table);
+
+	return (
 		<table
-			ref={ref}
 			// className={cx('w-full caption-bottom text-sm', className)}
 			{...props}
+			className={className}
 		/>
-	),
-);
-Table.displayName = 'Table';
+	);
+};
+
 // <div className='w-full overflow-auto'>
 // </div>
 
-const TableHeader = forwardRef<
-	HTMLTableSectionElement,
-	HTMLAttributes<HTMLTableSectionElement>
->((props, ref) => (
+const TableHeader = (props: HTMLAttributes<HTMLTableSectionElement>) => (
 	<thead
-		ref={ref}
 		// className={cx('[&_tr]:border-b', className)}
 		{...props}
 	/>
-));
-TableHeader.displayName = 'TableHeader';
+);
 
-const TableBody = forwardRef<
-	HTMLTableSectionElement,
-	HTMLAttributes<HTMLTableSectionElement>
->((props, ref) => (
+const TableBody = (props: HTMLAttributes<HTMLTableSectionElement>) => (
 	<tbody
-		ref={ref}
 		// className={cx('[&_tr:last-child]:border-0', className)}
 		{...props}
 	/>
-));
-TableBody.displayName = 'TableBody';
+);
 
-const TableFooter = forwardRef<
-	HTMLTableSectionElement,
-	HTMLAttributes<HTMLTableSectionElement>
->((props, ref) => (
+const TableFooter = (props: HTMLAttributes<HTMLTableSectionElement>) => (
 	<tfoot
-		ref={ref}
 		// className={cx('bg-primary text-primary-foreground font-medium', className)}
 		{...props}
 	/>
-));
-TableFooter.displayName = 'TableFooter';
+);
 
-const TableRow = forwardRef<
-	HTMLTableRowElement,
-	HTMLAttributes<HTMLTableRowElement>
->((props, ref) => (
+const TableRow = (props: HTMLAttributes<HTMLTableRowElement>) => (
 	<tr
-		ref={ref}
 		// className={cx(
 		// 	'hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors',
 		// 	className,
 		// )}
 		{...props}
 	/>
-));
-TableRow.displayName = 'TableRow';
+);
 
-const TableHead = forwardRef<
-	HTMLTableCellElement,
-	ThHTMLAttributes<HTMLTableCellElement>
->((props, ref) => (
+const TableHead = (props: ThHTMLAttributes<HTMLTableCellElement>) => (
 	<th
-		ref={ref}
 		// className={cx(
 		// 	'text-muted-foreground h-12 px-4 text-left align-middle font-medium [&:has([role=checkbox])]:pr-0',
 		// 	className,
 		// )}
 		{...props}
 	/>
-));
-TableHead.displayName = 'TableHead';
+);
 
-const TableCell = forwardRef<
-	HTMLTableCellElement,
-	TdHTMLAttributes<HTMLTableCellElement>
->((props, ref) => <td ref={ref} {...props} />);
-TableCell.displayName = 'TableCell';
+const TableCell = (props: TdHTMLAttributes<HTMLTableCellElement>) => (
+	<td {...props} />
+);
 
-const TableCaption = forwardRef<
-	HTMLTableCaptionElement,
-	HTMLAttributes<HTMLTableCaptionElement>
->(({ className, ...props }, ref) => (
-	<caption
-		ref={ref}
-		className={cx('text-muted-foreground mt-4 text-sm', className)}
-		{...props}
-	/>
-));
-TableCaption.displayName = 'TableCaption';
+const IndeterminateCheckbox = <TData,>({
+	indeterminate,
+	store,
+	tContainerType,
+	...props
+}: {
+	indeterminate?: boolean;
+	tContainerType: 'thead' | 'tbody';
+	store: StoreApi<TableStore<TData>>;
+} & HTMLProps<HTMLInputElement>) => {
+	const selectCheckBoxContainerClassName = useStore(store, (store) =>
+		tContainerType === 'thead'
+			? store.classNames?.thead?.th?.selectCheckBoxContainer
+			: store.classNames?.tbody?.td?.selectCheckBoxContainer,
+	);
+	const ref = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		if (!ref.current) return;
+
+		if (typeof indeterminate === 'boolean') {
+			ref.current.indeterminate = !props.checked && indeterminate;
+		}
+	}, [indeterminate, props.checked]);
+
+	return (
+		<div className={selectCheckBoxContainerClassName?._}>
+			<input
+				type='checkbox'
+				ref={ref}
+				className={selectCheckBoxContainerClassName?.checkbox}
+				{...props}
+			/>
+		</div>
+	);
+};
+
+// const TableCaption = forwardRef<
+// 	HTMLTableCaptionElement,
+// 	HTMLAttributes<HTMLTableCaptionElement>
+// >(({ className, ...props }, ref) => (
+// 	<caption
+// 		ref={ref}
+// 		className={cx('text-muted-foreground mt-4 text-sm', className)}
+// 		{...props}
+// 	/>
+// ));
+// TableCaption.displayName = 'TableCaption';
 
 export {
 	Table,
@@ -111,5 +131,5 @@ export {
 	TableHead,
 	TableRow,
 	TableCell,
-	TableCaption,
+	IndeterminateCheckbox,
 };

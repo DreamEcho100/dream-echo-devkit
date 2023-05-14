@@ -9,10 +9,10 @@ import { useMemo, useRef } from 'react';
 import {
 	QueryTable,
 	TableLoadMore,
-	handleCreateTableStore,
 	useCreateTableStore,
 } from '@de100/react-table-query';
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { cx } from 'class-variance-authority';
 
 const initialCursor: {
 	offset: ProductsAPIInput['offset'];
@@ -35,35 +35,39 @@ const columnHelper = createColumnHelper<Columns>();
 const border = 'border-[0.0625rem] border-gray-300 dark:border-gray-900';
 
 const tableClassNames = {
-	table: 'w-full text-sm text-left text-gray-500 dark:text-gray-400',
+	table: `w-full border-collapse text-sm text-left text-gray-500 dark:text-gray-400 ${border}`,
 	thead: {
 		_: 'text-xs text-gray-800 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400',
 		tr: ``,
 		th: {
-			_: `relative group px-6 py-3 ${border}`,
+			_: cx(
+				`relative group px-6 py-3 ${border}`,
+				'data-[select-th="true"]:flex data-[select-th="true"]:items-center data-[select-th="true"]:justify-center data-[select-th="true"]:p-4',
+			),
 			container: 'flex h-full w-full flex-col',
 			resizeController:
 				'absolute right-0 top-0 h-full w-1 cursor-col-resize touch-none select-none bg-black/50 opacity-0 hover:opacity-0 group-hover:bg-indigo-400 group-hover:opacity-100',
-			checkboxContainer: {
-				_: 'flex items-center justify-center p-4',
-				checkBox:
-					'color h-4 w-4 cursor-pointer rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600 dark:focus:ring-offset-gray-800',
+			selectCheckBoxContainer: {
+				_: 'flex items-center',
+				checkbox: 'h-4 w-4 cursor-pointer rounded',
 			},
 		},
 	},
 	tbody: {
-		_: '',
+		_: border,
 		loadingTr: {
 			_: 'animate-pulse text-center border-[0.0625rem] border-gray-300 bg-gray-50 dark:bg-gray-500 dark:border-gray-500',
 			td: 'p-16',
 		},
 		tr: `bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-600 ${border}`,
 		td: {
-			_: `min-w-fit px-6 py-4 ${border}`,
-			checkboxContainer: {
-				_: 'flex items-center justify-center p-1',
-				checkBox:
-					'color h-4 w-4 cursor-pointer rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600 dark:focus:ring-offset-gray-800',
+			_: cx(
+				`min-w-fit px-6 py-4 ${border}`,
+				'data-[select-td="true"]:mx-auto data-[select-td="true"]:w-auto',
+			),
+			selectCheckBoxContainer: {
+				_: 'flex items-center',
+				checkbox: 'mx-auto h-4 w-4 cursor-pointer rounded',
 			},
 		},
 	},
@@ -215,7 +219,7 @@ const Home = () => {
 				}),
 				columnHelper.accessor('description', {
 					cell: (info) => (
-						<div className='aspect-video w-64 max-w-fit'>{info.getValue()}</div>
+						<div className='w-64 aspect-video max-w-fit'>{info.getValue()}</div>
 					),
 					header: (info) => (
 						<span className='capitalize'>{info.column.id}</span>

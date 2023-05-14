@@ -34,7 +34,7 @@ const Form = <Fields, ValidatedField>({
 		(state) => state.utils.handlePreSubmit,
 	);
 
-	return <form onSubmit={handlePreSubmit(onSubmit)} {...(props as any)} />;
+	return <form onSubmit={handlePreSubmit(onSubmit)} {...props} />;
 };
 
 type FieldProps<Fields, ValidatedField> = {
@@ -75,7 +75,7 @@ const InputField = <Fields, ValidatedField>({
 		return field.valueFromStoreToField
 			? field.valueFromStoreToField(field.value)
 			: field.value;
-	});
+	}) as string;
 	const metadata = useStore(
 		store,
 		(store) => store.fields[props.name].metadata,
@@ -89,7 +89,7 @@ const InputField = <Fields, ValidatedField>({
 		<input
 			type='text'
 			className='px-2 py-1 text-black'
-			{...(props as any)}
+			{...props}
 			name={metadata.name}
 			id={metadata.id}
 			value={value}
@@ -147,7 +147,7 @@ const Example = () => {
 				console.log('values', values);
 				console.log('validatedValues', validatedValues.counter);
 			}}
-			className='flex w-fit flex-col gap-2 bg-neutral-500 p-4 text-white'
+			className='flex flex-col gap-2 p-4 text-white w-fit bg-neutral-500'
 		>
 			<InputField store={formStore} name='username' />
 			<FieldErrors store={formStore} name='username' />
@@ -192,7 +192,7 @@ const Example = () => {
 const Web = () => {
 	return (
 		<div>
-			<h1 className='h-full w-full text-3xl font-bold underline'>
+			<h1 className='w-full h-full text-3xl font-bold underline'>
 				Hello world!
 			</h1>
 			<Example />

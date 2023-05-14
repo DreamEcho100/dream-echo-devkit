@@ -51,9 +51,9 @@ export type TableClassNames = {
 			_?: string;
 			container?: string;
 			resizeController?: string;
-			checkboxContainer?: {
+			selectCheckBoxContainer?: {
 				_?: string;
-				checkBox?: string;
+				checkbox?: string;
 			};
 		};
 	};
@@ -63,9 +63,9 @@ export type TableClassNames = {
 		loadingTr?: { _?: string; td?: string };
 		td?: {
 			_?: string;
-			checkboxContainer?: {
+			selectCheckBoxContainer?: {
 				_?: string;
-				checkBox?: string;
+				checkbox?: string;
 			};
 		};
 	};
@@ -122,6 +122,11 @@ export type HandleCreateTableStoreProps = {
 
 export interface DataTableProps<TData, TValue> {
 	columns: ColumnDef<TData, TValue>[];
+	infiniteQuery: InfiniteQuery<TData>;
+	store: StoreApi<TableStore<TData>>;
+}
+
+export interface UseGetTableCurrentPageAndPaginationProps<TData> {
 	infiniteQuery: InfiniteQuery<TData>;
 	store: StoreApi<TableStore<TData>>;
 }

@@ -62,10 +62,12 @@ var useCreateTableStore = (props) => {
 };
 
 // src/components/TableLoadMore.tsx
-import { useMemo as useMemo2 } from "react";
-import { useStore } from "zustand";
+import { useMemo as useMemo3 } from "react";
+import { useStore as useStore2 } from "zustand";
 
 // src/utils/internal.ts
+import { useMemo as useMemo2 } from "react";
+import { useStore } from "zustand";
 var cx = (...classesArr) => {
   let classesStr = "";
   let className;
@@ -74,6 +76,32 @@ var cx = (...classesArr) => {
       classesStr += className + " ";
   }
   return classesStr.trimEnd();
+};
+var useGetTableCurrentPageAndPagination = (props) => {
+  const pageViewMode = useStore(props.store, (state) => state.pageViewMode);
+  const pageIndex = useStore(props.store, (state) => state.pageIndex);
+  const defaultPage = useMemo2(() => [], []);
+  const currentPage = useMemo2(() => {
+    if (pageViewMode === "INFINITE_SCROLL")
+      return (props.infiniteQuery?.data?.pages || defaultPage).map((page) => page.items).flat(1);
+    return props.infiniteQuery?.data?.pages?.[pageIndex]?.items || defaultPage;
+  }, [pageIndex, props.infiniteQuery.data?.pages, pageViewMode, defaultPage]);
+  const pagination = useMemo2(
+    () => ({
+      pageIndex,
+      pageSize: props.infiniteQuery?.data?.pages.length || 0
+    }),
+    [pageIndex, props.infiniteQuery?.data?.pages.length]
+  );
+  console.log("currentPage", currentPage);
+  const res = useMemo2(
+    () => ({
+      currentPage,
+      pagination
+    }),
+    [currentPage, pagination]
+  );
+  return res;
 };
 
 // src/components/TableLoadMore.tsx
@@ -86,9 +114,9 @@ var TableLoadMore = ({
     loadMoreButton: ""
   }
 }) => {
-  const pageIndex = useStore(store, (state) => state.pageIndex);
-  const storeUtils = useStore(store, (state) => state.utils);
-  const { isLastPageEmpty, isInBeforeLastPage } = useMemo2(() => {
+  const pageIndex = useStore2(store, (state) => state.pageIndex);
+  const storeUtils = useStore2(store, (state) => state.utils);
+  const { isLastPageEmpty, isInBeforeLastPage } = useMemo3(() => {
     const isLastPageEmpty2 = infiniteQuery?.data?.pages?.[infiniteQuery.data.pages.length - 1]?.items.length === 0;
     const isInFirstPage = pageIndex === 0;
     const isInLastPage = pageIndex + 1 === infiniteQuery?.data?.pages?.length;
@@ -104,7 +132,7 @@ var TableLoadMore = ({
       pagesLength
     };
   }, [pageIndex, infiniteQuery?.data?.pages]);
-  const isLoadMoreButtonDisabled = useMemo2(
+  const isLoadMoreButtonDisabled = useMemo3(
     () => !infiniteQuery.hasNextPage && pageIndex + 1 === infiniteQuery.data?.pages.length || infiniteQuery.isFetching || isInBeforeLastPage && isLastPageEmpty,
     [
       pageIndex,
@@ -141,8 +169,8 @@ var TableLoadMore = ({
 };
 var TableLoadMore_default = TableLoadMore;
 
-// src/components/Table/Data.tsx
-import { useEffect, useMemo as useMemo3, useRef as useRef2 } from "react";
+// src/components/Table/Query.tsx
+import { useEffect as useEffect2, useMemo as useMemo4 } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -154,87 +182,93 @@ import {
 
 // src/components/Table/Basic.tsx
 import {
-  forwardRef
+  useEffect,
+  useRef as useRef2
 } from "react";
+import { useStore as useStore3 } from "zustand";
 import { jsx as jsx2 } from "react/jsx-runtime";
-var Table = forwardRef(
-  (props, ref) => /* @__PURE__ */ jsx2(
+var Table = ({
+  store,
+  ...props
+}) => {
+  const className = useStore3(store, (store2) => store2.classNames?.table);
+  return /* @__PURE__ */ jsx2(
     "table",
     {
-      ref,
-      ...props
+      ...props,
+      className
     }
-  )
-);
-Table.displayName = "Table";
-var TableHeader = forwardRef((props, ref) => /* @__PURE__ */ jsx2(
+  );
+};
+var TableHeader = (props) => /* @__PURE__ */ jsx2(
   "thead",
   {
-    ref,
     ...props
   }
-));
-TableHeader.displayName = "TableHeader";
-var TableBody = forwardRef((props, ref) => /* @__PURE__ */ jsx2(
+);
+var TableBody = (props) => /* @__PURE__ */ jsx2(
   "tbody",
   {
-    ref,
     ...props
   }
-));
-TableBody.displayName = "TableBody";
-var TableFooter = forwardRef((props, ref) => /* @__PURE__ */ jsx2(
-  "tfoot",
-  {
-    ref,
-    ...props
-  }
-));
-TableFooter.displayName = "TableFooter";
-var TableRow = forwardRef((props, ref) => /* @__PURE__ */ jsx2(
+);
+var TableRow = (props) => /* @__PURE__ */ jsx2(
   "tr",
   {
-    ref,
     ...props
   }
-));
-TableRow.displayName = "TableRow";
-var TableHead = forwardRef((props, ref) => /* @__PURE__ */ jsx2(
+);
+var TableHead = (props) => /* @__PURE__ */ jsx2(
   "th",
   {
-    ref,
     ...props
   }
-));
-TableHead.displayName = "TableHead";
-var TableCell = forwardRef((props, ref) => /* @__PURE__ */ jsx2("td", { ref, ...props }));
-TableCell.displayName = "TableCell";
-var TableCaption = forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsx2(
-  "caption",
-  {
-    ref,
-    className: cx("text-muted-foreground mt-4 text-sm", className),
-    ...props
-  }
-));
-TableCaption.displayName = "TableCaption";
+);
+var TableCell = (props) => /* @__PURE__ */ jsx2("td", { ...props });
+var IndeterminateCheckbox = ({
+  indeterminate,
+  store,
+  tContainerType,
+  ...props
+}) => {
+  const selectCheckBoxContainerClassName = useStore3(
+    store,
+    (store2) => tContainerType === "thead" ? store2.classNames?.thead?.th?.selectCheckBoxContainer : store2.classNames?.tbody?.td?.selectCheckBoxContainer
+  );
+  const ref = useRef2(null);
+  useEffect(() => {
+    if (!ref.current)
+      return;
+    if (typeof indeterminate === "boolean") {
+      ref.current.indeterminate = !props.checked && indeterminate;
+    }
+  }, [indeterminate, props.checked]);
+  return /* @__PURE__ */ jsx2("div", { className: selectCheckBoxContainerClassName?._, children: /* @__PURE__ */ jsx2(
+    "input",
+    {
+      type: "checkbox",
+      ref,
+      className: selectCheckBoxContainerClassName?.checkbox,
+      ...props
+    }
+  ) });
+};
 
-// src/components/Table/Data.tsx
-import { useStore as useStore2 } from "zustand";
+// src/components/Table/Query.tsx
+import { useStore as useStore4 } from "zustand";
 import { jsx as jsx3, jsxs } from "react/jsx-runtime";
 var CustomTableHeader = ({
   table,
   store
 }) => {
-  const classNames = useStore2(store, (store2) => store2.classNames.thead);
+  const classNames = useStore4(store, (store2) => store2.classNames.thead);
   return /* @__PURE__ */ jsx3(TableHeader, { className: classNames?._, children: table.getHeaderGroups().map((headerGroup) => /* @__PURE__ */ jsx3(TableRow, { className: classNames?.tr, children: headerGroup.headers.map((header) => {
     return /* @__PURE__ */ jsx3(
       TableHead,
       {
-        className: cx(
-          header.id === "select" ? 'data-[select-th="true"]' : void 0,
-          classNames?.th?._
-        ),
+        "data-id": header.id,
+        className: classNames?.th?._,
+        "data-select-th": header.id === "select" ? true : void 0,
         children: header.isPlaceholder ? null : flexRender(
           header.column.columnDef.header,
           header.getContext()
@@ -249,7 +283,7 @@ var CustomTableBody = ({
   columnsLength,
   store
 }) => {
-  const classNames = useStore2(store, (store2) => store2.classNames.tbody);
+  const classNames = useStore4(store, (store2) => store2.classNames.tbody);
   return /* @__PURE__ */ jsx3(
     TableBody,
     {
@@ -263,10 +297,8 @@ var CustomTableBody = ({
           children: row.getVisibleCells().map((cell) => /* @__PURE__ */ jsx3(
             TableCell,
             {
-              className: cx(
-                cell.id === "select" ? 'data-[select-th="true"]' : void 0,
-                classNames?.td?._
-              ),
+              className: classNames?.td?._,
+              "data-select-td": cell.column.id === "select" ? true : void 0,
               children: flexRender(cell.column.columnDef.cell, cell.getContext())
             },
             cell.id
@@ -285,35 +317,14 @@ var CustomTableBody = ({
     }
   );
 };
-var IndeterminateCheckbox = ({
-  indeterminate,
-  className = "",
-  ...props
-}) => {
-  const ref = useRef2(null);
-  useEffect(() => {
-    if (!ref.current)
-      return;
-    if (typeof indeterminate === "boolean") {
-      ref.current.indeterminate = !props.checked && indeterminate;
-    }
-  }, [indeterminate, props.checked]);
-  return /* @__PURE__ */ jsx3("input", { type: "checkbox", ref, className, ...props });
-};
 var QueryTable = ({
   columns,
   store,
   infiniteQuery
 }) => {
-  const sorting = useStore2(store, (store2) => store2.sorting);
-  const columnFilters = useStore2(store, (store2) => store2.columnFilters);
-  const columnVisibility = useStore2(store, (store2) => store2.columnVisibility);
-  const rowSelection = useStore2(store, (store2) => store2.rowSelection);
-  const storeUtils = useStore2(store, (store2) => store2.utils);
-  const pageViewMode = useStore2(store, (state) => state.pageViewMode);
-  const pageIndex = useStore2(store, (state) => state.pageIndex);
-  const canMultiRowSelect = useStore2(store, (state) => state.canMultiRowSelect);
-  const modifiedColumns = useMemo3(() => {
+  const storeUtils = useStore4(store, (store2) => store2.utils);
+  const canMultiRowSelect = useStore4(store, (state) => state.canMultiRowSelect);
+  const modifiedColumns = useMemo4(() => {
     return [
       {
         id: "select",
@@ -322,7 +333,9 @@ var QueryTable = ({
           {
             checked: table2.getIsAllRowsSelected(),
             indeterminate: table2.getIsSomeRowsSelected(),
-            onChange: table2.getToggleAllRowsSelectedHandler()
+            onChange: table2.getToggleAllRowsSelectedHandler(),
+            tContainerType: "thead",
+            store
           }
         ),
         cell: ({ row }) => /* @__PURE__ */ jsx3(
@@ -330,7 +343,9 @@ var QueryTable = ({
           {
             checked: row.getIsSelected(),
             indeterminate: row.getIsSomeSelected(),
-            onChange: row.getToggleSelectedHandler()
+            onChange: row.getToggleSelectedHandler(),
+            tContainerType: "tbody",
+            store
           }
         ),
         enableSorting: false,
@@ -338,22 +353,17 @@ var QueryTable = ({
       },
       ...columns
     ];
-  }, [columns, canMultiRowSelect]);
-  const defaultPage = useMemo3(() => [], []);
-  const currentPage = useMemo3(() => {
-    if (pageViewMode === "INFINITE_SCROLL")
-      return (infiniteQuery?.data?.pages || defaultPage).map((page) => page.items).flat(1);
-    return infiniteQuery?.data?.pages?.[pageIndex]?.items || defaultPage;
-  }, [pageIndex, infiniteQuery.data?.pages, pageViewMode, defaultPage]);
-  const pagination = useMemo3(
-    () => ({
-      pageIndex,
-      pageSize: infiniteQuery?.data?.pages.length || 0
-    }),
-    [pageIndex, infiniteQuery?.data?.pages.length]
-  );
+  }, [canMultiRowSelect, columns, store]);
+  const sorting = useStore4(store, (store2) => store2.sorting);
+  const columnFilters = useStore4(store, (store2) => store2.columnFilters);
+  const columnVisibility = useStore4(store, (store2) => store2.columnVisibility);
+  const rowSelection = useStore4(store, (store2) => store2.rowSelection);
+  const currentPageAndPagination = useGetTableCurrentPageAndPagination({
+    infiniteQuery,
+    store
+  });
   const table = useReactTable({
-    data: currentPage,
+    data: currentPageAndPagination.currentPage,
     columns: modifiedColumns,
     onSortingChange: storeUtils.setSorting,
     onColumnFiltersChange: storeUtils.setColumnFilters,
@@ -368,15 +378,15 @@ var QueryTable = ({
     manualFiltering: true,
     manualSorting: true,
     state: {
-      pagination,
+      pagination: currentPageAndPagination.pagination,
       sorting,
       columnFilters,
       columnVisibility,
       rowSelection
     }
   });
-  useMemo3(() => store.setState({ table }), [store, table]);
-  return /* @__PURE__ */ jsxs(Table, { children: [
+  useEffect2(() => store.setState({ table }), [store, table]);
+  return /* @__PURE__ */ jsxs(Table, { store, children: [
     /* @__PURE__ */ jsx3(CustomTableHeader, { table, store }),
     /* @__PURE__ */ jsx3(
       CustomTableBody,
@@ -388,9 +398,9 @@ var QueryTable = ({
     )
   ] });
 };
-var Data_default = QueryTable;
+var Query_default = QueryTable;
 export {
-  Data_default as QueryTable,
+  Query_default as QueryTable,
   TableLoadMore_default as TableLoadMore,
   handleCreateTableStore,
   useCreateTableStore

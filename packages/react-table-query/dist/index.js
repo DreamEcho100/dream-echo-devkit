@@ -20,7 +20,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/index.ts
 var src_exports = {};
 __export(src_exports, {
-  QueryTable: () => Data_default,
+  QueryTable: () => Query_default,
   TableLoadMore: () => TableLoadMore_default,
   handleCreateTableStore: () => handleCreateTableStore,
   useCreateTableStore: () => useCreateTableStore
@@ -91,10 +91,12 @@ var useCreateTableStore = (props) => {
 };
 
 // src/components/TableLoadMore.tsx
-var import_react2 = require("react");
-var import_zustand2 = require("zustand");
+var import_react3 = require("react");
+var import_zustand3 = require("zustand");
 
 // src/utils/internal.ts
+var import_react2 = require("react");
+var import_zustand2 = require("zustand");
 var cx = (...classesArr) => {
   let classesStr = "";
   let className;
@@ -103,6 +105,32 @@ var cx = (...classesArr) => {
       classesStr += className + " ";
   }
   return classesStr.trimEnd();
+};
+var useGetTableCurrentPageAndPagination = (props) => {
+  const pageViewMode = (0, import_zustand2.useStore)(props.store, (state) => state.pageViewMode);
+  const pageIndex = (0, import_zustand2.useStore)(props.store, (state) => state.pageIndex);
+  const defaultPage = (0, import_react2.useMemo)(() => [], []);
+  const currentPage = (0, import_react2.useMemo)(() => {
+    if (pageViewMode === "INFINITE_SCROLL")
+      return (props.infiniteQuery?.data?.pages || defaultPage).map((page) => page.items).flat(1);
+    return props.infiniteQuery?.data?.pages?.[pageIndex]?.items || defaultPage;
+  }, [pageIndex, props.infiniteQuery.data?.pages, pageViewMode, defaultPage]);
+  const pagination = (0, import_react2.useMemo)(
+    () => ({
+      pageIndex,
+      pageSize: props.infiniteQuery?.data?.pages.length || 0
+    }),
+    [pageIndex, props.infiniteQuery?.data?.pages.length]
+  );
+  console.log("currentPage", currentPage);
+  const res = (0, import_react2.useMemo)(
+    () => ({
+      currentPage,
+      pagination
+    }),
+    [currentPage, pagination]
+  );
+  return res;
 };
 
 // src/components/TableLoadMore.tsx
@@ -115,9 +143,9 @@ var TableLoadMore = ({
     loadMoreButton: ""
   }
 }) => {
-  const pageIndex = (0, import_zustand2.useStore)(store, (state) => state.pageIndex);
-  const storeUtils = (0, import_zustand2.useStore)(store, (state) => state.utils);
-  const { isLastPageEmpty, isInBeforeLastPage } = (0, import_react2.useMemo)(() => {
+  const pageIndex = (0, import_zustand3.useStore)(store, (state) => state.pageIndex);
+  const storeUtils = (0, import_zustand3.useStore)(store, (state) => state.utils);
+  const { isLastPageEmpty, isInBeforeLastPage } = (0, import_react3.useMemo)(() => {
     const isLastPageEmpty2 = infiniteQuery?.data?.pages?.[infiniteQuery.data.pages.length - 1]?.items.length === 0;
     const isInFirstPage = pageIndex === 0;
     const isInLastPage = pageIndex + 1 === infiniteQuery?.data?.pages?.length;
@@ -133,7 +161,7 @@ var TableLoadMore = ({
       pagesLength
     };
   }, [pageIndex, infiniteQuery?.data?.pages]);
-  const isLoadMoreButtonDisabled = (0, import_react2.useMemo)(
+  const isLoadMoreButtonDisabled = (0, import_react3.useMemo)(
     () => !infiniteQuery.hasNextPage && pageIndex + 1 === infiniteQuery.data?.pages.length || infiniteQuery.isFetching || isInBeforeLastPage && isLastPageEmpty,
     [
       pageIndex,
@@ -170,91 +198,96 @@ var TableLoadMore = ({
 };
 var TableLoadMore_default = TableLoadMore;
 
-// src/components/Table/Data.tsx
-var import_react4 = require("react");
+// src/components/Table/Query.tsx
+var import_react5 = require("react");
 var import_react_table = require("@tanstack/react-table");
 
 // src/components/Table/Basic.tsx
-var import_react3 = require("react");
+var import_react4 = require("react");
+var import_zustand4 = require("zustand");
 var import_jsx_runtime2 = require("react/jsx-runtime");
-var Table = (0, import_react3.forwardRef)(
-  (props, ref) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+var Table = ({
+  store,
+  ...props
+}) => {
+  const className = (0, import_zustand4.useStore)(store, (store2) => store2.classNames?.table);
+  return /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
     "table",
     {
-      ref,
-      ...props
+      ...props,
+      className
     }
-  )
-);
-Table.displayName = "Table";
-var TableHeader = (0, import_react3.forwardRef)((props, ref) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+  );
+};
+var TableHeader = (props) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
   "thead",
   {
-    ref,
     ...props
   }
-));
-TableHeader.displayName = "TableHeader";
-var TableBody = (0, import_react3.forwardRef)((props, ref) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+);
+var TableBody = (props) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
   "tbody",
   {
-    ref,
     ...props
   }
-));
-TableBody.displayName = "TableBody";
-var TableFooter = (0, import_react3.forwardRef)((props, ref) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
-  "tfoot",
-  {
-    ref,
-    ...props
-  }
-));
-TableFooter.displayName = "TableFooter";
-var TableRow = (0, import_react3.forwardRef)((props, ref) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+);
+var TableRow = (props) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
   "tr",
   {
-    ref,
     ...props
   }
-));
-TableRow.displayName = "TableRow";
-var TableHead = (0, import_react3.forwardRef)((props, ref) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+);
+var TableHead = (props) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
   "th",
   {
-    ref,
     ...props
   }
-));
-TableHead.displayName = "TableHead";
-var TableCell = (0, import_react3.forwardRef)((props, ref) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("td", { ref, ...props }));
-TableCell.displayName = "TableCell";
-var TableCaption = (0, import_react3.forwardRef)(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
-  "caption",
-  {
-    ref,
-    className: cx("text-muted-foreground mt-4 text-sm", className),
-    ...props
-  }
-));
-TableCaption.displayName = "TableCaption";
+);
+var TableCell = (props) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("td", { ...props });
+var IndeterminateCheckbox = ({
+  indeterminate,
+  store,
+  tContainerType,
+  ...props
+}) => {
+  const selectCheckBoxContainerClassName = (0, import_zustand4.useStore)(
+    store,
+    (store2) => tContainerType === "thead" ? store2.classNames?.thead?.th?.selectCheckBoxContainer : store2.classNames?.tbody?.td?.selectCheckBoxContainer
+  );
+  const ref = (0, import_react4.useRef)(null);
+  (0, import_react4.useEffect)(() => {
+    if (!ref.current)
+      return;
+    if (typeof indeterminate === "boolean") {
+      ref.current.indeterminate = !props.checked && indeterminate;
+    }
+  }, [indeterminate, props.checked]);
+  return /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: selectCheckBoxContainerClassName?._, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+    "input",
+    {
+      type: "checkbox",
+      ref,
+      className: selectCheckBoxContainerClassName?.checkbox,
+      ...props
+    }
+  ) });
+};
 
-// src/components/Table/Data.tsx
-var import_zustand3 = require("zustand");
+// src/components/Table/Query.tsx
+var import_zustand5 = require("zustand");
 var import_jsx_runtime3 = require("react/jsx-runtime");
 var CustomTableHeader = ({
   table,
   store
 }) => {
-  const classNames = (0, import_zustand3.useStore)(store, (store2) => store2.classNames.thead);
+  const classNames = (0, import_zustand5.useStore)(store, (store2) => store2.classNames.thead);
   return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(TableHeader, { className: classNames?._, children: table.getHeaderGroups().map((headerGroup) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(TableRow, { className: classNames?.tr, children: headerGroup.headers.map((header) => {
     return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
       TableHead,
       {
-        className: cx(
-          header.id === "select" ? 'data-[select-th="true"]' : void 0,
-          classNames?.th?._
-        ),
+        "data-id": header.id,
+        className: classNames?.th?._,
+        "data-select-th": header.id === "select" ? true : void 0,
         children: header.isPlaceholder ? null : (0, import_react_table.flexRender)(
           header.column.columnDef.header,
           header.getContext()
@@ -269,7 +302,7 @@ var CustomTableBody = ({
   columnsLength,
   store
 }) => {
-  const classNames = (0, import_zustand3.useStore)(store, (store2) => store2.classNames.tbody);
+  const classNames = (0, import_zustand5.useStore)(store, (store2) => store2.classNames.tbody);
   return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
     TableBody,
     {
@@ -283,10 +316,8 @@ var CustomTableBody = ({
           children: row.getVisibleCells().map((cell) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
             TableCell,
             {
-              className: cx(
-                cell.id === "select" ? 'data-[select-th="true"]' : void 0,
-                classNames?.td?._
-              ),
+              className: classNames?.td?._,
+              "data-select-td": cell.column.id === "select" ? true : void 0,
               children: (0, import_react_table.flexRender)(cell.column.columnDef.cell, cell.getContext())
             },
             cell.id
@@ -305,35 +336,14 @@ var CustomTableBody = ({
     }
   );
 };
-var IndeterminateCheckbox = ({
-  indeterminate,
-  className = "",
-  ...props
-}) => {
-  const ref = (0, import_react4.useRef)(null);
-  (0, import_react4.useEffect)(() => {
-    if (!ref.current)
-      return;
-    if (typeof indeterminate === "boolean") {
-      ref.current.indeterminate = !props.checked && indeterminate;
-    }
-  }, [indeterminate, props.checked]);
-  return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("input", { type: "checkbox", ref, className, ...props });
-};
 var QueryTable = ({
   columns,
   store,
   infiniteQuery
 }) => {
-  const sorting = (0, import_zustand3.useStore)(store, (store2) => store2.sorting);
-  const columnFilters = (0, import_zustand3.useStore)(store, (store2) => store2.columnFilters);
-  const columnVisibility = (0, import_zustand3.useStore)(store, (store2) => store2.columnVisibility);
-  const rowSelection = (0, import_zustand3.useStore)(store, (store2) => store2.rowSelection);
-  const storeUtils = (0, import_zustand3.useStore)(store, (store2) => store2.utils);
-  const pageViewMode = (0, import_zustand3.useStore)(store, (state) => state.pageViewMode);
-  const pageIndex = (0, import_zustand3.useStore)(store, (state) => state.pageIndex);
-  const canMultiRowSelect = (0, import_zustand3.useStore)(store, (state) => state.canMultiRowSelect);
-  const modifiedColumns = (0, import_react4.useMemo)(() => {
+  const storeUtils = (0, import_zustand5.useStore)(store, (store2) => store2.utils);
+  const canMultiRowSelect = (0, import_zustand5.useStore)(store, (state) => state.canMultiRowSelect);
+  const modifiedColumns = (0, import_react5.useMemo)(() => {
     return [
       {
         id: "select",
@@ -342,7 +352,9 @@ var QueryTable = ({
           {
             checked: table2.getIsAllRowsSelected(),
             indeterminate: table2.getIsSomeRowsSelected(),
-            onChange: table2.getToggleAllRowsSelectedHandler()
+            onChange: table2.getToggleAllRowsSelectedHandler(),
+            tContainerType: "thead",
+            store
           }
         ),
         cell: ({ row }) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
@@ -350,7 +362,9 @@ var QueryTable = ({
           {
             checked: row.getIsSelected(),
             indeterminate: row.getIsSomeSelected(),
-            onChange: row.getToggleSelectedHandler()
+            onChange: row.getToggleSelectedHandler(),
+            tContainerType: "tbody",
+            store
           }
         ),
         enableSorting: false,
@@ -358,22 +372,17 @@ var QueryTable = ({
       },
       ...columns
     ];
-  }, [columns, canMultiRowSelect]);
-  const defaultPage = (0, import_react4.useMemo)(() => [], []);
-  const currentPage = (0, import_react4.useMemo)(() => {
-    if (pageViewMode === "INFINITE_SCROLL")
-      return (infiniteQuery?.data?.pages || defaultPage).map((page) => page.items).flat(1);
-    return infiniteQuery?.data?.pages?.[pageIndex]?.items || defaultPage;
-  }, [pageIndex, infiniteQuery.data?.pages, pageViewMode, defaultPage]);
-  const pagination = (0, import_react4.useMemo)(
-    () => ({
-      pageIndex,
-      pageSize: infiniteQuery?.data?.pages.length || 0
-    }),
-    [pageIndex, infiniteQuery?.data?.pages.length]
-  );
+  }, [canMultiRowSelect, columns, store]);
+  const sorting = (0, import_zustand5.useStore)(store, (store2) => store2.sorting);
+  const columnFilters = (0, import_zustand5.useStore)(store, (store2) => store2.columnFilters);
+  const columnVisibility = (0, import_zustand5.useStore)(store, (store2) => store2.columnVisibility);
+  const rowSelection = (0, import_zustand5.useStore)(store, (store2) => store2.rowSelection);
+  const currentPageAndPagination = useGetTableCurrentPageAndPagination({
+    infiniteQuery,
+    store
+  });
   const table = (0, import_react_table.useReactTable)({
-    data: currentPage,
+    data: currentPageAndPagination.currentPage,
     columns: modifiedColumns,
     onSortingChange: storeUtils.setSorting,
     onColumnFiltersChange: storeUtils.setColumnFilters,
@@ -388,15 +397,15 @@ var QueryTable = ({
     manualFiltering: true,
     manualSorting: true,
     state: {
-      pagination,
+      pagination: currentPageAndPagination.pagination,
       sorting,
       columnFilters,
       columnVisibility,
       rowSelection
     }
   });
-  (0, import_react4.useMemo)(() => store.setState({ table }), [store, table]);
-  return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(Table, { children: [
+  (0, import_react5.useEffect)(() => store.setState({ table }), [store, table]);
+  return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(Table, { store, children: [
     /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(CustomTableHeader, { table, store }),
     /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
       CustomTableBody,
@@ -408,7 +417,7 @@ var QueryTable = ({
     )
   ] });
 };
-var Data_default = QueryTable;
+var Query_default = QueryTable;
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   QueryTable,

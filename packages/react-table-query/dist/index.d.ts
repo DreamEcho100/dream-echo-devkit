@@ -24,9 +24,9 @@ type TableClassNames = {
             _?: string;
             container?: string;
             resizeController?: string;
-            checkboxContainer?: {
+            selectCheckBoxContainer?: {
                 _?: string;
-                checkBox?: string;
+                checkbox?: string;
             };
         };
     };
@@ -39,9 +39,9 @@ type TableClassNames = {
         };
         td?: {
             _?: string;
-            checkboxContainer?: {
+            selectCheckBoxContainer?: {
                 _?: string;
-                checkBox?: string;
+                checkbox?: string;
             };
         };
     };
@@ -88,6 +88,10 @@ interface DataTableProps<TData, TValue> {
     infiniteQuery: InfiniteQuery<TData>;
     store: StoreApi<TableStore<TData>>;
 }
+interface UseGetTableCurrentPageAndPaginationProps<TData> {
+    infiniteQuery: InfiniteQuery<TData>;
+    store: StoreApi<TableStore<TData>>;
+}
 type CustomTableBodyProps<TData> = {
     table: Table<TData>;
     columnsLength: number;
@@ -114,4 +118,4 @@ declare const TableLoadMore: <TData, TValue>({ infiniteQuery, store, classNames,
 
 declare const QueryTable: <TData, TValue>({ columns, store, infiniteQuery, }: DataTableProps<TData, TValue>) => react_jsx_runtime.JSX.Element;
 
-export { CustomTableBodyProps, CustomTableHeaderProps, DataTableProps, HandleCreateTableStoreProps, InfiniteQuery, PageViewMode, QueryTable, StoreUpdaterOrValue, TableClassNames, TableLoadMore, TableStore, handleCreateTableStore, useCreateTableStore };
+export { CustomTableBodyProps, CustomTableHeaderProps, DataTableProps, HandleCreateTableStoreProps, InfiniteQuery, PageViewMode, QueryTable, StoreUpdaterOrValue, TableClassNames, TableLoadMore, TableStore, UseGetTableCurrentPageAndPaginationProps, handleCreateTableStore, useCreateTableStore };

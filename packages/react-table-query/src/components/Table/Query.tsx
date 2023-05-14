@@ -1,4 +1,4 @@
-import { type HTMLProps, useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
 	flexRender,
 	getCoreRowModel,
@@ -8,6 +8,7 @@ import {
 	useReactTable,
 } from '@tanstack/react-table';
 import {
+	IndeterminateCheckbox,
 	Table,
 	TableBody,
 	TableCell,
@@ -21,7 +22,7 @@ import {
 	type CustomTableBodyProps,
 	type DataTableProps,
 } from '../../utils/types';
-import { cx } from '../../utils/internal';
+import { useGetTableCurrentPageAndPagination } from '../../utils/internal';
 
 const CustomTableHeader = <TData,>({
 	table,
@@ -37,12 +38,9 @@ const CustomTableHeader = <TData,>({
 						return (
 							<TableHead
 								key={header.id}
-								className={cx(
-									header.id === 'select'
-										? 'data-[select-th="true"]'
-										: undefined,
-									classNames?.th?._,
-								)}
+								data-id={header.id}
+								className={classNames?.th?._}
+								data-select-th={header.id === 'select' ? true : undefined}
 							>
 								{header.isPlaceholder
 									? null
@@ -81,10 +79,8 @@ const CustomTableBody = <TData,>({
 						{row.getVisibleCells().map((cell) => (
 							<TableCell
 								key={cell.id}
-								className={cx(
-									cell.id === 'select' ? 'data-[select-th="true"]' : undefined,
-									classNames?.td?._,
-								)}
+								className={classNames?.td?._}
+								data-select-td={cell.column.id === 'select' ? true : undefined}
 							>
 								{flexRender(cell.column.columnDef.cell, cell.getContext())}
 							</TableCell>
@@ -106,40 +102,14 @@ const CustomTableBody = <TData,>({
 	);
 };
 
-const IndeterminateCheckbox = ({
-	indeterminate,
-	className = '',
-	...props
-}: { indeterminate?: boolean } & HTMLProps<HTMLInputElement>) => {
-	const ref = useRef<HTMLInputElement>(null);
-
-	useEffect(() => {
-		if (!ref.current) return;
-
-		if (typeof indeterminate === 'boolean') {
-			ref.current.indeterminate = !props.checked && indeterminate;
-		}
-	}, [indeterminate, props.checked]);
-
-	return <input type='checkbox' ref={ref} className={className} {...props} />;
-};
-
 const QueryTable = <TData, TValue>({
 	columns,
 	store,
 	infiniteQuery,
 }: DataTableProps<TData, TValue>) => {
 	//
-	const sorting = useStore(store, (store) => store.sorting);
-	const columnFilters = useStore(store, (store) => store.columnFilters);
-	const columnVisibility = useStore(store, (store) => store.columnVisibility);
-	const rowSelection = useStore(store, (store) => store.rowSelection);
 	const storeUtils = useStore(store, (store) => store.utils);
-	const pageViewMode = useStore(store, (state) => state.pageViewMode);
-	//
-	const pageIndex = useStore(store, (state) => state.pageIndex);
 	const canMultiRowSelect = useStore(store, (state) => state.canMultiRowSelect);
-
 	const modifiedColumns: typeof columns = useMemo(() => {
 		return [
 			{
@@ -149,6 +119,8 @@ const QueryTable = <TData, TValue>({
 						checked={table.getIsAllRowsSelected()}
 						indeterminate={table.getIsSomeRowsSelected()}
 						onChange={table.getToggleAllRowsSelectedHandler()}
+						tContainerType='thead'
+						store={store}
 						// className={cx(classNames.thead?.th?.checkboxContainer?.checkBox)}
 					/>
 				),
@@ -157,6 +129,8 @@ const QueryTable = <TData, TValue>({
 						checked={row.getIsSelected()}
 						indeterminate={row.getIsSomeSelected()}
 						onChange={row.getToggleSelectedHandler()}
+						tContainerType='tbody'
+						store={store}
 						// className={cx(classNames.tbody?.td?.checkboxContainer?.checkBox)}
 					/>
 				),
@@ -165,28 +139,21 @@ const QueryTable = <TData, TValue>({
 			},
 			...columns,
 		];
-	}, [columns, canMultiRowSelect]);
+	}, [canMultiRowSelect, columns, store]);
 
-	const defaultPage = useMemo(() => [], []);
-	const currentPage = useMemo(() => {
-		if (pageViewMode === 'INFINITE_SCROLL')
-			return (infiniteQuery?.data?.pages || defaultPage)
-				.map((page) => page.items)
-				.flat(1);
+	//
+	const sorting = useStore(store, (store) => store.sorting);
+	const columnFilters = useStore(store, (store) => store.columnFilters);
+	const columnVisibility = useStore(store, (store) => store.columnVisibility);
+	const rowSelection = useStore(store, (store) => store.rowSelection);
 
-		return infiniteQuery?.data?.pages?.[pageIndex]?.items || defaultPage;
-	}, [pageIndex, infiniteQuery.data?.pages, pageViewMode, defaultPage]);
-
-	const pagination = useMemo(
-		() => ({
-			pageIndex,
-			pageSize: infiniteQuery?.data?.pages.length || 0,
-		}),
-		[pageIndex, infiniteQuery?.data?.pages.length],
-	);
+	const currentPageAndPagination = useGetTableCurrentPageAndPagination({
+		infiniteQuery,
+		store,
+	});
 
 	const table = useReactTable({
-		data: currentPage,
+		data: currentPageAndPagination.currentPage,
 		columns: modifiedColumns,
 		onSortingChange: storeUtils.setSorting,
 		onColumnFiltersChange: storeUtils.setColumnFilters,
@@ -201,7 +168,7 @@ const QueryTable = <TData, TValue>({
 		manualFiltering: true,
 		manualSorting: true,
 		state: {
-			pagination,
+			pagination: currentPageAndPagination.pagination,
 			sorting,
 			columnFilters,
 			columnVisibility,
@@ -209,10 +176,10 @@ const QueryTable = <TData, TValue>({
 		},
 	});
 
-	useMemo(() => store.setState({ table }), [store, table]);
+	useEffect(() => store.setState({ table }), [store, table]);
 
 	return (
-		<Table>
+		<Table store={store}>
 			<CustomTableHeader table={table} store={store} />
 			<CustomTableBody
 				table={table}

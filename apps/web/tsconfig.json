@@ -1,39 +1,47 @@
 {
-	"extends": "tsconfig/nextjs.json",
-	"compilerOptions": {
-		// // "jsx": "react-jsx",
-		// // "lib": ["ES2015", "DOM"],
-		// // "module": "ESNext",
-		// // "target": "ESNext",
-		// // "outDir": "./dist",
-		// // "composite": false,
-		// // "declaration": true,
-		// // "declarationMap": true,
-		// // "esModuleInterop": true,
-		// // "forceConsistentCasingInFileNames": true,
-		// // "inlineSources": false,
-		// // "isolatedModules": true,
-		// // "moduleResolution": "node",
-		// // "noUnusedLocals": false,
-		// // "noUnusedParameters": false,
-		// // "preserveWatchOutput": true,
-		// // "skipLibCheck": true,
-		// // "strict": true,
-		"jsx": "react-jsx",
-		// "target": "ESNext",
-		// "composite": false,
-		// "declaration": true,
-		// "declarationMap": true,
-		// "inlineSources": false,
-		// "moduleResolution": "node",
-		// "noUnusedLocals": false,
-		// "noUnusedParameters": false,
-		// "preserveWatchOutput": true,
-		"baseUrl": ".",
-		"paths": {
-			"~/*": ["./src/*"]
-		}
-	},
-	"include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
-	"exclude": ["node_modules"]
+  "extends": "tsconfig/nextjs.json",
+  "compilerOptions": {
+    // // "jsx": "react-jsx",
+    // // "lib": ["ES2015", "DOM"],
+    // // "module": "ESNext",
+    // // "target": "ESNext",
+    // // "outDir": "./dist",
+    // // "composite": false,
+    // // "declaration": true,
+    // // "declarationMap": true,
+    // // "esModuleInterop": true,
+    // // "forceConsistentCasingInFileNames": true,
+    // // "inlineSources": false,
+    // // "isolatedModules": true,
+    // // "moduleResolution": "node",
+    // // "noUnusedLocals": false,
+    // // "noUnusedParameters": false,
+    // // "preserveWatchOutput": true,
+    // // "skipLibCheck": true,
+    // // "strict": true,
+    "jsx": "preserve",
+    // "target": "ESNext",
+    // "composite": false,
+    // "declaration": true,
+    // "declarationMap": true,
+    // "inlineSources": false,
+    // "moduleResolution": "node",
+    // "noUnusedLocals": false,
+    // "noUnusedParameters": false,
+    // "preserveWatchOutput": true,
+    "baseUrl": ".",
+    "paths": {
+      "~/*": [
+        "./src/*"
+      ]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
