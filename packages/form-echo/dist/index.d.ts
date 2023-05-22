@@ -62,7 +62,7 @@ ValidatedFields> {
     };
     submitCounter: number;
     utils: {
-        resetErrorsFields: () => void;
+        resetFieldsErrors: () => void;
         handleOnInputChange: (name: keyof Fields, value: unknown) => void;
         errorFormatter: (error: unknown, validationEvent: ValidationEvents) => string[];
         reInitFieldsValues: () => void;

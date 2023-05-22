@@ -140,7 +140,7 @@ export const handleCreateFormStore = <
 		validations: { history: [] },
 		errors: {},
 		utils: {
-			resetErrorsFields: () =>
+			resetFieldsErrors: () =>
 				set((prev) => {
 					const fields = Object.fromEntries(
 						prev.metadata.fieldsNames.map((fieldsName) => [
