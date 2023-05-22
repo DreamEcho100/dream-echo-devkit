@@ -53,7 +53,7 @@ export const handleCreateFormStore = <
 			? `${params.baseId}-`
 			: '';
 
-	const errors = {};
+	// const errors = {};
 	const metadata = {
 		fieldsNames: Object.keys(params.initValues) as (keyof Fields)[],
 		formId: `${baseId}form`,
@@ -134,12 +134,30 @@ export const handleCreateFormStore = <
 
 	return createStore<FormStore>((set, get) => ({
 		fields,
-		errors,
 		metadata,
 		submitCounter,
 		isTrackingValidationHistory: trackValidationHistory,
 		validations: { history: [] },
+		errors: {},
 		utils: {
+			resetErrorsFields: () =>
+				set((prev) => {
+					const fields = Object.fromEntries(
+						prev.metadata.fieldsNames.map((fieldsName) => [
+							fieldsName,
+							{
+								...prev.fields[fieldsName],
+								errors: null,
+								isDirty: false,
+							},
+						]),
+					);
+
+					return {
+						fields: fields as unknown as typeof prev.fields,
+						errors: {},
+					};
+				}),
 			handleOnInputChange: (name, value) => {
 				const currentStore = get();
 				const _value = currentStore.utils.handleFieldValidation({
@@ -222,7 +240,7 @@ export const handleCreateFormStore = <
 
 					return {
 						fields: { ...currentState.fields, [params.name]: field },
-						errors,
+						errors: { ...currentState.errors, [params.name]: params.errors },
 					};
 				}),
 			createValidationHistoryRecord: ({
