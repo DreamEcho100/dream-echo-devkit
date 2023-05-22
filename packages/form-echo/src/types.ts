@@ -83,6 +83,7 @@ export interface FormStoreShape<
 	};
 	submitCounter: number;
 	utils: {
+		resetErrorsFields: () => void;
 		handleOnInputChange: (name: keyof Fields, value: unknown) => void;
 		errorFormatter: (
 			error: unknown,
