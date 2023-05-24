@@ -1,9 +1,13 @@
 import { useMemo } from 'react';
 import { type StoreApi, useStore } from 'zustand';
-import type { InfiniteQuery, TableStore } from '../utils/types';
+import type { InfiniteQuery, QueryInput, TableStore } from '../utils/types';
 import { cx } from '../utils/internal';
 
-const TableLoadMore = <TData, TValue>({
+const TableLoadMore = <
+	TData,
+	TQueryInput extends QueryInput = QueryInput,
+	TError = unknown,
+>({
 	infiniteQuery,
 	store,
 	classNames = {
@@ -11,14 +15,14 @@ const TableLoadMore = <TData, TValue>({
 		loadMoreButton: '',
 	},
 }: {
-	infiniteQuery: InfiniteQuery<TData>;
-	store: StoreApi<TableStore<TValue>>;
+	infiniteQuery: InfiniteQuery<TData, TError>;
+	store: StoreApi<TableStore<TData, TQueryInput>>;
 	classNames?: {
 		container: string;
 		loadMoreButton: string;
 	};
 }) => {
-	const pageIndex = useStore(store, (state) => state.pageIndex);
+	const pageIndex = useStore(store, (state) => state.queryInput.pageIndex || 0);
 
 	const storeUtils = useStore(store, (state) => state.utils);
 
@@ -84,7 +88,10 @@ const TableLoadMore = <TData, TValue>({
 								return;
 						}
 
-						storeUtils.setPageIndex((pageIndex) => pageIndex + 1);
+						storeUtils.setQueryInput((prev) => ({
+							...prev,
+							pageIndex: (prev.pageIndex || 0) + 1,
+						}));
 					});
 				}}
 				className={cx(classNames?.loadMoreButton)}

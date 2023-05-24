@@ -1,6 +1,9 @@
 import { useMemo } from 'react';
 import { useStore } from 'zustand';
-import { type UseGetTableCurrentPageAndPaginationProps } from './types';
+import {
+	type QueryInput,
+	type UseGetTableCurrentPageAndPaginationProps,
+} from './types';
 
 export const cx = (...classesArr: (string | undefined)[]) => {
 	let classesStr = '';
@@ -12,11 +15,17 @@ export const cx = (...classesArr: (string | undefined)[]) => {
 	return classesStr.trimEnd();
 };
 
-export const useGetTableCurrentPageAndPagination = <TData>(
-	props: UseGetTableCurrentPageAndPaginationProps<TData>,
+export const useGetTableCurrentPageAndPagination = <
+	TData,
+	TQueryInput extends QueryInput = QueryInput,
+>(
+	props: UseGetTableCurrentPageAndPaginationProps<TData, TQueryInput>,
 ) => {
 	const pageViewMode = useStore(props.store, (state) => state.pageViewMode);
-	const pageIndex = useStore(props.store, (state) => state.pageIndex);
+	const pageIndex = useStore(
+		props.store,
+		(state) => state.queryInput.pageIndex || 0,
+	);
 	const defaultPage = useMemo(() => [], []);
 	const currentPage = useMemo(() => {
 		if (pageViewMode === 'INFINITE_SCROLL')

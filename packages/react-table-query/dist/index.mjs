@@ -8,12 +8,11 @@ var handleCreateTableStore = ({
   tableAutoToFixedOnLoad = false,
   columnVisibility = {},
   baseId = "",
-  pageSize
+  queryInput
 }) => createStore((set) => ({
   table: null,
   baseId,
-  pageIndex: 0,
-  pageSize,
+  queryInput,
   classNames,
   pageViewMode,
   canMultiRowSelect,
@@ -24,13 +23,16 @@ var handleCreateTableStore = ({
   sorting: [],
   utils: {
     setPagination: (updaterOrValue) => set((prevData) => ({
-      ...typeof updaterOrValue === "function" ? updaterOrValue({
-        pageIndex: prevData.pageIndex,
-        pageSize: prevData.pageSize
-      }) : updaterOrValue
+      queryInput: {
+        ...prevData.queryInput,
+        ...typeof updaterOrValue === "function" ? updaterOrValue({
+          pageIndex: prevData.queryInput.pageIndex || 0,
+          pageSize: prevData.queryInput.pageSize || 0
+        }) : updaterOrValue
+      }
     })),
-    setPageIndex: (updaterOrValue) => set((prevData) => ({
-      pageIndex: typeof updaterOrValue === "function" ? updaterOrValue(prevData.pageIndex) : updaterOrValue
+    setQueryInput: (updaterOrValue) => set((prevData) => ({
+      queryInput: typeof updaterOrValue === "function" ? updaterOrValue(prevData.queryInput) : updaterOrValue
     })),
     setRowSelection: (updaterOrValue) => set((prevData) => ({
       rowSelection: typeof updaterOrValue === "function" ? updaterOrValue(prevData.rowSelection) : updaterOrValue
@@ -49,15 +51,18 @@ var handleCreateTableStore = ({
 var useCreateTableStore = (props) => {
   const baseId = useId();
   const storeRef = useRef(
-    handleCreateTableStore({ ...props, baseId: props.baseId || baseId })
+    handleCreateTableStore({
+      ...props,
+      baseId: props.baseId || baseId
+    })
   );
   useMemo(() => {
-    if (storeRef.current.getState().pageSize !== props.pageSize || storeRef.current.getState().baseId !== props.baseId)
+    if (storeRef.current.getState().queryInput.pageSize !== props.queryInput.pageSize || storeRef.current.getState().baseId !== props.baseId)
       storeRef.current.setState(() => ({
-        pageSize: props.pageSize,
+        pageSize: props.queryInput.pageSize,
         baseId: props.baseId
       }));
-  }, [props.baseId, props.pageSize]);
+  }, [props.baseId, props.queryInput.pageSize]);
   return storeRef.current;
 };
 
@@ -79,7 +84,10 @@ var cx = (...classesArr) => {
 };
 var useGetTableCurrentPageAndPagination = (props) => {
   const pageViewMode = useStore(props.store, (state) => state.pageViewMode);
-  const pageIndex = useStore(props.store, (state) => state.pageIndex);
+  const pageIndex = useStore(
+    props.store,
+    (state) => state.queryInput.pageIndex || 0
+  );
   const defaultPage = useMemo2(() => [], []);
   const currentPage = useMemo2(() => {
     if (pageViewMode === "INFINITE_SCROLL")
@@ -114,7 +122,7 @@ var TableLoadMore = ({
     loadMoreButton: ""
   }
 }) => {
-  const pageIndex = useStore2(store, (state) => state.pageIndex);
+  const pageIndex = useStore2(store, (state) => state.queryInput.pageIndex || 0);
   const storeUtils = useStore2(store, (state) => state.utils);
   const { isLastPageEmpty, isInBeforeLastPage } = useMemo3(() => {
     const isLastPageEmpty2 = infiniteQuery?.data?.pages?.[infiniteQuery.data.pages.length - 1]?.items.length === 0;
@@ -159,7 +167,10 @@ var TableLoadMore = ({
             if (!lastPage || isInBeforeLastPage && lastPage.items.length === 0)
               return;
           }
-          storeUtils.setPageIndex((pageIndex2) => pageIndex2 + 1);
+          storeUtils.setQueryInput((prev) => ({
+            ...prev,
+            pageIndex: (prev.pageIndex || 0) + 1
+          }));
         });
       },
       className: cx(classNames?.loadMoreButton),

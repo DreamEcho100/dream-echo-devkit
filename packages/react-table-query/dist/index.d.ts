@@ -5,15 +5,17 @@ import { Table, RowSelectionState, SortingState, ColumnFiltersState, VisibilityS
 import { UseTRPCInfiniteQueryResult } from '@trpc/react-query/shared';
 import * as react_jsx_runtime from 'react/jsx-runtime';
 
-type InfiniteQuery<TData> = UseInfiniteQueryResult<{
+type QueryInput = {
+    pageIndex?: number;
+    pageSize?: number;
+} & Record<string, unknown>;
+type InfiniteQuery<TData = unknown, TError = unknown> = UseInfiniteQueryResult<{
     items: TData[];
-} & Record<string, unknown>, {
-    message: string;
-} & Record<string, unknown>> | UseTRPCInfiniteQueryResult<{
+} & Record<string, unknown>, TError> | UseTRPCInfiniteQueryResult<{
     items: TData[];
     nextCursor: unknown;
-}, unknown>;
-type StoreUpdaterOrValue<TData, TableKey> = TableKey extends keyof TableStore<TData> ? TableStore<TData>[TableKey] | ((prevData: TableStore<TData>[TableKey]) => TableStore<TData>[TableKey]) : never;
+}, TError>;
+type StoreUpdaterOrValue<TData, TQueryInput extends QueryInput = QueryInput, TableKey = unknown> = TableKey extends keyof TableStore<TData, TQueryInput> ? TableStore<TData, TQueryInput>[TableKey] | ((prevData: TableStore<TData, TQueryInput>[TableKey]) => TableStore<TData, TQueryInput>[TableKey]) : never;
 type PageViewMode = 'PAGING' | 'INFINITE_SCROLL';
 type TableClassNames = {
     table?: string;
@@ -46,11 +48,10 @@ type TableClassNames = {
         };
     };
 };
-type TableStore<TData> = {
+type TableStore<TData, TQueryInput extends QueryInput = QueryInput> = {
     table: Table<TData> | null;
+    queryInput: TQueryInput;
     baseId: string;
-    pageIndex: number;
-    pageSize: number;
     classNames: TableClassNames;
     pageViewMode: PageViewMode;
     tableAutoToFixedOnLoad: boolean;
@@ -60,7 +61,7 @@ type TableStore<TData> = {
     columnFilters: ColumnFiltersState;
     columnVisibility: VisibilityState;
     utils: {
-        setPageIndex: (updaterOrValue: StoreUpdaterOrValue<TData, 'pageIndex'>) => void;
+        setQueryInput: (updaterOrValue: TQueryInput | ((prev: TQueryInput) => TQueryInput)) => void;
         setPagination: (updaterOrValue: {
             pageIndex: number;
             pageSize: number;
@@ -68,54 +69,54 @@ type TableStore<TData> = {
             pageIndex: number;
             pageSize: number;
         }) => void)) => void;
-        setRowSelection: (updaterOrValue: StoreUpdaterOrValue<TData, 'rowSelection'>) => void;
-        setSorting: (updaterOrValue: StoreUpdaterOrValue<TData, 'sorting'>) => void;
-        setColumnFilters: (updaterOrValue: StoreUpdaterOrValue<TData, 'columnFilters'>) => void;
-        setColumnVisibility: (updaterOrValue: StoreUpdaterOrValue<TData, 'columnVisibility'>) => void;
+        setRowSelection: (updaterOrValue: StoreUpdaterOrValue<TData, TQueryInput, 'rowSelection'>) => void;
+        setSorting: (updaterOrValue: StoreUpdaterOrValue<TData, TQueryInput, 'sorting'>) => void;
+        setColumnFilters: (updaterOrValue: StoreUpdaterOrValue<TData, TQueryInput, 'columnFilters'>) => void;
+        setColumnVisibility: (updaterOrValue: StoreUpdaterOrValue<TData, TQueryInput, 'columnVisibility'>) => void;
     };
 };
-type HandleCreateTableStoreProps = {
+type HandleCreateTableStoreProps<TQueryInput extends QueryInput = QueryInput> = {
     classNames?: TableClassNames;
     pageViewMode?: PageViewMode;
     columnVisibility?: VisibilityState;
     tableAutoToFixedOnLoad?: boolean;
     canMultiRowSelect?: boolean;
     baseId?: string;
-    pageSize: number;
+    queryInput: TQueryInput;
 };
-interface DataTableProps<TData, TValue> {
-    columns: ColumnDef<TData, TValue>[];
-    infiniteQuery: InfiniteQuery<TData>;
-    store: StoreApi<TableStore<TData>>;
+interface DataTableProps<TData, TQueryInput extends QueryInput = QueryInput, TError = unknown> {
+    columns: ColumnDef<TData, unknown>[];
+    infiniteQuery: InfiniteQuery<TData, TError>;
+    store: StoreApi<TableStore<TData, TQueryInput>>;
 }
-interface UseGetTableCurrentPageAndPaginationProps<TData> {
+interface UseGetTableCurrentPageAndPaginationProps<TData, TQueryInput extends QueryInput = QueryInput> {
     infiniteQuery: InfiniteQuery<TData>;
-    store: StoreApi<TableStore<TData>>;
+    store: StoreApi<TableStore<TData, TQueryInput>>;
 }
-type CustomTableBodyProps<TData> = {
+type CustomTableBodyProps<TData, TQueryInput extends QueryInput = QueryInput> = {
     table: Table<TData>;
     columnsLength: number;
-    store: StoreApi<TableStore<TData>>;
+    store: StoreApi<TableStore<TData, TQueryInput>>;
 };
-type CustomTableHeaderProps<TData> = {
+type CustomTableHeaderProps<TData, TQueryInput extends QueryInput = QueryInput> = {
     table: Table<TData>;
-    store: StoreApi<TableStore<TData>>;
+    store: StoreApi<TableStore<TData, TQueryInput>>;
 };
 
-declare const handleCreateTableStore: <TData extends Record<string, unknown>>({ classNames, pageViewMode, canMultiRowSelect, tableAutoToFixedOnLoad, columnVisibility, baseId, pageSize, }: HandleCreateTableStoreProps) => zustand.StoreApi<TableStore<TData>>;
-declare const useCreateTableStore: <TData extends Record<string, unknown>>(props: Omit<HandleCreateTableStoreProps, 'baseId'> & {
-    baseId?: HandleCreateTableStoreProps['baseId'];
-}) => zustand.StoreApi<TableStore<TData>>;
+declare const handleCreateTableStore: <TData, TQueryInput extends QueryInput = QueryInput>({ classNames, pageViewMode, canMultiRowSelect, tableAutoToFixedOnLoad, columnVisibility, baseId, queryInput, }: HandleCreateTableStoreProps<TQueryInput>) => zustand.StoreApi<TableStore<TData, TQueryInput>>;
+declare const useCreateTableStore: <TData, TQueryInput extends QueryInput = QueryInput>(props: Omit<HandleCreateTableStoreProps<TQueryInput>, "baseId"> & {
+    baseId?: string | undefined;
+}) => zustand.StoreApi<TableStore<TData, TQueryInput>>;
 
-declare const TableLoadMore: <TData, TValue>({ infiniteQuery, store, classNames, }: {
-    infiniteQuery: InfiniteQuery<TData>;
-    store: StoreApi<TableStore<TValue>>;
+declare const TableLoadMore: <TData, TQueryInput extends QueryInput = QueryInput, TError = unknown>({ infiniteQuery, store, classNames, }: {
+    infiniteQuery: InfiniteQuery<TData, TError>;
+    store: StoreApi<TableStore<TData, TQueryInput>>;
     classNames?: {
         container: string;
         loadMoreButton: string;
     } | undefined;
 }) => react_jsx_runtime.JSX.Element;
 
-declare const QueryTable: <TData, TValue>({ columns, store, infiniteQuery, }: DataTableProps<TData, TValue>) => react_jsx_runtime.JSX.Element;
+declare const QueryTable: <TData, TQueryInput extends QueryInput = QueryInput, TError = unknown>({ columns, store, infiniteQuery, }: DataTableProps<TData, TQueryInput, TError>) => react_jsx_runtime.JSX.Element;
 
-export { CustomTableBodyProps, CustomTableHeaderProps, DataTableProps, HandleCreateTableStoreProps, InfiniteQuery, PageViewMode, QueryTable, StoreUpdaterOrValue, TableClassNames, TableLoadMore, TableStore, UseGetTableCurrentPageAndPaginationProps, handleCreateTableStore, useCreateTableStore };
+export { CustomTableBodyProps, CustomTableHeaderProps, DataTableProps, HandleCreateTableStoreProps, InfiniteQuery, PageViewMode, QueryInput, QueryTable, StoreUpdaterOrValue, TableClassNames, TableLoadMore, TableStore, UseGetTableCurrentPageAndPaginationProps, handleCreateTableStore, useCreateTableStore };

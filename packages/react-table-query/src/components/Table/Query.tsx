@@ -21,13 +21,14 @@ import {
 	type CustomTableHeaderProps,
 	type CustomTableBodyProps,
 	type DataTableProps,
+	type QueryInput,
 } from '../../utils/types';
 import { useGetTableCurrentPageAndPagination } from '../../utils/internal';
 
-const CustomTableHeader = <TData,>({
+const CustomTableHeader = <TData, TQueryInput extends QueryInput = QueryInput>({
 	table,
 	store,
-}: CustomTableHeaderProps<TData>) => {
+}: CustomTableHeaderProps<TData, TQueryInput>) => {
 	const classNames = useStore(store, (store) => store.classNames.thead);
 
 	return (
@@ -57,11 +58,11 @@ const CustomTableHeader = <TData,>({
 	);
 };
 
-const CustomTableBody = <TData,>({
+const CustomTableBody = <TData, TQueryInput extends QueryInput = QueryInput>({
 	table,
 	columnsLength,
 	store,
-}: CustomTableBodyProps<TData>) => {
+}: CustomTableBodyProps<TData, TQueryInput>) => {
 	const classNames = useStore(store, (store) => store.classNames.tbody);
 
 	return (
@@ -102,11 +103,15 @@ const CustomTableBody = <TData,>({
 	);
 };
 
-const QueryTable = <TData, TValue>({
+const QueryTable = <
+	TData,
+	TQueryInput extends QueryInput = QueryInput,
+	TError = unknown,
+>({
 	columns,
 	store,
 	infiniteQuery,
-}: DataTableProps<TData, TValue>) => {
+}: DataTableProps<TData, TQueryInput, TError>) => {
 	//
 	const storeUtils = useStore(store, (store) => store.utils);
 	const canMultiRowSelect = useStore(store, (state) => state.canMultiRowSelect);

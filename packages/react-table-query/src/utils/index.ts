@@ -1,23 +1,29 @@
 import { createStore } from 'zustand';
 
-import type { TableStore, HandleCreateTableStoreProps } from './types';
+import type {
+	TableStore,
+	HandleCreateTableStoreProps,
+	QueryInput,
+} from './types';
 import { useRef, useId, useMemo } from 'react';
 
-export const handleCreateTableStore = <TData extends Record<string, unknown>>({
+export const handleCreateTableStore = <
+	TData,
+	TQueryInput extends QueryInput = QueryInput,
+>({
 	classNames = {},
 	pageViewMode = 'PAGING',
 	canMultiRowSelect = false,
 	tableAutoToFixedOnLoad = false,
 	columnVisibility = {},
 	baseId = '',
-	pageSize,
-}: HandleCreateTableStoreProps) =>
-	createStore<TableStore<TData>>((set) => ({
+	queryInput,
+}: HandleCreateTableStoreProps<TQueryInput>) =>
+	createStore<TableStore<TData, TQueryInput>>((set) => ({
 		table: null,
 		baseId,
 
-		pageIndex: 0,
-		pageSize,
+		queryInput,
 		classNames,
 		pageViewMode,
 		canMultiRowSelect,
@@ -31,20 +37,24 @@ export const handleCreateTableStore = <TData extends Record<string, unknown>>({
 		utils: {
 			setPagination: (updaterOrValue) =>
 				set((prevData) => ({
-					...(typeof updaterOrValue === 'function'
-						? updaterOrValue({
-								pageIndex: prevData.pageIndex,
-								pageSize: prevData.pageSize,
-						  })
-						: updaterOrValue),
+					queryInput: {
+						...prevData.queryInput,
+						...(typeof updaterOrValue === 'function'
+							? updaterOrValue({
+									pageIndex: prevData.queryInput.pageIndex || 0,
+									pageSize: prevData.queryInput.pageSize || 0,
+							  })
+							: updaterOrValue),
+					},
 				})),
-			setPageIndex: (updaterOrValue) =>
+			setQueryInput: (updaterOrValue) =>
 				set((prevData) => ({
-					pageIndex:
+					queryInput:
 						typeof updaterOrValue === 'function'
-							? updaterOrValue(prevData.pageIndex)
+							? updaterOrValue(prevData.queryInput)
 							: updaterOrValue,
 				})),
+
 			setRowSelection: (updaterOrValue) =>
 				set((prevData) => ({
 					rowSelection:
@@ -76,27 +86,34 @@ export const handleCreateTableStore = <TData extends Record<string, unknown>>({
 		},
 	}));
 
-export const useCreateTableStore = <TData extends Record<string, unknown>>(
-	props: Omit<HandleCreateTableStoreProps, 'baseId'> & {
-		baseId?: HandleCreateTableStoreProps['baseId'];
+export const useCreateTableStore = <
+	TData,
+	TQueryInput extends QueryInput = QueryInput,
+>(
+	props: Omit<HandleCreateTableStoreProps<TQueryInput>, 'baseId'> & {
+		baseId?: HandleCreateTableStoreProps<TQueryInput>['baseId'];
 	},
 ) => {
 	const baseId = useId();
 
 	const storeRef = useRef(
-		handleCreateTableStore<TData>({ ...props, baseId: props.baseId || baseId }),
+		handleCreateTableStore<TData, TQueryInput>({
+			...props,
+			baseId: props.baseId || baseId,
+		}),
 	);
 
 	useMemo(() => {
 		if (
-			storeRef.current.getState().pageSize !== props.pageSize ||
+			storeRef.current.getState().queryInput.pageSize !==
+				props.queryInput.pageSize ||
 			storeRef.current.getState().baseId !== props.baseId
 		)
 			storeRef.current.setState(() => ({
-				pageSize: props.pageSize,
+				pageSize: props.queryInput.pageSize,
 				baseId: props.baseId,
 			}));
-	}, [props.baseId, props.pageSize]);
+	}, [props.baseId, props.queryInput.pageSize]);
 
 	return storeRef.current;
 };

@@ -7,13 +7,13 @@ import {
 	useRef,
 } from 'react';
 import { useStore, type StoreApi } from 'zustand';
-import { type TableStore } from '../../utils/types';
+import { type QueryInput, type TableStore } from '../../utils/types';
 
-const Table = <TData,>({
+const Table = <TData, TQueryInput extends QueryInput = QueryInput>({
 	store,
 	...props
 }: HTMLAttributes<HTMLTableElement> & {
-	store: StoreApi<TableStore<TData>>;
+	store: StoreApi<TableStore<TData, TQueryInput>>;
 }) => {
 	const className = useStore(store, (store) => store.classNames?.table);
 
@@ -74,7 +74,10 @@ const TableCell = (props: TdHTMLAttributes<HTMLTableCellElement>) => (
 	<td {...props} />
 );
 
-const IndeterminateCheckbox = <TData,>({
+const IndeterminateCheckbox = <
+	TData,
+	TQueryInput extends QueryInput = QueryInput,
+>({
 	indeterminate,
 	store,
 	tContainerType,
@@ -82,7 +85,7 @@ const IndeterminateCheckbox = <TData,>({
 }: {
 	indeterminate?: boolean;
 	tContainerType: 'thead' | 'tbody';
-	store: StoreApi<TableStore<TData>>;
+	store: StoreApi<TableStore<TData, TQueryInput>>;
 } & HTMLProps<HTMLInputElement>) => {
 	const selectCheckBoxContainerClassName = useStore(store, (store) =>
 		tContainerType === 'thead'
