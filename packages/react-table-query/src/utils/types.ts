@@ -11,8 +11,8 @@ import { type UseTRPCInfiniteQueryResult } from '@trpc/react-query/shared';
 import { type StoreApi } from 'zustand';
 
 export type QueryInput = {
-	offset?: number | null;
-	limit?: number | null;
+	offset?: number | null | undefined;
+	limit?: number | null | undefined;
 } & Record<string, unknown>;
 
 export type InfiniteQuery<TData = unknown, TError = unknown> =
