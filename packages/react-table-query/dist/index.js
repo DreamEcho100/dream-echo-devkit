@@ -51,15 +51,22 @@ var handleCreateTableStore = ({
   columnVisibility,
   sorting: [],
   utils: {
-    setPagination: (updaterOrValue) => set((prevData) => ({
-      queryInput: {
-        ...prevData.queryInput,
-        ...typeof updaterOrValue === "function" ? updaterOrValue({
-          pageIndex: prevData.queryInput.pageIndex || 0,
-          pageSize: prevData.queryInput.pageSize || 0
-        }) : updaterOrValue
-      }
-    })),
+    setPagination: (updaterOrValue) => set((prevData) => {
+      const pagination = typeof updaterOrValue === "function" ? updaterOrValue({
+        pageIndex: prevData.queryInput.offset || 0,
+        pageSize: prevData.queryInput.limit || 0
+      }) : {
+        pageIndex: updaterOrValue.pageIndex || prevData.queryInput.offset,
+        pageSize: updaterOrValue.pageSize || prevData.queryInput.limit
+      };
+      return {
+        queryInput: {
+          ...prevData.queryInput,
+          limit: pagination.pageSize,
+          offset: pagination.pageIndex
+        }
+      };
+    }),
     setQueryInput: (updaterOrValue) => set((prevData) => ({
       queryInput: typeof updaterOrValue === "function" ? updaterOrValue(prevData.queryInput) : updaterOrValue
     })),
@@ -86,12 +93,12 @@ var useCreateTableStore = (props) => {
     })
   );
   (0, import_react.useMemo)(() => {
-    if (storeRef.current.getState().queryInput.pageSize !== props.queryInput.pageSize || storeRef.current.getState().baseId !== props.baseId)
+    if (storeRef.current.getState().queryInput.limit !== props.queryInput.limit || storeRef.current.getState().baseId !== props.baseId)
       storeRef.current.setState(() => ({
-        pageSize: props.queryInput.pageSize,
+        limit: props.queryInput.limit,
         baseId: props.baseId
       }));
-  }, [props.baseId, props.queryInput.pageSize]);
+  }, [props.baseId, props.queryInput.limit]);
   return storeRef.current;
 };
 
@@ -113,30 +120,29 @@ var cx = (...classesArr) => {
 };
 var useGetTableCurrentPageAndPagination = (props) => {
   const pageViewMode = (0, import_zustand2.useStore)(props.store, (state) => state.pageViewMode);
-  const pageIndex = (0, import_zustand2.useStore)(
-    props.store,
-    (state) => state.queryInput.pageIndex || 0
-  );
+  const offset = (0, import_zustand2.useStore)(props.store, (state) => state.queryInput.offset || 0);
   const defaultPage = (0, import_react2.useMemo)(() => [], []);
   const currentPage = (0, import_react2.useMemo)(() => {
     if (pageViewMode === "INFINITE_SCROLL")
       return (props.infiniteQuery?.data?.pages || defaultPage).map((page) => page.items).flat(1);
-    return props.infiniteQuery?.data?.pages?.[pageIndex]?.items || defaultPage;
-  }, [pageIndex, props.infiniteQuery.data?.pages, pageViewMode, defaultPage]);
+    return props.infiniteQuery?.data?.pages?.[offset]?.items || defaultPage;
+  }, [offset, props.infiniteQuery.data?.pages, pageViewMode, defaultPage]);
   const pagination = (0, import_react2.useMemo)(
     () => ({
-      pageIndex,
-      pageSize: props.infiniteQuery?.data?.pages.length || 0
+      offset,
+      limit: props.infiniteQuery?.data?.pages.length || 0
     }),
-    [pageIndex, props.infiniteQuery?.data?.pages.length]
+    [offset, props.infiniteQuery?.data?.pages.length]
   );
-  console.log("currentPage", currentPage);
   const res = (0, import_react2.useMemo)(
     () => ({
       currentPage,
-      pagination
+      pagination: {
+        pageSize: pagination.limit,
+        pageIndex: pagination.offset
+      }
     }),
-    [currentPage, pagination]
+    [currentPage, pagination.limit, pagination.offset]
   );
   return res;
 };
@@ -151,13 +157,13 @@ var TableLoadMore = ({
     loadMoreButton: ""
   }
 }) => {
-  const pageIndex = (0, import_zustand3.useStore)(store, (state) => state.queryInput.pageIndex || 0);
+  const offset = (0, import_zustand3.useStore)(store, (state) => state.queryInput.offset || 0);
   const storeUtils = (0, import_zustand3.useStore)(store, (state) => state.utils);
   const { isLastPageEmpty, isInBeforeLastPage } = (0, import_react3.useMemo)(() => {
     const isLastPageEmpty2 = infiniteQuery?.data?.pages?.[infiniteQuery.data.pages.length - 1]?.items.length === 0;
-    const isInFirstPage = pageIndex === 0;
-    const isInLastPage = pageIndex + 1 === infiniteQuery?.data?.pages?.length;
-    const isInBeforeLastPage2 = typeof infiniteQuery?.data?.pages?.length === "number" && infiniteQuery.data.pages.length !== 0 && pageIndex + 1 === infiniteQuery.data.pages.length - 1;
+    const isInFirstPage = offset === 0;
+    const isInLastPage = offset + 1 === infiniteQuery?.data?.pages?.length;
+    const isInBeforeLastPage2 = typeof infiniteQuery?.data?.pages?.length === "number" && infiniteQuery.data.pages.length !== 0 && offset + 1 === infiniteQuery.data.pages.length - 1;
     let pagesLength = infiniteQuery?.data?.pages?.length || 0;
     if (isLastPageEmpty2 && pagesLength !== 0)
       pagesLength--;
@@ -168,11 +174,11 @@ var TableLoadMore = ({
       isInFirstPage,
       pagesLength
     };
-  }, [pageIndex, infiniteQuery?.data?.pages]);
+  }, [offset, infiniteQuery?.data?.pages]);
   const isLoadMoreButtonDisabled = (0, import_react3.useMemo)(
-    () => !infiniteQuery.hasNextPage && pageIndex + 1 === infiniteQuery.data?.pages.length || infiniteQuery.isFetching || isInBeforeLastPage && isLastPageEmpty,
+    () => !infiniteQuery.hasNextPage && offset + 1 === infiniteQuery.data?.pages.length || infiniteQuery.isFetching || isInBeforeLastPage && isLastPageEmpty,
     [
-      pageIndex,
+      offset,
       infiniteQuery.data?.pages.length,
       infiniteQuery.hasNextPage,
       infiniteQuery.isFetching,
@@ -198,7 +204,7 @@ var TableLoadMore = ({
           }
           storeUtils.setQueryInput((prev) => ({
             ...prev,
-            pageIndex: (prev.pageIndex || 0) + 1
+            offset: (prev.offset || 0) + 1
           }));
         });
       },

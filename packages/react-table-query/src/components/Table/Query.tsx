@@ -25,7 +25,7 @@ import {
 } from '../../utils/types';
 import { useGetTableCurrentPageAndPagination } from '../../utils/internal';
 
-const CustomTableHeader = <TData, TQueryInput extends QueryInput = QueryInput>({
+const CustomTableHeader = <TData, TQueryInput extends QueryInput>({
 	table,
 	store,
 }: CustomTableHeaderProps<TData, TQueryInput>) => {
@@ -58,7 +58,7 @@ const CustomTableHeader = <TData, TQueryInput extends QueryInput = QueryInput>({
 	);
 };
 
-const CustomTableBody = <TData, TQueryInput extends QueryInput = QueryInput>({
+const CustomTableBody = <TData, TQueryInput extends QueryInput>({
 	table,
 	columnsLength,
 	store,
@@ -103,11 +103,7 @@ const CustomTableBody = <TData, TQueryInput extends QueryInput = QueryInput>({
 	);
 };
 
-const QueryTable = <
-	TData,
-	TQueryInput extends QueryInput = QueryInput,
-	TError = unknown,
->({
+const QueryTable = <TData, TQueryInput extends QueryInput, TError = unknown>({
 	columns,
 	store,
 	infiniteQuery,

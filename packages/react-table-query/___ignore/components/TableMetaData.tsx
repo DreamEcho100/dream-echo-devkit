@@ -31,7 +31,7 @@ const TableMetaData = <
 		nextPageButton: string;
 	};
 }) => {
-	const pageIndex = useStore(store, (state) => state.pageIndex);
+	const offset = useStore(store, (state) => state.offset);
 
 	const {
 		incrementCurrentPageIndex,
@@ -50,13 +50,13 @@ const TableMetaData = <
 			infiniteQuery?.data?.pages?.[infiniteQuery.data.pages.length - 1]?.items
 				.length === 0;
 
-		// const isInFirstPage = pageIndex === 0;
+		// const isInFirstPage = offset === 0;
 		// const isInLastPage =
-		// 	pageIndex + 1 === infiniteQuery?.data?.pages?.length;
+		// 	offset + 1 === infiniteQuery?.data?.pages?.length;
 		const isInBeforeLastPage =
 			typeof infiniteQuery?.data?.pages?.length === 'number' &&
 			infiniteQuery.data.pages.length !== 0 &&
-			pageIndex + 1 === infiniteQuery.data.pages.length - 1;
+			offset + 1 === infiniteQuery.data.pages.length - 1;
 
 		let pagesLength = infiniteQuery?.data?.pages?.length || 0;
 		if (isLastPageEmpty && pagesLength !== 0) pagesLength--;
@@ -67,16 +67,16 @@ const TableMetaData = <
 			// isInFirstPage,
 			pagesLength,
 		};
-	}, [pageIndex, infiniteQuery?.data?.pages]);
+	}, [offset, infiniteQuery?.data?.pages]);
 
 	const isNextPageDisabled = useMemo(
 		() =>
 			(!infiniteQuery.hasNextPage &&
-				pageIndex + 1 === infiniteQuery.data?.pages.length) ||
+				offset + 1 === infiniteQuery.data?.pages.length) ||
 			infiniteQuery.isFetching ||
 			(isInBeforeLastPage && isLastPageEmpty),
 		[
-			pageIndex,
+			offset,
 			infiniteQuery.data?.pages.length,
 			infiniteQuery.hasNextPage,
 			infiniteQuery.isFetching,
@@ -86,8 +86,8 @@ const TableMetaData = <
 	);
 
 	const isPreviousPageDisabled = useMemo(
-		() => pageIndex === 0 || infiniteQuery.isFetching,
-		[pageIndex, infiniteQuery.isFetching],
+		() => offset === 0 || infiniteQuery.isFetching,
+		[offset, infiniteQuery.isFetching],
 	);
 
 	const onPageChange = useCallback(() => {
@@ -109,7 +109,7 @@ const TableMetaData = <
 				<IoMdRefresh style={{ background: 'transparent', fontSize: '120%' }} />
 			</button>
 			<p title='page/Loaded Pages'>
-				{pageIndex + 1}/{pagesLength}
+				{offset + 1}/{pagesLength}
 			</p>
 			<button
 				title={

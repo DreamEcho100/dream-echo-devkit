@@ -260,7 +260,7 @@ const Form = <Fields, ValidatedField>({
 		(state) => state.utils.handlePreSubmit,
 	);
 
-	return <form onSubmit={handlePreSubmit(onSubmit)} {...(props as any)} />;
+	return <form onSubmit={handlePreSubmit(onSubmit)} {...props} />;
 };
 ```
 

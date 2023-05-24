@@ -5,7 +5,7 @@ import { cx } from '../utils/internal';
 
 const TableLoadMore = <
 	TData,
-	TQueryInput extends QueryInput = QueryInput,
+	TQueryInput extends QueryInput,
 	TError = unknown,
 >({
 	infiniteQuery,
@@ -22,7 +22,7 @@ const TableLoadMore = <
 		loadMoreButton: string;
 	};
 }) => {
-	const pageIndex = useStore(store, (state) => state.queryInput.pageIndex || 0);
+	const offset = useStore(store, (state) => state.queryInput.offset || 0);
 
 	const storeUtils = useStore(store, (state) => state.utils);
 
@@ -31,12 +31,12 @@ const TableLoadMore = <
 			infiniteQuery?.data?.pages?.[infiniteQuery.data.pages.length - 1]?.items
 				.length === 0;
 
-		const isInFirstPage = pageIndex === 0;
-		const isInLastPage = pageIndex + 1 === infiniteQuery?.data?.pages?.length;
+		const isInFirstPage = offset === 0;
+		const isInLastPage = offset + 1 === infiniteQuery?.data?.pages?.length;
 		const isInBeforeLastPage =
 			typeof infiniteQuery?.data?.pages?.length === 'number' &&
 			infiniteQuery.data.pages.length !== 0 &&
-			pageIndex + 1 === infiniteQuery.data.pages.length - 1;
+			offset + 1 === infiniteQuery.data.pages.length - 1;
 
 		let pagesLength = infiniteQuery?.data?.pages?.length || 0;
 		if (isLastPageEmpty && pagesLength !== 0) pagesLength--;
@@ -47,16 +47,16 @@ const TableLoadMore = <
 			isInFirstPage,
 			pagesLength,
 		};
-	}, [pageIndex, infiniteQuery?.data?.pages]);
+	}, [offset, infiniteQuery?.data?.pages]);
 
 	const isLoadMoreButtonDisabled = useMemo(
 		() =>
 			(!infiniteQuery.hasNextPage &&
-				pageIndex + 1 === infiniteQuery.data?.pages.length) ||
+				offset + 1 === infiniteQuery.data?.pages.length) ||
 			infiniteQuery.isFetching ||
 			(isInBeforeLastPage && isLastPageEmpty),
 		[
-			pageIndex,
+			offset,
 			infiniteQuery.data?.pages.length,
 			infiniteQuery.hasNextPage,
 			infiniteQuery.isFetching,
@@ -90,7 +90,7 @@ const TableLoadMore = <
 
 						storeUtils.setQueryInput((prev) => ({
 							...prev,
-							pageIndex: (prev.pageIndex || 0) + 1,
+							offset: (prev.offset || 0) + 1,
 						}));
 					});
 				}}

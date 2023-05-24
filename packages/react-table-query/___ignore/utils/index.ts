@@ -21,7 +21,7 @@ export const handleCreateTableStore = <TData extends Record<string, unknown>>({
 		rowSelection: {},
 		filterByFormValues,
 		debouncedValue: {},
-		pageIndex: 0,
+		offset: 0,
 		remoteFilter: true,
 		pageViewMode,
 		tableAutoToFixedOnLoad,
@@ -29,11 +29,11 @@ export const handleCreateTableStore = <TData extends Record<string, unknown>>({
 		utils: {
 			incrementCurrentPageIndex: () =>
 				set((state: TableStore<TData>) => ({
-					pageIndex: state.pageIndex + 1,
+					offset: state.offset + 1,
 				})),
 			decrementCurrentPageIndex: () =>
 				set((state: TableStore<TData>) => ({
-					pageIndex: state.pageIndex - 1,
+					offset: state.offset - 1,
 				})),
 			setRowSelection: (updaterOrValue) =>
 				set((prevData: TableStore<TData>) => ({

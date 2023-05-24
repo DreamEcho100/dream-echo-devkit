@@ -7,16 +7,16 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-export type CustomGetNextPageParam<TData, TQueryKey> =
+export type CustomGetNextPageParam<TData, TQueryInput> =
 	| GetNextPageParamFunction<{
 			data: TData;
-			cursor?: TQueryKey | undefined;
+			cursor?: TQueryInput | undefined;
 	  }>
 	| undefined;
 
 export const useCustomInfiniteQuery = <
 	TData,
-	TQueryKey extends [string, { cursor: unknown; filterBy?: unknown }],
+	TQueryInput extends [string, { cursor: unknown; filterBy?: unknown }],
 >({
 	initialCursor,
 	queryMainKey,
@@ -26,10 +26,10 @@ export const useCustomInfiniteQuery = <
 	options = {},
 	filterBy = {},
 }: {
-	initialCursor: TQueryKey[1]['cursor'];
-	queryMainKey: TQueryKey[0];
-	filterBy?: NonNullable<TQueryKey[1]['filterBy']>;
-	fetchFn: (query: TQueryKey[1]) => Promise<TData>;
+	initialCursor: TQueryInput[1]['cursor'];
+	queryMainKey: TQueryInput[0];
+	filterBy?: NonNullable<TQueryInput[1]['filterBy']>;
+	fetchFn: (query: TQueryInput[1]) => Promise<TData>;
 	// /**
 	//  * Don't forget to memoize it
 	//  * @param queryKey
@@ -37,17 +37,17 @@ export const useCustomInfiniteQuery = <
 	//  */
 	// onQueryKeyChange?: (
 	// 	queryKey: readonly [
-	// 		TQueryKey[0],
+	// 		TQueryInput[0],
 	// 		{
-	// 			readonly initialCursor: TQueryKey[1]['cursor'];
-	// 			readonly filterBy: NonNullable<TQueryKey[1]['filterBy']>;
+	// 			readonly initialCursor: TQueryInput[1]['cursor'];
+	// 			readonly filterBy: NonNullable<TQueryInput[1]['filterBy']>;
 	// 		}
 	// 	]
 	// ) => void;
 	getNextPageParam?:
 		| GetNextPageParamFunction<{
 				items: TData;
-				cursor?: TQueryKey[1]['cursor'] | undefined;
+				cursor?: TQueryInput[1]['cursor'] | undefined;
 		  }>
 		| undefined;
 
@@ -55,10 +55,10 @@ export const useCustomInfiniteQuery = <
 		| Partial<
 				Omit<
 					UseInfiniteQueryOptions<
-						{ items: TData; cursor?: TQueryKey[1]['cursor'] | undefined },
+						{ items: TData; cursor?: TQueryInput[1]['cursor'] | undefined },
 						{ message: string },
-						{ items: TData; cursor?: TQueryKey[1]['cursor'] | undefined },
-						{ items: TData; cursor?: TQueryKey[1]['cursor'] | undefined },
+						{ items: TData; cursor?: TQueryInput[1]['cursor'] | undefined },
+						{ items: TData; cursor?: TQueryInput[1]['cursor'] | undefined },
 						QueryKey
 					>,
 					'queryKey' | 'queryFn' | 'getNextPageParam'
@@ -78,15 +78,15 @@ export const useCustomInfiniteQuery = <
 	const infiniteQuery = useInfiniteQuery<
 		{
 			items: TData;
-			cursor?: TQueryKey[1]['cursor'];
+			cursor?: TQueryInput[1]['cursor'];
 		},
 		{ message: string }
 	>(
 		queryKey,
 		async ({ pageParam }) => {
-			const cursor: TQueryKey[1]['cursor'] = pageParam || initialCursor;
+			const cursor: TQueryInput[1]['cursor'] = pageParam || initialCursor;
 
-			const query = { cursor, filterBy } as TQueryKey[1];
+			const query = { cursor, filterBy } as TQueryInput[1];
 
 			return {
 				items: await fetchFn(query),

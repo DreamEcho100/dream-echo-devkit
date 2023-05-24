@@ -142,13 +142,18 @@ const QData: Parameters<
 };
 
 const Home = () => {
-	const tableStore = useCreateTableStore<Columns>({
+	const tableStore = useCreateTableStore<Columns, typeof initialCursor>({
 		classNames: tableClassNames,
 		pageViewMode: 'INFINITE_SCROLL',
 		canMultiRowSelect: false,
-		pageSize: initialCursor.limit,
+		queryInput: initialCursor,
+		// {
+		// 	limit: initialCursor.limit,
+		// 	offset: initialCursor.offset
+		// },
 		// columnVisibility: { select: false },
 	});
+
 	const infiniteQuery = useInfiniteQuery<
 		{
 			items: Product[];
@@ -219,7 +224,7 @@ const Home = () => {
 				}),
 				columnHelper.accessor('description', {
 					cell: (info) => (
-						<div className='w-64 aspect-video max-w-fit'>{info.getValue()}</div>
+						<div className='aspect-video w-64 max-w-fit'>{info.getValue()}</div>
 					),
 					header: (info) => (
 						<span className='capitalize'>{info.column.id}</span>

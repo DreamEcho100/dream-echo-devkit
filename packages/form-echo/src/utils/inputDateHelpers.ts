@@ -70,9 +70,9 @@ function parseDate(dateString: string | number, type: InputDateTypes): Date {
 			const [hours, minutes, seconds] = dateString.toString().split(':');
 			// Create a new Date object and set the hours, minutes, and seconds based on the input string
 			parsedDate = new Date();
-			parsedDate.setHours(Number(hours));
-			parsedDate.setMinutes(Number(minutes));
-			parsedDate.setSeconds(Number(seconds));
+			parsedDate.setHours(Number(hours || 0));
+			parsedDate.setMinutes(Number(minutes || 0));
+			parsedDate.setSeconds(Number(seconds || 0));
 			break;
 		case 'datetime-local':
 			// For the 'datetime-local' type, replace the space character with 'T' and parse the resulting string as a date in ISO format

@@ -11,8 +11,8 @@ import { type UseTRPCInfiniteQueryResult } from '@trpc/react-query/shared';
 import { type StoreApi } from 'zustand';
 
 export type QueryInput = {
-	pageIndex?: number;
-	pageSize?: number;
+	offset?: number;
+	limit?: number;
 } & Record<string, unknown>;
 
 export type InfiniteQuery<TData = unknown, TError = unknown> =
@@ -32,7 +32,7 @@ export type InfiniteQuery<TData = unknown, TError = unknown> =
 
 export type StoreUpdaterOrValue<
 	TData,
-	TQueryInput extends QueryInput = QueryInput,
+	TQueryInput extends QueryInput,
 	TableKey = unknown,
 > = TableKey extends keyof TableStore<TData, TQueryInput>
 	?
@@ -74,7 +74,7 @@ export type TableClassNames = {
 	// tfoot?: { _?: string; tr?: string; th?: string };
 };
 
-export type TableStore<TData, TQueryInput extends QueryInput = QueryInput> = {
+export type TableStore<TData, TQueryInput extends QueryInput> = {
 	table: Table<TData> | null;
 
 	queryInput: TQueryInput;
@@ -98,7 +98,10 @@ export type TableStore<TData, TQueryInput extends QueryInput = QueryInput> = {
 		setPagination: (
 			updaterOrValue:
 				| { pageIndex: number; pageSize: number }
-				| ((pagination: { pageIndex: number; pageSize: number }) => void), // { pageIndex: number }),
+				| ((pagination: { pageIndex: number; pageSize: number }) => {
+						pageIndex: number;
+						pageSize: number;
+				  }), // { pageIndex: number }),
 		) => void;
 		setRowSelection: (
 			updaterOrValue: StoreUpdaterOrValue<TData, TQueryInput, 'rowSelection'>,
@@ -119,9 +122,7 @@ export type TableStore<TData, TQueryInput extends QueryInput = QueryInput> = {
 	};
 };
 
-export type HandleCreateTableStoreProps<
-	TQueryInput extends QueryInput = QueryInput,
-> = {
+export type HandleCreateTableStoreProps<TQueryInput extends QueryInput> = {
 	classNames?: TableClassNames;
 	pageViewMode?: PageViewMode;
 	columnVisibility?: VisibilityState;
@@ -133,7 +134,7 @@ export type HandleCreateTableStoreProps<
 
 export interface DataTableProps<
 	TData,
-	TQueryInput extends QueryInput = QueryInput,
+	TQueryInput extends QueryInput,
 	TError = unknown,
 > {
 	columns: ColumnDef<TData, unknown>[];
@@ -143,25 +144,19 @@ export interface DataTableProps<
 
 export interface UseGetTableCurrentPageAndPaginationProps<
 	TData,
-	TQueryInput extends QueryInput = QueryInput,
+	TQueryInput extends QueryInput,
 > {
 	infiniteQuery: InfiniteQuery<TData>;
 	store: StoreApi<TableStore<TData, TQueryInput>>;
 }
 
-export type CustomTableBodyProps<
-	TData,
-	TQueryInput extends QueryInput = QueryInput,
-> = {
+export type CustomTableBodyProps<TData, TQueryInput extends QueryInput> = {
 	table: Table<TData>;
 	columnsLength: number;
 	store: StoreApi<TableStore<TData, TQueryInput>>;
 };
 
-export type CustomTableHeaderProps<
-	TData,
-	TQueryInput extends QueryInput = QueryInput,
-> = {
+export type CustomTableHeaderProps<TData, TQueryInput extends QueryInput> = {
 	table: Table<TData>;
 	store: StoreApi<TableStore<TData, TQueryInput>>;
 };

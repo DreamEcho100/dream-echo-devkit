@@ -71,7 +71,7 @@ export const CustomTable = <
 	store: StoreApi<TableStore<TableItem>>;
 	canMultiRowSelect?: boolean;
 }) => {
-	const pageIndex = useStore(store, (state) => state.pageIndex);
+	const offset = useStore(store, (state) => state.offset);
 	const rowSelection = useStore(store, (state) => state.rowSelection);
 	const columnFilters = useStore(store, (state) => state.columnFilters);
 	const classNames = useStore(store, (state) => state.classNames);
@@ -154,8 +154,8 @@ export const CustomTable = <
 				.map((page) => page.items)
 				.flat(1);
 
-		return infiniteQuery?.data?.pages?.[pageIndex]?.items || [];
-	}, [pageIndex, infiniteQuery.data?.pages, pageViewMode]);
+		return infiniteQuery?.data?.pages?.[offset]?.items || [];
+	}, [offset, infiniteQuery.data?.pages, pageViewMode]);
 
 	const table = useReactTable({
 		data: currentPage as unknown as TableItem[],

@@ -9,7 +9,7 @@ import {
 import { useStore, type StoreApi } from 'zustand';
 import { type QueryInput, type TableStore } from '../../utils/types';
 
-const Table = <TData, TQueryInput extends QueryInput = QueryInput>({
+const Table = <TData, TQueryInput extends QueryInput>({
 	store,
 	...props
 }: HTMLAttributes<HTMLTableElement> & {
@@ -74,10 +74,7 @@ const TableCell = (props: TdHTMLAttributes<HTMLTableCellElement>) => (
 	<td {...props} />
 );
 
-const IndeterminateCheckbox = <
-	TData,
-	TQueryInput extends QueryInput = QueryInput,
->({
+const IndeterminateCheckbox = <TData, TQueryInput extends QueryInput>({
 	indeterminate,
 	store,
 	tContainerType,

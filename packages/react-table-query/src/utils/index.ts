@@ -7,10 +7,7 @@ import type {
 } from './types';
 import { useRef, useId, useMemo } from 'react';
 
-export const handleCreateTableStore = <
-	TData,
-	TQueryInput extends QueryInput = QueryInput,
->({
+export const handleCreateTableStore = <TData, TQueryInput extends QueryInput>({
 	classNames = {},
 	pageViewMode = 'PAGING',
 	canMultiRowSelect = false,
@@ -36,17 +33,28 @@ export const handleCreateTableStore = <
 
 		utils: {
 			setPagination: (updaterOrValue) =>
-				set((prevData) => ({
-					queryInput: {
-						...prevData.queryInput,
-						...(typeof updaterOrValue === 'function'
+				set((prevData) => {
+					const pagination =
+						typeof updaterOrValue === 'function'
 							? updaterOrValue({
-									pageIndex: prevData.queryInput.pageIndex || 0,
-									pageSize: prevData.queryInput.pageSize || 0,
+									pageIndex: prevData.queryInput.offset || 0,
+									pageSize: prevData.queryInput.limit || 0,
 							  })
-							: updaterOrValue),
-					},
-				})),
+							: {
+									pageIndex:
+										updaterOrValue.pageIndex || prevData.queryInput.offset,
+									pageSize:
+										updaterOrValue.pageSize || prevData.queryInput.limit,
+							  };
+
+					return {
+						queryInput: {
+							...prevData.queryInput,
+							limit: pagination.pageSize,
+							offset: pagination.pageIndex,
+						},
+					};
+				}),
 			setQueryInput: (updaterOrValue) =>
 				set((prevData) => ({
 					queryInput:
@@ -86,10 +94,7 @@ export const handleCreateTableStore = <
 		},
 	}));
 
-export const useCreateTableStore = <
-	TData,
-	TQueryInput extends QueryInput = QueryInput,
->(
+export const useCreateTableStore = <TData, TQueryInput extends QueryInput>(
 	props: Omit<HandleCreateTableStoreProps<TQueryInput>, 'baseId'> & {
 		baseId?: HandleCreateTableStoreProps<TQueryInput>['baseId'];
 	},
@@ -105,15 +110,14 @@ export const useCreateTableStore = <
 
 	useMemo(() => {
 		if (
-			storeRef.current.getState().queryInput.pageSize !==
-				props.queryInput.pageSize ||
+			storeRef.current.getState().queryInput.limit !== props.queryInput.limit ||
 			storeRef.current.getState().baseId !== props.baseId
 		)
 			storeRef.current.setState(() => ({
-				pageSize: props.queryInput.pageSize,
+				limit: props.queryInput.limit,
 				baseId: props.baseId,
 			}));
-	}, [props.baseId, props.queryInput.pageSize]);
+	}, [props.baseId, props.queryInput.limit]);
 
 	return storeRef.current;
 };

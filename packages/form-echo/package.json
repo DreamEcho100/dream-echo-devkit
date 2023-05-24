@@ -1,6 +1,6 @@
 {
 	"name": "@de100/form-echo",
-	"version": "0.0.9-canary.9",
+	"version": "0.0.9-canary.10",
 	"description": "A form state management for fields validations and errors",
 	"keywords": [
 		"form",
@@ -15,7 +15,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/DreamEcho100/dream-echo-devkit.git",
+		"url": "https://github.com/DreamEcho100/dream-echo-devkit",
 		"directory": "packages/form-echo"
 	},
 	"readme": "./README.md",
