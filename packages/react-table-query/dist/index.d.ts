@@ -6,8 +6,8 @@ import { UseTRPCInfiniteQueryResult } from '@trpc/react-query/shared';
 import * as react_jsx_runtime from 'react/jsx-runtime';
 
 type QueryInput = {
-    offset?: number;
-    limit?: number;
+    offset?: number | null;
+    limit?: number | null;
 } & Record<string, unknown>;
 type InfiniteQuery<TData = unknown, TError = unknown> = UseInfiniteQueryResult<{
     items: TData[];
