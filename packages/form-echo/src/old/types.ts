@@ -1,10 +1,14 @@
 import type { FormEvent } from 'react';
 
-import type { ZodSchema } from 'zod';
+import type { ZodSchema, z } from 'zod';
 
 import type { StoreApi } from 'zustand';
 
 type TPassedFieldsShape = Record<string, unknown>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type TFunction = (...args: any[]) => any;
+type AnyValueExceptFunctions = // eslint-disable-next-line @typescript-eslint/ban-types
+	Exclude<{} | null | undefined, TFunction>;
 
 export type InputDateTypes =
 	| 'date'
@@ -52,10 +56,7 @@ export type FieldShape<Name, Value, ValidatedValue> = {
 	) => Exclude<Value, (value: Value) => Value>;
 	valueFromStoreToField?: (StoreValue: Value) => string;
 };
-export type AllFieldsShape<
-	Fields, // = TPassedFieldsShape,
-	ValidatedFields, // = undefined,
-> = {
+export type AllFieldsShape<Fields, ValidatedFields> = {
 	[FieldName in NonNullable<keyof Fields>]: FieldShape<
 		FieldName,
 		Fields[FieldName],
@@ -65,70 +66,95 @@ export type AllFieldsShape<
 	>;
 };
 
-export interface FormMetadata<Fields> {
-	//  = TPassedFieldsShape
+export interface FormMetadata<Fields, ValidatedFields> {
+	baseId?: string;
 	formId: string;
 	fieldsNames: (keyof Fields)[];
+	fieldsNamesMap: Record<keyof Fields, true>;
+	//
+	validatedFieldsNamesMap: Record<keyof ValidatedFields, true>;
+	validatedFieldsNames: (keyof ValidatedFields)[];
+	// //
+	manualValidatedFields: Exclude<keyof ValidatedFields, keyof Fields>[];
+	manualValidatedFieldsMap: Record<
+		Exclude<keyof ValidatedFields, keyof Fields>,
+		true
+	>;
+	// //
+	referencedValidatedFields: (keyof ValidatedFields & keyof Fields)[];
+	referencedValidatedFieldsMap: Record<
+		keyof ValidatedFields & keyof Fields,
+		true
+	>;
 }
-export interface FormStoreShape<
-	Fields, // = TPassedFieldsShape,
-	ValidatedFields, // = Record<keyof Fields, unknown>,
-> {
+export interface FormStoreShape<Fields, ValidatedFields> {
 	fields: AllFieldsShape<Fields, ValidatedFields>;
 	errors: { [Key in keyof Fields]?: string[] | null };
-	metadata: FormMetadata<Fields>;
+	metadata: FormMetadata<Fields, ValidatedFields>;
 	isTrackingValidationHistory: boolean;
 	validations: {
 		history: unknown[];
 	};
 	submitCounter: number;
 	utils: {
-		resetFieldsErrors: () => void;
-		handleOnInputChange: (name: keyof Fields, value: unknown) => void;
-		errorFormatter: (
-			error: unknown,
-			validationEvent: ValidationEvents,
-		) => string[];
-		reInitFieldsValues: () => void;
-		setFieldValue: <Name extends keyof Fields>(
-			name: Name,
-			value:
-				| ((value: Fields[Name]) => Fields[Name])
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				| Exclude<Fields[Name], (...args: any[]) => any>,
-		) => void;
-		setFieldErrors: (params: {
-			name: keyof Fields;
-			errors: string[] | null;
-			validationEvent: ValidationEvents;
-		}) => void;
+		//
 		createValidationHistoryRecord: (params: {
 			validationEvent: ValidationEvents;
 			validationEventPhase: 'start' | 'end';
 			validationEventState: 'processing' | 'failed' | 'passed';
 			fields: AllFieldsShape<Fields, ValidatedFields>[keyof Fields][];
 		}) => unknown;
-		handleFieldValidation: <Name extends keyof Fields, ValueToCheck>(params: {
-			name: Name;
-			value: ValueToCheck extends (value: Fields[Name]) => Fields[Name]
-				? (value: Fields[Name]) => Fields[Name]
-				: ValueToCheck;
-			// Exclude<unknown, ((value: Fields[Name]) => Fields[Name])> | ((value: unknown) => Fields[Name]);
-
+		//
+		resetFieldsErrors: () => void;
+		reInitFieldsValues: () => void;
+		setFieldValue: <Name extends keyof Fields>(
+			name: Name,
+			value: ((value: Fields[Name]) => Fields[Name]) | AnyValueExceptFunctions, // Exclude<Fields[Name], TFunction>,
+		) => void;
+		handleOnInputChange: <Name extends keyof Fields>(
+			name: Name,
+			value: AnyValueExceptFunctions | ((value: Fields[Name]) => Fields[Name]),
+		) => void;
+		errorFormatter: (
+			error: unknown,
+			validationEvent: ValidationEvents,
+		) => string[];
+		setFieldErrors: (params: {
+			name: keyof ValidatedFields | keyof Fields; // Fields;
+			errors: string[] | null;
 			validationEvent: ValidationEvents;
-		}) => Exclude<Fields[Name], (value: Fields[Name]) => Fields[Name]>;
+		}) => void;
+		//
+		handleFieldValidation: <Name extends keyof Fields>(params: {
+			name: Name;
+			value: AnyValueExceptFunctions | ((value: Fields[Name]) => Fields[Name]); // ???
+			validationEvent: ValidationEvents;
+		}) => {
+			value: Fields[Name];
+			validatedValue: AnyValueExceptFunctions;
+			// Name extends keyof ValidatedFields
+			// ? ValidatedFields[Name]
+			// : undefined;
+			//AnyValueExceptFunctions | ((value: Fields[Name]) => Fields[Name])
+		}; // Exclude<Fields[Name], (value: Fields[Name]) => Fields[Name]>;
 		handlePreSubmit: (
 			cb?: THandlePreSubmitCB<Fields, ValidatedFields>,
-		) => (event: FormEvent<HTMLFormElement>) => void;
+		) => (event: FormEvent<HTMLFormElement>) => unknown | Promise<unknown>;
 	};
 }
 
 export type GetPassedValidationFieldsValues<PV> = {
 	[Key in keyof PV]: PV[Key] extends ZodSchema<unknown>
-		? ReturnType<PV[Key]['parse']>
-		: PV[Key] extends HandleValidation<unknown>
+		? z.infer<PV[Key]>
+		: PV[Key] extends (...args: any) => any
 		? ReturnType<PV[Key]>
-		: undefined;
+		: PV[Key];
+
+	// PV[Key] extends ZodSchema<unknown>
+	// 	? z.infer<PV[Key]>
+	// 	: PV[Key] extends HandleValidation<unknown>
+	// 	? ReturnType<PV[Key]>
+	// 	: undefined;
 };
 
 export type HandlePreSubmitCB<Fields, ValidatedField> = THandlePreSubmitCB<
@@ -136,27 +162,24 @@ export type HandlePreSubmitCB<Fields, ValidatedField> = THandlePreSubmitCB<
 	GetPassedValidationFieldsValues<ValidatedField>
 >;
 
-export type THandlePreSubmitCB<
-	Fields, // = TPassedFieldsShape,
-	ValidatedFields = Record<keyof Fields, unknown>,
-> = (
+export type THandlePreSubmitCB<Fields, ValidatedFields> = (
 	event: FormEvent<HTMLFormElement>,
 	params: {
-		validatedValues: ValidatedFields;
+		validatedValues: GetPassedValidationFieldsValues<ValidatedFields>;
 		values: Fields;
 		hasError: boolean;
 		errors: {
-			[Key in keyof Fields]: {
+			[Key in keyof ValidatedFields]: {
 				name: Key;
 				errors: string[] | null;
 				validationEvent: ValidationEvents;
 			};
 		};
 	},
-) => void;
+) => unknown | Promise<unknown>;
 
 export type CreateCreateFormStore<
-	Fields, // = TPassedFieldsShape,
+	Fields,
 	ValidatedFields = Record<keyof Fields, unknown>,
 > = FormStoreShape<
 	{
@@ -168,7 +191,7 @@ export type CreateCreateFormStore<
 >;
 
 export type FormStoreApi<
-	Fields, // = TPassedFieldsShape,
+	Fields,
 	ValidatedFields = Record<keyof Fields, unknown>,
 > = StoreApi<CreateCreateFormStore<Fields, ValidatedFields>>;
 
@@ -206,7 +229,7 @@ export type CreateStoreValidationHandler<
 };
 
 export type GetFieldsValueFromValidationHandler<
-	Fields, // = TPassedFieldsShape,
+	Fields,
 	PassedValidationHandler = CreateStoreValidationHandler<Fields>,
 > = {
 	[Key in keyof PassedValidationHandler]: PassedValidationHandler[Key] extends ZodSchema<unknown>
@@ -216,10 +239,7 @@ export type GetFieldsValueFromValidationHandler<
 		: never;
 };
 
-export type CreateFormStoreProps<
-	Fields, // = TPassedFieldsShape,
-	StorePassedValidationHandler = Record<keyof Fields, unknown>,
-> = {
+export type CreateFormStoreProps<Fields, StorePassedValidationHandler> = {
 	initValues: Fields;
 	isUpdatingFieldsValueOnError?: boolean;
 	baseId?: string | boolean;
@@ -228,20 +248,53 @@ export type CreateFormStoreProps<
 		[key in ValidationEvents]?: boolean;
 	};
 	validationSchema: {
-		[Key in keyof StorePassedValidationHandler]: StorePassedValidationHandler[Key] extends
-			| ZodSchema<unknown>
-			| HandleValidation<unknown>
-			? StorePassedValidationHandler[Key]
+		[Key in keyof StorePassedValidationHandler]: Key extends keyof Fields
+			? StorePassedValidationHandler[Key] extends
+					| ZodSchema<unknown>
+					| HandleValidation<unknown>
+				? StorePassedValidationHandler[Key]
+				: never
+			: Key extends Exclude<string, keyof Fields>
+			? (fields: Fields, validationEvent: ValidationEvents) => unknown
 			: never;
 	};
+	// & {
+	// 	[Key in Exclude<string, keyof Fields>]:
+	// 		| ((fields: Fields) => unknown)
+	// 		| undefined;
+	// };
 	valuesFromFieldsToStore?: {
 		[Key in keyof Fields]?: (fieldValue: string) => Fields[Key];
 	};
 	valuesFromStoreToFields?: {
-		[Key in keyof Fields]?: (storeValue: Fields[Key]) => string;
+		[Key in keyof Fields]?: (
+			storeValue: Fields[Key],
+		) => string | ReadonlyArray<string> | number | undefined;
 	};
 	errorFormatter?: (
 		error: unknown,
 		validationEvent: ValidationEvents,
 	) => string[];
 };
+
+// type GetFromFieldStore<
+// 	TFormStore,
+// 	TValueType extends 'values' | 'schema' | 'validatedValues' = 'values',
+// > = TFormStore extends FormStoreApi<infer FromValues, infer FromValidatedValues>
+// 	? TValueType extends 'schema'
+// 		? FromValidatedValues
+// 		: TValueType extends 'validatedValues'
+// 		? GetPassedValidationFieldsValues<FromValidatedValues>
+// 		: FromValues
+// 	: never;
+
+// type TValues = GetFromFieldStore<FormStore>;
+// type TSchema = GetFromFieldStore<FormStore, "schema">;
+// type TValidatedValues = GetFromFieldStore<FormStore, "validatedValues">;
+
+// const values = {} as TValues;
+// values.category;
+// const schema = {} as TSchema;
+// schema.categoryName;
+// const validatedValues = {} as TValidatedValues;
+// validatedValues.categoryName;

@@ -1,149 +1,143 @@
 import { FormEvent } from 'react';
-import { ZodSchema } from 'zod';
+import { ZodSchema, z, ZodError } from 'zod';
 import * as zustand from 'zustand';
 import { StoreApi } from 'zustand';
 
-type TPassedFieldsShape = Record<string, unknown>;
+type FormStoreApi<FieldsValues, ValidationsHandlers = Record<keyof FieldsValues, unknown>> = StoreApi<FormStoreShape<FieldsValues, ValidationsHandlers>>;
+type GetFormStoreApiStore<TFormStore, TValueType extends 'values' | 'validationHandlers' | 'validatedValues' = 'values'> = TFormStore extends FormStoreApi<infer FieldsValues, infer ValidationsHandlers> ? TValueType extends 'validationHandlers' ? ValidationsHandlers : TValueType extends 'validatedValues' ? GetValidationValuesFromSchema<ValidationsHandlers> : FieldsValues : never;
+
+type TFunction = (...args: any[]) => any;
+type AnyValueExceptFunctions = Exclude<{} | null | undefined, TFunction>;
 type InputDateTypes = 'date' | 'time' | 'datetime-local' | 'week' | 'month';
+type GetValidationValuesFromSchema<Handler> = {
+    [Key in keyof Handler]: Handler[Key] extends ZodSchema<unknown> ? z.infer<Handler[Key]> : Handler[Key] extends TFunction ? ReturnType<Handler[Key]> : Handler[Key];
+};
+/****************        ****************/
+/************** Validation **************/
+/****************        ****************/
+type ValidationError = {
+    isDirty: false;
+    message: null;
+} | {
+    isDirty: true;
+    message: string;
+};
 type ValidationEvents = 'submit' | 'change';
 type HandleValidation<Value> = (value: unknown, validationEvent: ValidationEvents) => Value;
-interface FieldMetadata<Name, Value> {
+interface ValidationMetadata<Name> {
     name: Name & string;
-    id: string;
-    initialValue: Value;
 }
-interface FieldValidation<Value> {
-    handler: HandleValidation<Value>;
+type FormStoreValidation<ValidationsValues, Key extends keyof ValidationsValues> = {
+    handler: HandleValidation<ValidationsValues[Key]>;
     events: {
         [key in ValidationEvents]: {
+            isDirty: boolean;
             isActive: boolean;
             passedAttempts: number;
             failedAttempts: number;
-        };
+        } & ValidationError;
     };
+    isDirty: boolean;
+    currentDirtyEventsCounter: number;
     passedAttempts: number;
     failedAttempts: number;
-}
-type FieldIsDirtyErrorsAndValidation = {
-    isDirty: false;
-    errors: null;
-} | {
-    isDirty: true;
-    errors: string[];
+    metadata: ValidationMetadata<Key>;
 };
-type FieldShape<Name, Value, ValidatedValue> = {
-    validation: FieldValidation<ValidatedValue>;
-    value: Exclude<Value, (value: Value) => Value>;
-    isDirty: boolean;
-    errors: string[];
+/****************        ****************/
+/**************** Fields ****************/
+/****************        ****************/
+interface FieldMetadata<Name, Value> {
+    name: Name & string;
+    initialValue: Value;
+}
+type FormStoreField<FieldsValues, Key extends keyof FieldsValues> = {
+    id: string;
+    value: FieldsValues[Key];
+    metadata: FieldMetadata<Key, FieldsValues[Key]>;
     isUpdatingValueOnError: boolean;
-    metadata: FieldMetadata<Name, Value>;
-    valueFromFieldToStore?: (fieldValue: unknown) => Exclude<Value, (value: Value) => Value>;
-    valueFromStoreToField?: (StoreValue: Value) => string;
+    valueFromFieldToStore?: (fieldValue: unknown) => Exclude<FieldsValues[Key], (value: FieldsValues[Key]) => FieldsValues[Key]>;
+    valueFromStoreToField?: (StoreValue: FieldsValues[Key]) => string;
 };
-type AllFieldsShape<Fields, // = TPassedFieldsShape,
-ValidatedFields> = {
-    [FieldName in NonNullable<keyof Fields>]: FieldShape<FieldName, Fields[FieldName], ValidatedFields extends Record<FieldName, unknown> ? ValidatedFields[FieldName] : never>;
-};
-interface FormMetadata<Fields> {
-    formId: string;
-    fieldsNames: (keyof Fields)[];
+/****************        ****************/
+/**********   FormStoreShape   **********/
+/****************        ****************/
+interface FormStoreMetadata<FieldsValues, ValidationsHandlers> {
+    fieldsNames: (keyof FieldsValues)[];
+    fieldsNamesMap: Record<keyof FieldsValues, true>;
+    validatedFieldsNamesMap: Record<keyof ValidationsHandlers, true>;
+    validatedFieldsNames: (keyof ValidationsHandlers)[];
+    manualValidatedFields: Exclude<keyof ValidationsHandlers, keyof FieldsValues>[];
+    manualValidatedFieldsMap: Record<Exclude<keyof ValidationsHandlers, keyof FieldsValues>, true>;
+    referencedValidatedFields: (keyof ValidationsHandlers & keyof FieldsValues)[];
+    referencedValidatedFieldsMap: Record<keyof ValidationsHandlers & keyof FieldsValues, true>;
 }
-interface FormStoreShape<Fields, // = TPassedFieldsShape,
-ValidatedFields> {
-    fields: AllFieldsShape<Fields, ValidatedFields>;
-    errors: {
-        [Key in keyof Fields]?: string[] | null;
-    };
-    metadata: FormMetadata<Fields>;
-    isTrackingValidationHistory: boolean;
-    validations: {
-        history: unknown[];
-    };
+interface FormStoreShape<FieldsValues, ValidationsHandlers> {
     submitCounter: number;
+    currentDirtyFieldsCounter: number;
+    isSubmitting: boolean;
+    isDirty: boolean;
+    baseId: string;
+    id: string;
+    metadata: FormStoreMetadata<FieldsValues, ValidationsHandlers>;
+    validations: {
+        [Key in keyof GetValidationValuesFromSchema<ValidationsHandlers>]: FormStoreValidation<GetValidationValuesFromSchema<ValidationsHandlers>, Key>;
+    };
+    fields: {
+        [Key in keyof FieldsValues]: FormStoreField<FieldsValues, Key>;
+    };
     utils: {
-        resetFieldsErrors: () => void;
-        handleOnInputChange: (name: keyof Fields, value: unknown) => void;
-        errorFormatter: (error: unknown, validationEvent: ValidationEvents) => string[];
-        reInitFieldsValues: () => void;
-        setFieldValue: <Name extends keyof Fields>(name: Name, value: ((value: Fields[Name]) => Fields[Name]) | Exclude<Fields[Name], (...args: any[]) => any>) => void;
+        setIsSubmitting: (valueOrUpdater: boolean | ((value: boolean) => boolean)) => void;
+        resetFormStore: (itemsToReset?: {
+            fields?: boolean;
+            validations?: boolean;
+            submitCounter?: boolean;
+        }) => void;
+        setFieldValue: <Name extends keyof FieldsValues>(name: Name, valueOrUpdater: ((value: FieldsValues[Name]) => FieldsValues[Name]) | AnyValueExceptFunctions) => void;
+        handleOnInputChange: <Name extends keyof FieldsValues, ValidationName extends keyof ValidationsHandlers | undefined = undefined>(name: Name, valueOrUpdater: ((value: FieldsValues[Name]) => FieldsValues[Name]) | AnyValueExceptFunctions, validationName?: ValidationName) => void;
+        handleSubmit: (cb: HandleSubmitCB<FieldsValues, ValidationsHandlers>) => (event: FormEvent<HTMLFormElement>) => Promise<unknown> | unknown;
+        errorFormatter: (error: unknown, validationEvent: ValidationEvents) => string;
         setFieldErrors: (params: {
-            name: keyof Fields;
-            errors: string[] | null;
+            name: keyof ValidationsHandlers;
+            error: string | null;
             validationEvent: ValidationEvents;
         }) => void;
-        createValidationHistoryRecord: (params: {
-            validationEvent: ValidationEvents;
-            validationEventPhase: 'start' | 'end';
-            validationEventState: 'processing' | 'failed' | 'passed';
-            fields: AllFieldsShape<Fields, ValidatedFields>[keyof Fields][];
-        }) => unknown;
-        handleFieldValidation: <Name extends keyof Fields, ValueToCheck>(params: {
-            name: Name;
-            value: ValueToCheck extends (value: Fields[Name]) => Fields[Name] ? (value: Fields[Name]) => Fields[Name] : ValueToCheck;
-            validationEvent: ValidationEvents;
-        }) => Exclude<Fields[Name], (value: Fields[Name]) => Fields[Name]>;
-        handlePreSubmit: (cb?: THandlePreSubmitCB<Fields, ValidatedFields>) => (event: FormEvent<HTMLFormElement>) => void;
     };
 }
-type GetPassedValidationFieldsValues<PV> = {
-    [Key in keyof PV]: PV[Key] extends ZodSchema<unknown> ? ReturnType<PV[Key]['parse']> : PV[Key] extends HandleValidation<unknown> ? ReturnType<PV[Key]> : undefined;
-};
-type HandlePreSubmitCB<Fields, ValidatedField> = THandlePreSubmitCB<Fields, GetPassedValidationFieldsValues<ValidatedField>>;
-type THandlePreSubmitCB<Fields, // = TPassedFieldsShape,
-ValidatedFields = Record<keyof Fields, unknown>> = (event: FormEvent<HTMLFormElement>, params: {
-    validatedValues: ValidatedFields;
-    values: Fields;
+type HandleSubmitCB<FieldsValues, ValidationsHandlers> = (params: {
+    event: FormEvent<HTMLFormElement>;
+    validatedValues: GetValidationValuesFromSchema<ValidationsHandlers>;
+    values: FieldsValues;
     hasError: boolean;
     errors: {
-        [Key in keyof Fields]: {
+        [Key in keyof ValidationsHandlers]: {
             name: Key;
-            errors: string[] | null;
+            error: string | null;
             validationEvent: ValidationEvents;
         };
     };
-}) => void;
-type CreateCreateFormStore<Fields, // = TPassedFieldsShape,
-ValidatedFields = Record<keyof Fields, unknown>> = FormStoreShape<{
-    [Key in keyof Fields]: Fields[Key];
-}, ValidatedFields extends NonNullable<ValidatedFields> ? GetPassedValidationFieldsValues<ValidatedFields> : never>;
-type FormStoreApi<Fields, // = TPassedFieldsShape,
-ValidatedFields = Record<keyof Fields, unknown>> = StoreApi<CreateCreateFormStore<Fields, ValidatedFields>>;
-type FormStoreValues<Fields = AllFieldsShape<TPassedFieldsShape, Record<string, unknown>>> = {
-    [Key in keyof Fields]: Fields extends AllFieldsShape<TPassedFieldsShape, Record<string, unknown>> ? Fields[Key]['value'] : never;
-};
-type FormStoreErrors<Fields = AllFieldsShape<TPassedFieldsShape, Record<string, unknown>>> = {
-    [Key in keyof Fields]: Fields extends AllFieldsShape<TPassedFieldsShape, Record<string, unknown>> ? Fields[Key]['errors'] : never;
-};
-type ValidationHandler<Fields = TPassedFieldsShape> = {
-    [Key in keyof Fields]?: HandleValidation<Fields[Key]>;
-};
-type CreateStoreValidationHandler<Fields = TPassedFieldsShape, PassedValidationHandler = unknown> = {
-    [Key in keyof Fields & keyof PassedValidationHandler]?: PassedValidationHandler[Key];
-};
-type GetFieldsValueFromValidationHandler<Fields, // = TPassedFieldsShape,
-PassedValidationHandler = CreateStoreValidationHandler<Fields>> = {
-    [Key in keyof PassedValidationHandler]: PassedValidationHandler[Key] extends ZodSchema<unknown> ? ReturnType<PassedValidationHandler[Key]['parse']> : PassedValidationHandler[Key] extends HandleValidation<unknown> ? ReturnType<PassedValidationHandler[Key]> : never;
-};
-type CreateFormStoreProps<Fields, // = TPassedFieldsShape,
-StorePassedValidationHandler = Record<keyof Fields, unknown>> = {
-    initValues: Fields;
+}) => unknown | Promise<unknown>;
+type GetFromFormStoreShape<TFormStore, TValueType extends 'values' | 'validationHandlers' | 'validatedValues' = 'values'> = TFormStore extends FormStoreShape<infer FieldsValues, infer ValidationsHandlers> ? TValueType extends 'validationHandlers' ? ValidationsHandlers : TValueType extends 'validatedValues' ? GetValidationValuesFromSchema<ValidationsHandlers> : FieldsValues : never;
+/****************        ****************/
+/************ CreateFormStore ************/
+/****************        ****************/
+type CreateFormStoreProps<FieldsValues, ValidationsHandlers = Record<keyof FieldsValues, unknown>> = {
+    initValues: FieldsValues;
     isUpdatingFieldsValueOnError?: boolean;
     baseId?: string | boolean;
     trackValidationHistory?: boolean;
     validationEvents?: {
         [key in ValidationEvents]?: boolean;
     };
-    validationSchema: {
-        [Key in keyof StorePassedValidationHandler]: StorePassedValidationHandler[Key] extends ZodSchema<unknown> | HandleValidation<unknown> ? StorePassedValidationHandler[Key] : never;
+    validationsSchema: {
+        [Key in keyof ValidationsHandlers]: Key extends keyof FieldsValues ? ValidationsHandlers[Key] extends ZodSchema<unknown> | HandleValidation<unknown> ? ValidationsHandlers[Key] : never : Key extends Exclude<string, keyof FieldsValues> ? (fields: FieldsValues, validationEvent: ValidationEvents) => unknown : never;
     };
     valuesFromFieldsToStore?: {
-        [Key in keyof Fields]?: (fieldValue: string) => Fields[Key];
+        [Key in keyof FieldsValues]?: (fieldValue: string) => FieldsValues[Key];
     };
     valuesFromStoreToFields?: {
-        [Key in keyof Fields]?: (storeValue: Fields[Key]) => string;
+        [Key in keyof FieldsValues]?: (storeValue: FieldsValues[Key]) => string | ReadonlyArray<string> | number | undefined;
     };
-    errorFormatter?: (error: unknown, validationEvent: ValidationEvents) => string[];
+    errorFormatter?: (error: unknown, validationEvent: ValidationEvents) => string;
 };
 
 /**
@@ -207,9 +201,16 @@ declare const inputDateHelpers: {
     getFirstDateOfWeek: typeof getFirstDateOfWeek;
 };
 
-declare const handleCreateFormStore: <Fields, ValidationSchema>({ isUpdatingFieldsValueOnError, trackValidationHistory, valuesFromFieldsToStore, valuesFromStoreToFields, validationSchema, ...params }: CreateFormStoreProps<Fields, ValidationSchema>) => zustand.StoreApi<CreateCreateFormStore<Fields, ValidationSchema>>;
-declare const useCreateFormStore: <Fields, ValidationSchema>(props: Omit<CreateFormStoreProps<Fields, ValidationSchema>, "baseId"> & {
-    baseId?: string | boolean | undefined;
-}) => zustand.StoreApi<CreateCreateFormStore<Fields, ValidationSchema>>;
+declare function isZodValidator(validator: unknown): validator is ZodSchema;
+declare function isZodError(error: unknown): error is ZodError;
+declare function errorFormatter(error: unknown): string;
 
-export { AllFieldsShape, CreateCreateFormStore, CreateFormStoreProps, CreateStoreValidationHandler, FieldIsDirtyErrorsAndValidation, FieldMetadata, FieldShape, FieldValidation, FormMetadata, FormStoreApi, FormStoreErrors, FormStoreShape, FormStoreValues, GetFieldsValueFromValidationHandler, GetPassedValidationFieldsValues, HandlePreSubmitCB, HandleValidation, InputDateTypes, THandlePreSubmitCB, ValidationEvents, ValidationHandler, handleCreateFormStore, inputDateHelpers, useCreateFormStore };
+declare const handleCreateFormStore: <FieldsValues, ValidationsHandlers>(params: CreateFormStoreProps<FieldsValues, ValidationsHandlers>) => zustand.StoreApi<FormStoreShape<FieldsValues, ValidationsHandlers>>;
+declare const useCreateFormStore: <FieldsValues, ValidationsHandlers>(props: Omit<CreateFormStoreProps<FieldsValues, ValidationsHandlers>, "baseId"> & {
+    baseId?: string | boolean | undefined;
+}) => zustand.StoreApi<FormStoreShape<FieldsValues, ValidationsHandlers>>;
+
+type SetStateInternal<T> = (partial: T | Partial<T> | ((state: T) => T | Partial<T>)) => void;
+declare function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(params: CreateFormStoreProps<FieldsValues, ValidationsHandlers>): (set: SetStateInternal<FormStoreShape<FieldsValues, ValidationsHandlers>>, get: () => FormStoreShape<FieldsValues, ValidationsHandlers>) => FormStoreShape<FieldsValues, ValidationsHandlers>;
+
+export { CreateFormStoreProps, FieldMetadata, FormStoreApi, FormStoreField, FormStoreMetadata, FormStoreShape, FormStoreValidation, GetFormStoreApiStore, GetFromFormStoreShape, GetValidationValuesFromSchema, HandleSubmitCB, HandleValidation, InputDateTypes, ValidationEvents, ValidationMetadata, createFormStoreBuilder, errorFormatter, formatDate, getFirstDateOfWeek, getWeekNumber, handleCreateFormStore, inputDateHelpers, isZodError, isZodValidator, parseDate, useCreateFormStore };
