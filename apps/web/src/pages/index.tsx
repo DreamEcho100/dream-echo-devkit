@@ -1,75 +1,81 @@
-import { Button } from 'ui';
-import {
-	FormHTMLAttributes,
-	InputHTMLAttributes,
-	useEffect,
-	useId,
-	useMemo,
-} from 'react';
+// import { Button } from 'ui';
+import { FormHTMLAttributes, InputHTMLAttributes, useEffect } from 'react';
 import { z } from 'zod';
 import {
 	FormStoreApi,
-	HandlePreSubmitCB,
-	// useStore,
+	HandleSubmitCB,
 	useCreateFormStore,
 	inputDateHelpers,
 } from '@de100/form-echo';
 import { useStore } from 'zustand';
+import { cx } from 'class-variance-authority';
 
-type FormProps<Fields, ValidatedField> = Omit<
+type FormProps<FieldsValues, ValidationsHandlers> = Omit<
 	FormHTMLAttributes<HTMLFormElement>,
 	'onSubmit'
 > & {
-	store: FormStoreApi<Fields, ValidatedField>;
-	onSubmit: HandlePreSubmitCB<Fields, ValidatedField>;
+	store: FormStoreApi<FieldsValues, ValidationsHandlers>;
+	onSubmit: HandleSubmitCB<FieldsValues, ValidationsHandlers>;
 };
 
-const Form = <Fields, ValidatedField>({
+const Form = <FieldsValues, ValidationsHandlers>({
 	store,
 	onSubmit,
 	...props
-}: FormProps<Fields, ValidatedField>) => {
-	const handlePreSubmit = useStore(
-		store,
-		(state) => state.utils.handlePreSubmit,
+}: FormProps<FieldsValues, ValidationsHandlers>) => {
+	const handleSubmit = useStore(store, (state) => state.utils.handleSubmit);
+	const isDirty = useStore(store, (state) => state.isDirty);
+
+	return (
+		<form
+			onSubmit={handleSubmit(onSubmit)}
+			{...props}
+			className={cx(
+				isDirty && 'ring-2 ring-inset ring-red-500',
+				props.className,
+			)}
+		/>
 	);
-
-	return <form onSubmit={handlePreSubmit(onSubmit)} {...props} />;
 };
 
-type FieldProps<Fields, ValidatedField> = {
-	store: FormStoreApi<Fields, ValidatedField>;
-	name: keyof Fields;
+type FieldProps<FieldsValues, ValidationsHandlers> = {
+	store: FormStoreApi<FieldsValues, ValidationsHandlers>;
+	name: keyof FieldsValues;
+	validationName?: keyof ValidationsHandlers;
+};
+type FieldErrorsProps<FieldsValues, ValidationsHandlers> = {
+	store: FormStoreApi<FieldsValues, ValidationsHandlers>;
+	validationName: keyof ValidationsHandlers;
 };
 
-const FieldErrors = <Fields, ValidatedField>({
+const FieldErrors = <FieldsValues, ValidationsHandlers>({
 	store,
-	name,
-}: FieldProps<Fields, ValidatedField>) => {
-	const isDirty = useStore(store, (store) => store.fields[name].isDirty);
-	const errors = useStore(store, (store) => store.fields[name].errors);
+	validationName,
+}: FieldErrorsProps<FieldsValues, ValidationsHandlers>) => {
+	const isDirty = useStore(
+		store,
+		(store) => store.validations[validationName].isDirty,
+	);
+	const errorMessage = useStore(store, (store) => {
+		const validation = store.validations[validationName];
+		return validation.isDirty && validation.error.message;
+	});
 
 	if (!isDirty) return <></>;
 
-	return (
-		<ul>
-			{errors!.map((error) => (
-				<p key={error}>{error}</p>
-			))}
-		</ul>
-	);
+	return <ul>{errorMessage && <li>{errorMessage}</li>}</ul>;
 };
 
-type InputFieldProps<Fields, ValidatedField> = Omit<
+type InputFieldProps<FieldsValues, ValidationsHandlers> = Omit<
 	InputHTMLAttributes<HTMLInputElement>,
 	'name'
 > &
-	FieldProps<Fields, ValidatedField>;
+	FieldProps<FieldsValues, ValidationsHandlers>;
 
-const InputField = <Fields, ValidatedField>({
+const InputField = <FieldsValues, ValidationsHandlers>({
 	store,
 	...props
-}: InputFieldProps<Fields, ValidatedField>) => {
+}: InputFieldProps<FieldsValues, ValidationsHandlers>) => {
 	const value = useStore(store, (store) => {
 		const field = store.fields[props.name];
 		return field.valueFromStoreToField
@@ -80,10 +86,7 @@ const InputField = <Fields, ValidatedField>({
 		store,
 		(store) => store.fields[props.name].metadata,
 	);
-	const handleOnInputChange = useStore(
-		store,
-		(store) => store.utils.handleOnInputChange,
-	);
+	const id = useStore(store, (store) => store.fields[props.name].id);
 
 	return (
 		<input
@@ -91,41 +94,53 @@ const InputField = <Fields, ValidatedField>({
 			className='px-2 py-1 text-black'
 			{...props}
 			name={metadata.name}
-			id={metadata.id}
+			id={id}
 			value={value}
-			onChange={(event) => handleOnInputChange(props.name, event.target.value)}
+			onChange={(event) =>
+				store
+					.getState()
+					.utils.handleOnInputChange(props.name, event.target.value)
+			}
 		/>
 	);
 };
 
 type FormFields = {
-	username: string;
+	username?: string;
 	counter: number;
 	dateOfBirth: null | Date;
-	testArr: string[];
+	testArr: { key: string; title: string }[];
 };
 
 const FormValidationSchema = {
 	username: (val: unknown) => z.string().min(1).max(4).parse(val),
 	counter: z.number().nonnegative(),
 	dateOfBirth: z.date(),
+	testExtraValidationItem: (fields: FormFields) => fields.counter + 10,
 };
 
 const Example = () => {
-	const formStore = useCreateFormStore<FormFields, typeof FormValidationSchema>(
+	const formStore = useCreateFormStore(
+		// <FormFields, typeof FormValidationSchema>
 		{
-			initValues: {
+			initialValues: {
 				username: 'Test',
 				counter: 1,
 				dateOfBirth: null, // new Date(),
 				testArr: [],
+			} as FormFields,
+			validationsHandlers: {
+				...FormValidationSchema,
+				testArrTitles: (fields) =>
+					z.array(z.string()).parse(fields.testArr.map((item) => item.title)),
 			},
-			validationSchema: FormValidationSchema,
 			valuesFromFieldsToStore: {
 				counter: (value) => Number(value),
-				dateOfBirth: (value) => inputDateHelpers.parseDate(value, 'date'),
+				dateOfBirth: (value) =>
+					!value ? null : inputDateHelpers.parseDate(value, 'date'),
 			},
 			valuesFromStoreToFields: {
+				username: (value) => value ?? '',
 				dateOfBirth: (value) =>
 					value ? inputDateHelpers.formatDate(value, 'date') : '',
 			},
@@ -133,35 +148,43 @@ const Example = () => {
 		},
 	);
 
+	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+	// @ts-ignore
+	if (typeof window !== 'undefined') window.formStore = formStore;
+
 	const formStoreUtils = useStore(formStore, (store) => store.utils);
 	const testArr = useStore(formStore, (store) => store.fields.testArr.value);
+	const username = useStore(formStore, (store) => store.fields.username.value);
 
 	useEffect(() => {
-		formStoreUtils.setFieldValue('username', (prev) => prev + ' 1?');
-	}, [formStoreUtils]);
+		formStore.getState().utils.handleOnInputChange('username', '99');
+	}, [formStore, formStoreUtils]);
 
 	return (
 		<Form
 			store={formStore}
-			onSubmit={(event, { values, validatedValues }) => {
+			onSubmit={({ values, validatedValues }) => {
 				console.log('values', values);
-				console.log('validatedValues', validatedValues.counter);
+				console.log('validatedValues', validatedValues);
 			}}
-			className='flex flex-col gap-2 p-4 text-white w-fit bg-neutral-500'
+			className='flex w-fit flex-col gap-2 bg-neutral-500 p-4 text-white'
 		>
 			<InputField store={formStore} name='username' />
-			<FieldErrors store={formStore} name='username' />
+			<FieldErrors store={formStore} validationName='username' />
 			<InputField store={formStore} name='counter' type='number' />
-			<FieldErrors store={formStore} name='counter' />
+			<FieldErrors store={formStore} validationName='counter' />
 			<InputField store={formStore} name='dateOfBirth' type='date' />
-			<FieldErrors store={formStore} name='dateOfBirth' />
+			<FieldErrors store={formStore} validationName='dateOfBirth' />
 
 			<button
 				type='button'
 				onClick={() => {
 					formStoreUtils.setFieldValue('testArr', (prev) => [
-						Math.random().toString(36).slice(2),
 						...prev,
+						{
+							key: Math.random().toString(36).slice(2),
+							title: Math.random().toString(36).slice(2),
+						},
 					]);
 				}}
 			>
@@ -169,13 +192,13 @@ const Example = () => {
 			</button>
 			<ul>
 				{testArr.map((item) => (
-					<li key={item} className='flex justify-between gap-1'>
-						{item}{' '}
+					<li key={item.key} className='flex justify-between gap-1'>
+						{item.title}{' '}
 						<button
 							type='button'
 							onClick={() => {
 								formStoreUtils.setFieldValue('testArr', (prev) =>
-									prev.filter((_item) => _item !== item),
+									prev.filter((_item) => _item.key !== item.key),
 								);
 							}}
 						>
@@ -184,7 +207,9 @@ const Example = () => {
 					</li>
 				))}
 			</ul>
-			<button type='submit'>Submit</button>
+			<button type='submit' className='capitalize'>
+				submit
+			</button>
 		</Form>
 	);
 };
@@ -192,7 +217,7 @@ const Example = () => {
 const Web = () => {
 	return (
 		<div>
-			<h1 className='w-full h-full text-3xl font-bold underline'>
+			<h1 className='h-full w-full text-3xl font-bold underline'>
 				Hello world!
 			</h1>
 			<Example />

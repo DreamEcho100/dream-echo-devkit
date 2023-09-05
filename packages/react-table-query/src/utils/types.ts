@@ -15,6 +15,17 @@ export type QueryInput = {
 	limit?: number | null | undefined;
 } & Record<string, unknown>;
 
+export type InferItemFromInfiniteQuery<TInfiniteQuery, TError> =
+	TInfiniteQuery extends UseTRPCInfiniteQueryResult<infer IData, TError>
+		? IData extends { items: (infer TIem)[] }
+			? TIem
+			: never
+		: TInfiniteQuery extends UseInfiniteQueryResult<infer IData, TError>
+		? IData extends { items: (infer TIem)[] }
+			? TIem
+			: never
+		: never;
+
 export type InfiniteQuery<TData = unknown, TError = unknown> =
 	| UseInfiniteQueryResult<
 			{

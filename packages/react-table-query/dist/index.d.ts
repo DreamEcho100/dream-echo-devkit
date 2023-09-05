@@ -9,6 +9,11 @@ type QueryInput = {
     offset?: number | null | undefined;
     limit?: number | null | undefined;
 } & Record<string, unknown>;
+type InferItemFromInfiniteQuery<TInfiniteQuery, TError> = TInfiniteQuery extends UseTRPCInfiniteQueryResult<infer IData, TError> ? IData extends {
+    items: (infer TIem)[];
+} ? TIem : never : TInfiniteQuery extends UseInfiniteQueryResult<infer IData, TError> ? IData extends {
+    items: (infer TIem)[];
+} ? TIem : never : never;
 type InfiniteQuery<TData = unknown, TError = unknown> = UseInfiniteQueryResult<{
     items: TData[];
 } & Record<string, unknown>, TError> | UseTRPCInfiniteQueryResult<{
@@ -122,4 +127,4 @@ declare const TableLoadMore: <TData, TQueryInput extends QueryInput, TError = un
 
 declare const QueryTable: <TData, TQueryInput extends QueryInput, TError = unknown>({ columns, store, infiniteQuery, }: DataTableProps<TData, TQueryInput, TError>) => react_jsx_runtime.JSX.Element;
 
-export { CustomTableBodyProps, CustomTableHeaderProps, DataTableProps, HandleCreateTableStoreProps, InfiniteQuery, PageViewMode, QueryInput, QueryTable, StoreUpdaterOrValue, TableClassNames, TableLoadMore, TableStore, UseGetTableCurrentPageAndPaginationProps, handleCreateTableStore, useCreateTableStore };
+export { CustomTableBodyProps, CustomTableHeaderProps, DataTableProps, HandleCreateTableStoreProps, InferItemFromInfiniteQuery, InfiniteQuery, PageViewMode, QueryInput, QueryTable, StoreUpdaterOrValue, TableClassNames, TableLoadMore, TableStore, UseGetTableCurrentPageAndPaginationProps, handleCreateTableStore, useCreateTableStore };

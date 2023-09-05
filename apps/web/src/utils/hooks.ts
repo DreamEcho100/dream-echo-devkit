@@ -124,9 +124,9 @@ export const useCustomInfiniteQuery = <
 	};
 };
 
-export const useDebounce = <TData>(initValue: TData, delay?: number) => {
-	const [value, setValue] = useState(initValue);
-	const [debouncedValue, setDebouncedValue] = useState(initValue);
+export const useDebounce = <TData>(initialValue: TData, delay?: number) => {
+	const [value, setValue] = useState(initialValue);
+	const [debouncedValue, setDebouncedValue] = useState(initialValue);
 
 	useEffect(() => {
 		if (!delay) return;
