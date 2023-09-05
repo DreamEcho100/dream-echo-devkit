@@ -48,7 +48,7 @@ Now let's build the store
 const Example = () => {
 	const formStore = useCreateFormStore<FormFields, typeof FormValidationSchema>(
 		{
-			initValues: {
+			initialValues: {
 				username: 'Test',
 				counter: 1,
 				dateOfBirth: null, // new Date(),
@@ -70,7 +70,7 @@ const Example = () => {
 };
 ```
 
-### `initValues`
+### `initialValues`
 
 This will be the initial values that will be on the store and we could use on the form fields.
 
@@ -148,7 +148,7 @@ const FormValidationSchema = {
 const Example = () => {
 	const formStore = useCreateFormStore<FormFields, typeof FormValidationSchema>(
 		{
-			initValues: {
+			initialValues: {
 				username: 'Test',
 				counter: 1,
 				dateOfBirth: null, // new Date(),

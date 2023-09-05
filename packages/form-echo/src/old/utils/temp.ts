@@ -27,7 +27,7 @@ export const CreateFormStoreBuilder = <
 ) => CreateCreateFormStore<Fields, ValidationSchema>) => {
 	type FormStore = CreateCreateFormStore<Fields, ValidationSchema>;
 
-	if (!params.initValues || typeof params.initValues !== 'object')
+	if (!params.initialValues || typeof params.initialValues !== 'object')
 		throw new Error('');
 
 	const baseId =
@@ -54,7 +54,7 @@ export const CreateFormStoreBuilder = <
 		referencedValidatedFieldsMap: [],
 	} as unknown as FormStore['metadata'];
 
-	metadata.fieldsNames = Object.keys(params.initValues) as (keyof Fields)[];
+	metadata.fieldsNames = Object.keys(params.initialValues) as (keyof Fields)[];
 	for (const fieldName of metadata.fieldsNames) {
 		metadata.fieldsNamesMap[fieldName] = true;
 	}
@@ -84,7 +84,7 @@ export const CreateFormStoreBuilder = <
 
 	const fields = {} as FormStore['fields'];
 
-	let passedField: (typeof params)['initValues'][keyof Fields];
+	let passedField: (typeof params)['initialValues'][keyof Fields];
 
 	let validation: (typeof fields)[keyof Fields]['validation'];
 	let fieldValidationEvents: NonNullable<typeof params.validationEvents> = {
@@ -115,7 +115,7 @@ export const CreateFormStoreBuilder = <
 			},
 		} as NonNullable<typeof validation>;
 
-		passedField = params.initValues[fieldName];
+		passedField = params.initialValues[fieldName];
 
 		if (params.validationEvents) {
 			isFieldHavingPassedValidations = true;

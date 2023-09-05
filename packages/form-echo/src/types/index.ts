@@ -137,7 +137,9 @@ export interface FormStoreShape<FieldsValues, ValidationsHandlers> {
 			Key
 		>;
 	};
-	fields: { [Key in keyof FieldsValues]: FormStoreField<FieldsValues, Key> };
+	fields: {
+		[Key in NonNullable<keyof FieldsValues>]: FormStoreField<FieldsValues, Key>;
+	};
 	utils: {
 		setIsSubmitting: (
 			valueOrUpdater: boolean | ((value: boolean) => boolean),
@@ -187,7 +189,7 @@ export interface HandleSubmitCB<FieldsValues, ValidationsHandlers> {
 		errors: {
 			[Key in keyof ValidationsHandlers]: {
 				name: Key;
-				error: string | null;
+				message: string | null;
 				validationEvent: ValidationEvents;
 			};
 		};
@@ -218,14 +220,13 @@ export interface CreateFormStoreProps<
 	FieldsValues,
 	ValidationsHandlers = Record<keyof FieldsValues, unknown>,
 > {
-	initValues: FieldsValues;
+	initialValues: FieldsValues;
 	isUpdatingFieldsValueOnError?: boolean;
 	baseId?: string | boolean;
-	trackValidationHistory?: boolean;
 	validationEvents?: {
 		[key in ValidationEvents]?: boolean;
 	};
-	validationsSchema: {
+	validationsHandlers: {
 		[Key in keyof ValidationsHandlers]: Key extends keyof FieldsValues
 			? ValidationsHandlers[Key] extends
 					| ZodSchema<unknown>

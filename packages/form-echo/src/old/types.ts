@@ -240,7 +240,7 @@ export type GetFieldsValueFromValidationHandler<
 };
 
 export type CreateFormStoreProps<Fields, StorePassedValidationHandler> = {
-	initValues: Fields;
+	initialValues: Fields;
 	isUpdatingFieldsValueOnError?: boolean;
 	baseId?: string | boolean;
 	trackValidationHistory?: boolean;

@@ -85,7 +85,7 @@ interface FormStoreShape<FieldsValues, ValidationsHandlers> {
         [Key in keyof GetValidationValuesFromSchema<ValidationsHandlers>]: FormStoreValidation<GetValidationValuesFromSchema<ValidationsHandlers>, Key>;
     };
     fields: {
-        [Key in keyof FieldsValues]: FormStoreField<FieldsValues, Key>;
+        [Key in NonNullable<keyof FieldsValues>]: FormStoreField<FieldsValues, Key>;
     };
     utils: {
         setIsSubmitting: (valueOrUpdater: boolean | ((value: boolean) => boolean)) => void;
@@ -114,7 +114,7 @@ interface HandleSubmitCB<FieldsValues, ValidationsHandlers> {
         errors: {
             [Key in keyof ValidationsHandlers]: {
                 name: Key;
-                error: string | null;
+                message: string | null;
                 validationEvent: ValidationEvents;
             };
         };
@@ -125,14 +125,13 @@ type GetFromFormStoreShape<TFormStore, TValueType extends 'values' | 'validation
 /************ CreateFormStore ************/
 /****************        ****************/
 interface CreateFormStoreProps<FieldsValues, ValidationsHandlers = Record<keyof FieldsValues, unknown>> {
-    initValues: FieldsValues;
+    initialValues: FieldsValues;
     isUpdatingFieldsValueOnError?: boolean;
     baseId?: string | boolean;
-    trackValidationHistory?: boolean;
     validationEvents?: {
         [key in ValidationEvents]?: boolean;
     };
-    validationsSchema: {
+    validationsHandlers: {
         [Key in keyof ValidationsHandlers]: Key extends keyof FieldsValues ? ValidationsHandlers[Key] extends ZodSchema<unknown> | HandleValidation<unknown> ? ValidationsHandlers[Key] : never : Key extends Exclude<string, keyof FieldsValues> ? (fields: FieldsValues, validationEvent: ValidationEvents) => unknown : never;
     };
     valuesFromFieldsToStore?: {

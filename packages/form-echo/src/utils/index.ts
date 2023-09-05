@@ -24,7 +24,7 @@ function createFormStoreMetadata<FieldsValues, ValidationsHandlers>(
 	baseId: string,
 ) {
 	type FormStore = FormStoreShape<FieldsValues, ValidationsHandlers>;
-	if (!params.initValues || typeof params.initValues !== 'object')
+	if (!params.initialValues || typeof params.initialValues !== 'object')
 		throw new Error('');
 
 	const metadata = {
@@ -44,12 +44,12 @@ function createFormStoreMetadata<FieldsValues, ValidationsHandlers>(
 	} as unknown as FormStore['metadata'];
 
 	metadata.fieldsNames = Object.keys(
-		params.initValues,
+		params.initialValues,
 	) as typeof metadata.fieldsNames;
 	for (const fieldName of metadata.fieldsNames) {
 		metadata.fieldsNamesMap[fieldName] = true;
 	}
-	for (const key in params.validationsSchema) {
+	for (const key in params.validationsHandlers) {
 		metadata.validatedFieldsNames.push(key);
 		metadata.validatedFieldsNamesMap[key] = true;
 
@@ -89,7 +89,7 @@ function createFormStoreValidations<FieldsValues, ValidationsHandlers>(
 	const validations: FormStore['validations'] = {} as FormStore['validations'];
 	for (const fieldName of metadata.validatedFieldsNames) {
 		const fieldValidationsHandler =
-			params.validationsSchema?.[
+			params.validationsHandlers?.[
 				fieldName as keyof GetFromFormStoreShape<FormStore> &
 					keyof GetFromFormStoreShape<FormStore, 'validationHandlers'>
 			];
@@ -156,7 +156,7 @@ function createFormStoreFields<FieldsValues, ValidationsHandlers>(
 	const fields = {} as FormStore['fields'];
 	for (const fieldName of metadata.fieldsNames) {
 		fields[fieldName] = {
-			value: params.initValues[fieldName],
+			value: params.initialValues[fieldName],
 			isUpdatingValueOnError,
 			valueFromFieldToStore: params.valuesFromFieldsToStore?.[fieldName]
 				? params.valuesFromFieldsToStore[fieldName]
@@ -164,12 +164,10 @@ function createFormStoreFields<FieldsValues, ValidationsHandlers>(
 			valueFromStoreToField: params.valuesFromStoreToFields?.[fieldName]
 				? params.valuesFromStoreToFields[fieldName]
 				: undefined,
-			errors: null,
-			isDirty: false,
 			id: `${baseId}field-${String(fieldName)}`,
 			metadata: {
 				name: fieldName,
-				initialValue: params.initValues[fieldName],
+				initialValue: params.initialValues[fieldName],
 			},
 		} as (typeof fields)[typeof fieldName];
 	}
@@ -235,7 +233,8 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 						let submitCounter = currentState.submitCounter;
 
 						if (itemsToReset.fields) {
-							for (const key in fields) {
+							let key: keyof typeof fields;
+							for (key in fields) {
 								fields[key].value = fields[key].metadata.initialValue;
 							}
 						}
@@ -312,7 +311,7 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 							validation.failedAttempts++;
 							validation.events[params.validationEvent].failedAttempts++;
 
-							if (!validation.events[params.validationEvent].isDirty) {
+							if (!validation.isDirty) {
 								validation.currentDirtyEventsCounter++;
 								if (validation.currentDirtyEventsCounter > 0) {
 									currentDirtyFieldsCounter++;
@@ -329,7 +328,7 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 							validation.passedAttempts++;
 							validation.events[params.validationEvent].passedAttempts++;
 
-							if (validation.events[params.validationEvent].isDirty) {
+							if (validation.isDirty) {
 								validation.currentDirtyEventsCounter--;
 								if (validation.currentDirtyEventsCounter === 0) {
 									currentDirtyFieldsCounter--;
@@ -435,7 +434,7 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 							string,
 							{
 								name: string | number | symbol;
-								error: string | null;
+								message: string | null;
 								validationEvent: ValidationEvents;
 							}
 						> = {};
@@ -449,31 +448,35 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 						let fieldName: keyof typeof fields & string; // (typeof metadata)['referencedValidatedFieldsMap'];
 						for (fieldName in fields) {
 							values[fieldName] = fields[fieldName].value;
+
 							try {
 								const validationSchema =
 									fieldName in metadata.referencedValidatedFieldsMap &&
 									validations[fieldName as unknown as keyof typeof validations]
 										.handler;
+
 								if (
-									validations[fieldName as unknown as keyof typeof validations]
-										.events.submit.isActive &&
-									typeof validationSchema === 'function'
+									typeof validationSchema !== 'function' ||
+									!validations[fieldName as unknown as keyof typeof validations]
+										.events.submit.isActive
 								) {
-									validatedValues[fieldName] = validationSchema(
-										fields[fieldName].value,
-										'submit',
-									);
+									continue;
 								}
+
+								validatedValues[fieldName] = validationSchema(
+									fields[fieldName].value,
+									'submit',
+								);
 
 								errors[fieldName] = {
 									name: fieldName,
-									error: null,
+									message: null,
 									validationEvent: 'submit',
 								};
 							} catch (error) {
 								errors[fieldName] = {
 									name: fieldName,
-									error: currentStore.utils.errorFormatter(error, 'submit'),
+									message: currentStore.utils.errorFormatter(error, 'submit'),
 									validationEvent: 'submit',
 								};
 
@@ -486,22 +489,24 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 							try {
 								const validationSchema =
 									currentStore.validations[manualFieldName].handler;
-								if (typeof validationSchema === 'function') {
-									validatedValues[manualFieldName as string] = validationSchema(
-										values as FieldsValues,
-										'submit',
-									);
+								if (typeof validationSchema !== 'function') {
+									continue;
 								}
+
+								validatedValues[manualFieldName as string] = validationSchema(
+									values as FieldsValues,
+									'submit',
+								);
 
 								errors[manualFieldName as string] = {
 									name: manualFieldName,
-									error: null,
+									message: null,
 									validationEvent: 'submit',
 								};
 							} catch (error) {
 								errors[manualFieldName as string] = {
 									name: manualFieldName,
-									error: currentStore.utils.errorFormatter(error, 'submit'),
+									message: currentStore.utils.errorFormatter(error, 'submit'),
 									validationEvent: 'submit',
 								};
 
@@ -518,7 +523,7 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 							errors: {
 								[Key in keyof ValidationsHandlers]: {
 									name: Key;
-									error: string | null;
+									message: string | null;
 									validationEvent: ValidationEvents;
 								};
 							};
@@ -532,7 +537,7 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 								errors[errorKey] as unknown as NecessaryEvil['error'],
 							);
 
-							if (typeof errorObj.error !== 'string') continue;
+							if (typeof errorObj.message !== 'string') continue;
 
 							hasError = true;
 							// currentStore.utils.setFieldErrors(
@@ -558,170 +563,3 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 		};
 	};
 }
-
-// export const handleSubmit = function <FieldsValues, ValidationsHandlers>(
-// 	storeGetter: () => FormStoreShape<FieldsValues, ValidationsHandlers>,
-// 	cb: HandleSubmitCB<FieldsValues, ValidationsHandlers>,
-// ) {
-// 	return async function (
-// 		event: FormEvent<HTMLFormElement>,
-// 		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// 		// @ts-ignore
-// 	): Promise<unknown> | unknown {
-// 		event.preventDefault();
-// 		// if (!cb) return;
-// 		const currentStore = storeGetter();
-
-// 		currentStore.utils.setIsSubmitting(true);
-
-// 		const metadata = currentStore.metadata;
-// 		const fields = currentStore.fields;
-// 		const validations = currentStore.validations;
-// 		const values: Record<string, unknown> = {}; // as Fields;
-// 		const validatedValues: Record<string, unknown> = {};
-
-// 		const errors: Record<
-// 			string,
-// 			{
-// 				name: string | number | symbol;
-// 				error: string | null;
-// 				validationEvent: ValidationEvents;
-// 			}
-// 		> = {};
-
-// 		let hasError = false;
-
-// 		// let formFieldName: keyof typeof fields & string;
-// 		// for (formFieldName in fields) {
-// 		// 	values[formFieldName] = fields[formFieldName].value;
-// 		// }
-// 		let fieldName: keyof typeof fields & string; // (typeof metadata)['referencedValidatedFieldsMap'];
-// 		for (fieldName in fields) {
-// 			values[fieldName] = fields[fieldName].value;
-// 			try {
-// 				const validationSchema =
-// 					fieldName in metadata.referencedValidatedFieldsMap &&
-// 					validations[fieldName as unknown as keyof typeof validations].handler;
-// 				if (
-// 					validations[fieldName as unknown as keyof typeof validations].events
-// 						.submit.isActive &&
-// 					typeof validationSchema === 'function'
-// 				) {
-// 					validatedValues[fieldName] = validationSchema(
-// 						fields[fieldName].value,
-// 						'submit',
-// 					);
-// 				}
-
-// 				errors[fieldName] = {
-// 					name: fieldName,
-// 					error: null,
-// 					validationEvent: 'submit',
-// 				};
-// 			} catch (error) {
-// 				errors[fieldName] = {
-// 					name: fieldName,
-// 					error: currentStore.utils.errorFormatter(error, 'submit'),
-// 					validationEvent: 'submit',
-// 				};
-
-// 				// hasError = true;
-// 			}
-// 		}
-
-// 		let manualFieldName: keyof (typeof metadata)['manualValidatedFieldsMap'];
-// 		for (manualFieldName of metadata.manualValidatedFields) {
-// 			try {
-// 				const validationSchema =
-// 					currentStore.validations[manualFieldName].handler;
-// 				if (typeof validationSchema === 'function') {
-// 					validatedValues[manualFieldName as string] = validationSchema(
-// 						values as FieldsValues,
-// 						'submit',
-// 					);
-// 				}
-
-// 				errors[manualFieldName as string] = {
-// 					name: manualFieldName,
-// 					error: null,
-// 					validationEvent: 'submit',
-// 				};
-// 			} catch (error) {
-// 				errors[manualFieldName as string] = {
-// 					name: manualFieldName,
-// 					error: currentStore.utils.errorFormatter(error, 'submit'),
-// 					validationEvent: 'submit',
-// 				};
-
-// 				// hasError = true;
-// 			}
-// 		}
-
-// 		type NecessaryEvil = {
-// 			values: FieldsValues;
-// 			validatedValues: GetFromFormStoreShape<
-// 				ReturnType<typeof storeGetter>,
-// 				'validatedValues'
-// 			>;
-// 			errors: {
-// 				[Key in keyof (typeof metadata)['validatedFieldsNamesMap']]: {
-// 					name: Key;
-// 					error: string | null;
-// 					validationEvent: ValidationEvents;
-// 				};
-// 			};
-// 		};
-
-// 		let errorKey: keyof typeof errors & string;
-// 		for (errorKey in errors) {
-// 			const errorObj = errors[errorKey]; // as NecessaryEvil['errors'][keyof NecessaryEvil['errors']];
-
-// 			currentStore.utils.setFieldErrors(
-// 				errors[
-// 					errorKey
-// 				] as unknown as NecessaryEvil['errors'][keyof NecessaryEvil['errors']],
-// 			);
-
-// 			if (typeof errorObj.error !== 'string') continue;
-
-// 			hasError = true;
-// 			// currentStore.utils.setFieldErrors(
-// 			// 	errors[errorKey], //  as NecessaryEvil['errors'][keyof NecessaryEvil['errors']],
-// 			// );
-// 		}
-
-// 		currentStore.utils.setIsSubmitting(false);
-
-// 		if (hasError) return;
-
-// 		await cb({
-// 			event,
-// 			values: values as NecessaryEvil['values'],
-// 			validatedValues: validatedValues as NecessaryEvil['validatedValues'],
-// 			hasError,
-// 			errors: errors as NecessaryEvil['errors'],
-// 		});
-// 	};
-// };
-
-// // eslint-disable-next-line @typescript-eslint/no-explicit-any
-// type TFunction = (...args: any[]) => any;
-// type AnyValueExceptFunctions = // eslint-disable-next-line @typescript-eslint/ban-types
-// 	Exclude<{} | null | undefined, TFunction>;
-// export function handleOnInputChange<
-// 	FormStore extends FormStoreShape<any, any>,
-// 	Name extends keyof GetFromFormStoreShape<FormStore>,
-// 	ValidationName extends
-// 		| keyof GetFromFormStoreShape<FormStore, 'validatedValues'>
-// 		| undefined = undefined,
-// >(
-// 	storeGetter: () => FormStore,
-// 	name: Name,
-// 	valueOrUpdater:
-// 		| ((
-// 				value: GetFromFormStoreShape<FormStore>[Name],
-// 		  ) => GetFromFormStoreShape<FormStore>[Name])
-// 		| AnyValueExceptFunctions,
-// 	validationName?: ValidationName,
-// ) {
-// }

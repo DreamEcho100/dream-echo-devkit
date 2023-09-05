@@ -23,7 +23,7 @@
 // ee.fields.username.validation.handler;
 
 // const eee = createFormStore({
-// 	initValues: {
+// 	initialValues: {
 // 		username: undefined,
 // 		age: 0,
 // 	},
@@ -136,7 +136,7 @@
 // };
 
 // const t = createFormStore({
-// 	initValues: { username: null, age: '0' } as {
+// 	initialValues: { username: null, age: '0' } as {
 // 		username?: null | string;
 // 		age: string;
 // 	},
