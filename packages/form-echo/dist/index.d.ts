@@ -17,13 +17,17 @@ type GetValidationValuesFromSchema<Handler> = {
 /****************        ****************/
 type ValidationError = {
     isDirty: false;
-    message: null;
+    error: null;
 } | {
     isDirty: true;
-    message: string;
+    error: {
+        message: string;
+    };
 };
 type ValidationEvents = 'submit' | 'change';
-type HandleValidation<Value> = (value: unknown, validationEvent: ValidationEvents) => Value;
+interface HandleValidation<Value> {
+    (value: unknown, validationEvent: ValidationEvents): Value;
+}
 interface ValidationMetadata<Name> {
     name: Name & string;
 }
@@ -31,18 +35,16 @@ type FormStoreValidation<ValidationsValues, Key extends keyof ValidationsValues>
     handler: HandleValidation<ValidationsValues[Key]>;
     events: {
         [key in ValidationEvents]: {
-            isDirty: boolean;
             isActive: boolean;
             passedAttempts: number;
             failedAttempts: number;
         } & ValidationError;
     };
-    isDirty: boolean;
     currentDirtyEventsCounter: number;
     passedAttempts: number;
     failedAttempts: number;
     metadata: ValidationMetadata<Key>;
-};
+} & ValidationError;
 /****************        ****************/
 /**************** Fields ****************/
 /****************        ****************/
@@ -50,14 +52,14 @@ interface FieldMetadata<Name, Value> {
     name: Name & string;
     initialValue: Value;
 }
-type FormStoreField<FieldsValues, Key extends keyof FieldsValues> = {
+interface FormStoreField<FieldsValues, Key extends keyof FieldsValues> {
     id: string;
     value: FieldsValues[Key];
     metadata: FieldMetadata<Key, FieldsValues[Key]>;
     isUpdatingValueOnError: boolean;
     valueFromFieldToStore?: (fieldValue: unknown) => Exclude<FieldsValues[Key], (value: FieldsValues[Key]) => FieldsValues[Key]>;
     valueFromStoreToField?: (StoreValue: FieldsValues[Key]) => string;
-};
+}
 /****************        ****************/
 /**********   FormStoreShape   **********/
 /****************        ****************/
@@ -98,29 +100,31 @@ interface FormStoreShape<FieldsValues, ValidationsHandlers> {
         errorFormatter: (error: unknown, validationEvent: ValidationEvents) => string;
         setFieldErrors: (params: {
             name: keyof ValidationsHandlers;
-            error: string | null;
+            message: string | null;
             validationEvent: ValidationEvents;
         }) => void;
     };
 }
-type HandleSubmitCB<FieldsValues, ValidationsHandlers> = (params: {
-    event: FormEvent<HTMLFormElement>;
-    validatedValues: GetValidationValuesFromSchema<ValidationsHandlers>;
-    values: FieldsValues;
-    hasError: boolean;
-    errors: {
-        [Key in keyof ValidationsHandlers]: {
-            name: Key;
-            error: string | null;
-            validationEvent: ValidationEvents;
+interface HandleSubmitCB<FieldsValues, ValidationsHandlers> {
+    (params: {
+        event: FormEvent<HTMLFormElement>;
+        validatedValues: GetValidationValuesFromSchema<ValidationsHandlers>;
+        values: FieldsValues;
+        hasError: boolean;
+        errors: {
+            [Key in keyof ValidationsHandlers]: {
+                name: Key;
+                error: string | null;
+                validationEvent: ValidationEvents;
+            };
         };
-    };
-}) => unknown | Promise<unknown>;
+    }): unknown | Promise<unknown>;
+}
 type GetFromFormStoreShape<TFormStore, TValueType extends 'values' | 'validationHandlers' | 'validatedValues' = 'values'> = TFormStore extends FormStoreShape<infer FieldsValues, infer ValidationsHandlers> ? TValueType extends 'validationHandlers' ? ValidationsHandlers : TValueType extends 'validatedValues' ? GetValidationValuesFromSchema<ValidationsHandlers> : FieldsValues : never;
 /****************        ****************/
 /************ CreateFormStore ************/
 /****************        ****************/
-type CreateFormStoreProps<FieldsValues, ValidationsHandlers = Record<keyof FieldsValues, unknown>> = {
+interface CreateFormStoreProps<FieldsValues, ValidationsHandlers = Record<keyof FieldsValues, unknown>> {
     initValues: FieldsValues;
     isUpdatingFieldsValueOnError?: boolean;
     baseId?: string | boolean;
@@ -138,7 +142,7 @@ type CreateFormStoreProps<FieldsValues, ValidationsHandlers = Record<keyof Field
         [Key in keyof FieldsValues]?: (storeValue: FieldsValues[Key]) => string | ReadonlyArray<string> | number | undefined;
     };
     errorFormatter?: (error: unknown, validationEvent: ValidationEvents) => string;
-};
+}
 
 /**
  * Formats a date object to the desired string format based on the type.

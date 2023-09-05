@@ -3,7 +3,6 @@ import { type ZodSchema, type z } from 'zod';
 
 export * from './zustand';
 
-// type TPassedFieldsShape = Record<string, unknown>;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TFunction = (...args: any[]) => any;
 type AnyValueExceptFunctions = // eslint-disable-next-line @typescript-eslint/ban-types
@@ -34,13 +33,22 @@ export type GetValidationValuesFromSchema<Handler> = {
 /************** Validation **************/
 /****************        ****************/
 type ValidationError =
-	| { isDirty: false; message: null }
-	| { isDirty: true; message: string };
+	| { isDirty: false; error: null }
+	| { isDirty: true; error: { message: string } };
 export type ValidationEvents = 'submit' | 'change'; // | 'mount' | 'blur';
-export type HandleValidation<Value> = (
-	value: unknown,
-	validationEvent: ValidationEvents,
-) => Value;
+export interface HandleValidation<Value> {
+	(value: unknown, validationEvent: ValidationEvents): Value;
+}
+/*
+export type HandleValidation2<FieldsValues, Key, Value> =
+	Key extends keyof FieldsValues
+		? (params: { value: unknown; validationEvent: ValidationEvents }) => Value
+		: (params: {
+				fields: FieldsValues;
+				validationEvent: ValidationEvents;
+		  }) => Value;
+			*/
+
 export interface ValidationMetadata<Name> {
 	/* readonly */ name: Name & string;
 }
@@ -53,18 +61,16 @@ export type FormStoreValidation<
 	// A cleanup function on the utils?
 	events: {
 		[key in ValidationEvents]: {
-			isDirty: boolean;
 			isActive: boolean;
 			passedAttempts: number;
 			failedAttempts: number;
 		} & ValidationError;
 	};
-	isDirty: boolean;
 	currentDirtyEventsCounter: number;
 	passedAttempts: number;
 	failedAttempts: number;
 	metadata: ValidationMetadata<Key>;
-};
+} & ValidationError;
 
 /****************        ****************/
 /**************** Fields ****************/
@@ -73,7 +79,7 @@ export interface FieldMetadata<Name, Value> {
 	/* readonly */ name: Name & string;
 	/* readonly */ initialValue: Value;
 }
-export type FormStoreField<FieldsValues, Key extends keyof FieldsValues> = {
+export interface FormStoreField<FieldsValues, Key extends keyof FieldsValues> {
 	id: string;
 	value: FieldsValues[Key];
 	metadata: FieldMetadata<Key, FieldsValues[Key]>;
@@ -85,7 +91,7 @@ export type FormStoreField<FieldsValues, Key extends keyof FieldsValues> = {
 		(value: FieldsValues[Key]) => FieldsValues[Key]
 	>;
 	valueFromStoreToField?: (StoreValue: FieldsValues[Key]) => string;
-};
+}
 
 /****************        ****************/
 /**********   FormStoreShape   **********/
@@ -146,16 +152,7 @@ export interface FormStoreShape<FieldsValues, ValidationsHandlers> {
 			valueOrUpdater:
 				| ((value: FieldsValues[Name]) => FieldsValues[Name])
 				| AnyValueExceptFunctions,
-			// ValueOrUpdaterSanitized<
-			// 	ValueOrUpdater,
-			// 	FieldsValues[Name]
-			// >, //  FieldsValues[Name] | ((value: FieldsValues[Name]) => FieldsValues[Name])
 		) => void;
-		// 	typeof valueOrUpdater extends (
-		// 	value: FieldsValues[Name],
-		// ) => FieldsValues[Name]
-		// 	? ReturnType<typeof valueOrUpdater>
-		// 	: typeof valueOrUpdater;
 		handleOnInputChange: <
 			Name extends keyof FieldsValues,
 			ValidationName extends keyof ValidationsHandlers | undefined = undefined,
@@ -175,46 +172,28 @@ export interface FormStoreShape<FieldsValues, ValidationsHandlers> {
 			validationEvent: ValidationEvents,
 		) => string;
 		setFieldErrors: (params: {
-			name: keyof ValidationsHandlers; // Fields;
-			error: string | null;
+			name: keyof ValidationsHandlers;
+			message: string | null;
 			validationEvent: ValidationEvents;
 		}) => void;
-		// handleFieldValidation: <Name extends keyof FieldsValues>(params: {
-		// 	name: Name;
-		// 	value: AnyValueExceptFunctions | ((value: FieldsValues[Name]) => FieldsValues[Name]); // ???
-		// 	validationEvent: ValidationEvents;
-		// }) => {
-		// 	value: FieldsValues[Name];
-		// 	validatedValue: AnyValueExceptFunctions;
-		// };
 	};
 }
-
-// export type HandleSubmit = <FieldsValues, ValidationsHandlers>(
-// 	storeGetter: () => FormStoreShape<FieldsValues, ValidationsHandlers>,
-// 	cb: HandleSubmitCB<FieldsValues, ValidationsHandlers>,
-// ) => (event: FormEvent<HTMLFormElement>) => unknown | Promise<unknown>;
-
-// export type GetPassedValidationFieldsValues<ValidationsHandlers> = {
-// 	[Key in keyof ValidationsHandlers]: ValidationsHandlers[Key] extends ZodSchema<unknown>
-// 		? z.infer<ValidationsHandlers[Key]>
-// 		: ValidationsHandlers[Key] extends TFunction
-// 		? ReturnType<ValidationsHandlers[Key]>
-// 		: ValidationsHandlers[Key];
-// };
-export type HandleSubmitCB<FieldsValues, ValidationsHandlers> = (params: {
-	event: FormEvent<HTMLFormElement>;
-	validatedValues: GetValidationValuesFromSchema<ValidationsHandlers>;
-	values: FieldsValues;
-	hasError: boolean;
-	errors: {
-		[Key in keyof ValidationsHandlers]: {
-			name: Key;
-			error: string | null;
-			validationEvent: ValidationEvents;
+export interface HandleSubmitCB<FieldsValues, ValidationsHandlers> {
+	(params: {
+		event: FormEvent<HTMLFormElement>;
+		validatedValues: GetValidationValuesFromSchema<ValidationsHandlers>;
+		values: FieldsValues;
+		hasError: boolean;
+		errors: {
+			[Key in keyof ValidationsHandlers]: {
+				name: Key;
+				error: string | null;
+				validationEvent: ValidationEvents;
+			};
 		};
-	};
-}) => unknown | Promise<unknown>;
+	}): unknown | Promise<unknown>;
+}
+
 export type GetFromFormStoreShape<
 	TFormStore,
 	TValueType extends
@@ -235,10 +214,10 @@ export type GetFromFormStoreShape<
 /****************        ****************/
 /************ CreateFormStore ************/
 /****************        ****************/
-export type CreateFormStoreProps<
+export interface CreateFormStoreProps<
 	FieldsValues,
 	ValidationsHandlers = Record<keyof FieldsValues, unknown>,
-> = {
+> {
 	initValues: FieldsValues;
 	isUpdatingFieldsValueOnError?: boolean;
 	baseId?: string | boolean;
@@ -269,7 +248,7 @@ export type CreateFormStoreProps<
 		error: unknown,
 		validationEvent: ValidationEvents,
 	) => string;
-};
+}
 
 // export type CreateFormStore<
 // 	Fields,

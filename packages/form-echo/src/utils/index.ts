@@ -111,14 +111,14 @@ function createFormStoreValidations<FieldsValues, ValidationsHandlers>(
 					passedAttempts: 0,
 					isActive: false,
 					isDirty: false,
-					message: null,
+					error: null,
 				},
 				submit: {
 					failedAttempts: 0,
 					passedAttempts: 0,
 					isActive: false,
 					isDirty: false,
-					message: null,
+					error: null,
 				},
 			},
 			isDirty: false,
@@ -245,6 +245,7 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 								validations[key].failedAttempts = 0;
 								validations[key].passedAttempts = 0;
 								validations[key].isDirty = false;
+								validations[key].error = null;
 
 								let eventKey: keyof (typeof validations)[typeof key]['events'];
 								for (eventKey in validations[key].events) {
@@ -252,7 +253,7 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 									validations[key].events[eventKey].failedAttempts = 0;
 									validations[key].events[eventKey].passedAttempts = 0;
 									validations[key].events[eventKey].isDirty = false;
-									validations[key].events[eventKey].message = null;
+									validations[key].events[eventKey].error = null;
 								}
 							}
 							isDirty = false;
@@ -307,39 +308,39 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 							currentState.currentDirtyFieldsCounter;
 						const validation = currentState.validations[params.name];
 
-						const isDirty = !!params.error;
-						if (isDirty) {
+						if (params.message) {
 							validation.failedAttempts++;
+							validation.events[params.validationEvent].failedAttempts++;
+
 							if (!validation.events[params.validationEvent].isDirty) {
 								validation.currentDirtyEventsCounter++;
-								if (
-									!validation.isDirty &&
-									validation.currentDirtyEventsCounter > 0
-								)
+								if (validation.currentDirtyEventsCounter > 0) {
 									currentDirtyFieldsCounter++;
+								}
 							}
 
-							validation.events[params.validationEvent].message = params.error;
-							validation.events[params.validationEvent].isDirty = isDirty;
-							validation.events[params.validationEvent].failedAttempts++;
+							validation.events[params.validationEvent].error = {
+								message: params.message,
+							};
+							validation.error = { message: params.message };
+							validation.events[params.validationEvent].isDirty = true;
+							validation.isDirty = true;
 						} else {
 							validation.passedAttempts++;
+							validation.events[params.validationEvent].passedAttempts++;
+
 							if (validation.events[params.validationEvent].isDirty) {
 								validation.currentDirtyEventsCounter--;
-								if (
-									validation.isDirty &&
-									validation.currentDirtyEventsCounter === 0
-								) {
+								if (validation.currentDirtyEventsCounter === 0) {
 									currentDirtyFieldsCounter--;
 								}
 							}
 
-							validation.events[params.validationEvent].message = params.error;
-							validation.events[params.validationEvent].isDirty = isDirty;
-							validation.events[params.validationEvent].passedAttempts++;
+							validation.events[params.validationEvent].error = null;
+							validation.error = null;
+							validation.events[params.validationEvent].isDirty = false;
+							validation.isDirty = false;
 						}
-
-						validation.isDirty = validation.currentDirtyEventsCounter > 0;
 
 						return {
 							...currentState,
@@ -393,13 +394,13 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 							);
 							currentState.utils.setFieldErrors({
 								name: _validationName,
-								error: null,
+								message: null,
 								validationEvent: 'change',
 							});
 						} catch (error) {
 							currentState.utils.setFieldErrors({
 								name: _validationName,
-								error: currentState.utils.errorFormatter(error, 'change'),
+								message: currentState.utils.errorFormatter(error, 'change'),
 								validationEvent: 'change',
 							});
 
