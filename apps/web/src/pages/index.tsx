@@ -1,5 +1,15 @@
 // import { Button } from 'ui';
-import { FormHTMLAttributes, InputHTMLAttributes, useEffect } from 'react';
+import {
+	FormHTMLAttributes,
+	InputHTMLAttributes,
+	JSXElementConstructor,
+	Key,
+	PromiseLikeOfReactNode,
+	ReactElement,
+	ReactFragment,
+	ReactPortal,
+	useEffect,
+} from 'react';
 import { z } from 'zod';
 import {
 	FormStoreApi,
@@ -40,28 +50,48 @@ const Form = <FieldsValues, ValidationsHandlers>({
 
 type FieldProps<FieldsValues, ValidationsHandlers> = {
 	store: FormStoreApi<FieldsValues, ValidationsHandlers>;
-	name: keyof FieldsValues;
-	validationName?: keyof ValidationsHandlers;
-};
+} & (
+	| {
+			name: keyof FieldsValues;
+			validationName: keyof ValidationsHandlers;
+	  }
+	| {
+			name: keyof FieldsValues & keyof ValidationsHandlers;
+			validationName?: undefined;
+	  }
+);
 type FieldErrorsProps<FieldsValues, ValidationsHandlers> = {
 	store: FormStoreApi<FieldsValues, ValidationsHandlers>;
-	validationName: keyof ValidationsHandlers;
+	name: keyof ValidationsHandlers & keyof FieldsValues & string;
+	validationName?: keyof ValidationsHandlers;
 };
 
 const FieldErrors = <FieldsValues, ValidationsHandlers>({
 	store,
+	name,
 	validationName,
 }: FieldErrorsProps<FieldsValues, ValidationsHandlers>) => {
 	const isDirty = useStore(
 		store,
-		(store) => store.validations[validationName].isDirty,
+		(store) => store.validations[validationName ?? name].isDirty,
 	);
 	const errorMessage = useStore(store, (store) => {
-		const validation = store.validations[validationName];
+		const validation = store.validations[validationName ?? name];
 		return validation.isDirty && validation.error.message;
 	});
+	const isFocused = useStore(
+		store,
+		(store) => store.focus.field?.name === name,
+	);
+	const focus = useStore(store, (store) => store.focus);
 
-	if (!isDirty) return <></>;
+	console.log('\n\n\n', name, isFocused);
+	console.log('isFocused', isFocused);
+	console.log('errorMessage', errorMessage);
+	console.log('isDirty', isDirty);
+	console.log('focus', focus);
+
+	if (isFocused || !isDirty) return <></>;
 
 	return <ul>{errorMessage && <li>{errorMessage}</li>}</ul>;
 };
@@ -76,17 +106,19 @@ const InputField = <FieldsValues, ValidationsHandlers>({
 	store,
 	...props
 }: InputFieldProps<FieldsValues, ValidationsHandlers>) => {
-	const value = useStore(store, (store) => {
-		const field = store.fields[props.name];
-		return field.valueFromStoreToField
-			? field.valueFromStoreToField(field.value)
-			: field.value;
-	}) as string;
+	const value = useStore(
+		store,
+		(store) => store.fields[props.name].storeToFieldValue,
+	);
 	const metadata = useStore(
 		store,
 		(store) => store.fields[props.name].metadata,
 	);
 	const id = useStore(store, (store) => store.fields[props.name].id);
+	const getFieldEventsListeners = useStore(
+		store,
+		(store) => store.utils.getFieldEventsListeners,
+	);
 
 	return (
 		<input
@@ -96,11 +128,7 @@ const InputField = <FieldsValues, ValidationsHandlers>({
 			name={metadata.name}
 			id={id}
 			value={value}
-			onChange={(event) =>
-				store
-					.getState()
-					.utils.handleOnInputChange(props.name, event.target.value)
-			}
+			{...getFieldEventsListeners(props.name, props.validationName)}
 		/>
 	);
 };
@@ -131,20 +159,22 @@ const Example = () => {
 			} as FormFields,
 			validationsHandlers: {
 				...FormValidationSchema,
-				testArrTitles: (fields) =>
-					z.array(z.string()).parse(fields.testArr.map((item) => item.title)),
+				testArrTitles: (fields: { testArr: any[] }) =>
+					z
+						.array(z.string())
+						.parse(fields.testArr.map((item: { title: any }) => item.title)),
 			},
 			valuesFromFieldsToStore: {
-				counter: (value) => Number(value),
-				dateOfBirth: (value) =>
+				counter: (value: any) => Number(value),
+				dateOfBirth: (value: any) =>
 					!value ? null : inputDateHelpers.parseDate(value, 'date'),
 			},
 			valuesFromStoreToFields: {
-				username: (value) => value ?? '',
-				dateOfBirth: (value) =>
+				username: (value: any) => value ?? '',
+				dateOfBirth: (value: any) =>
 					value ? inputDateHelpers.formatDate(value, 'date') : '',
 			},
-			validationEvents: { change: true },
+			// validationEvents: { change: true },
 		},
 	);
 
@@ -153,8 +183,8 @@ const Example = () => {
 	if (typeof window !== 'undefined') window.formStore = formStore;
 
 	const formStoreUtils = useStore(formStore, (store) => store.utils);
-	const testArr = useStore(formStore, (store) => store.fields.testArr.value);
-	const username = useStore(formStore, (store) => store.fields.username.value);
+	// const username = useStore(formStore, (store) => store.fields.username.value);
+	const submit = useStore(formStore, (store) => store.submit);
 
 	useEffect(() => {
 		formStore.getState().utils.handleOnInputChange('username', '99');
@@ -163,23 +193,51 @@ const Example = () => {
 	return (
 		<Form
 			store={formStore}
-			onSubmit={({ values, validatedValues }) => {
-				console.log('values', values);
-				console.log('validatedValues', validatedValues);
+			onSubmit={async (params: { values: any; validatedValues: any }) => {
+				console.log('Before submission');
+				await new Promise((res) => {
+					console.log('values', params.values);
+					console.log('validatedValues', params.validatedValues);
+					setTimeout(res, 2000);
+				});
+				console.log('After submission');
 			}}
 			className='flex w-fit flex-col gap-2 bg-neutral-500 p-4 text-white'
 		>
 			<InputField store={formStore} name='username' />
-			<FieldErrors store={formStore} validationName='username' />
+			<FieldErrors store={formStore} name='username' />
 			<InputField store={formStore} name='counter' type='number' />
-			<FieldErrors store={formStore} validationName='counter' />
+			<FieldErrors store={formStore} name='counter' />
 			<InputField store={formStore} name='dateOfBirth' type='date' />
-			<FieldErrors store={formStore} validationName='dateOfBirth' />
+			<FieldErrors store={formStore} name='dateOfBirth' />
+			<RandomListGenerator store={formStore} />
 
+			<button type='submit' className='capitalize'>
+				{submit.isActive ? 'Loading...' : 'submit'}
+			</button>
+
+			{submit.errorMessage && <p>{submit.errorMessage}</p>}
+		</Form>
+	);
+};
+
+const RandomListGenerator = <
+	FieldsValues extends { testArr: FormFields['testArr'] },
+	ValidationsHandlers,
+>({
+	store,
+}: {
+	store: FormStoreApi<FieldsValues, ValidationsHandlers>;
+}) => {
+	const formStoreUtils = useStore(store, (store) => store.utils);
+	const testArr = useStore(store, (store) => store.fields.testArr.value);
+
+	return (
+		<>
 			<button
 				type='button'
 				onClick={() => {
-					formStoreUtils.setFieldValue('testArr', (prev) => [
+					formStoreUtils.setFieldValue('testArr', (prev: any) => [
 						...prev,
 						{
 							key: Math.random().toString(36).slice(2),
@@ -191,26 +249,39 @@ const Example = () => {
 				Add To Random String Arr List
 			</button>
 			<ul>
-				{testArr.map((item) => (
-					<li key={item.key} className='flex justify-between gap-1'>
-						{item.title}{' '}
-						<button
-							type='button'
-							onClick={() => {
-								formStoreUtils.setFieldValue('testArr', (prev) =>
-									prev.filter((_item) => _item.key !== item.key),
-								);
-							}}
-						>
-							x
-						</button>
-					</li>
-				))}
+				{testArr.map(
+					(item: {
+						key: Key | null | undefined;
+						title:
+							| string
+							| number
+							| boolean
+							| ReactElement<any, string | JSXElementConstructor<any>>
+							| ReactFragment
+							| ReactPortal
+							| PromiseLikeOfReactNode
+							| null
+							| undefined;
+					}) => (
+						<li key={item.key} className='flex justify-between gap-1'>
+							{item.title}{' '}
+							<button
+								type='button'
+								onClick={() => {
+									formStoreUtils.setFieldValue('testArr', (prev: any[]) =>
+										prev.filter(
+											(_item: { key: any }) => _item.key !== item.key,
+										),
+									);
+								}}
+							>
+								x
+							</button>
+						</li>
+					),
+				)}
 			</ul>
-			<button type='submit' className='capitalize'>
-				submit
-			</button>
-		</Form>
+		</>
 	);
 };
 
