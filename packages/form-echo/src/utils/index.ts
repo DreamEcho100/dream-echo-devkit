@@ -1,3 +1,5 @@
+import FormStoreField from './FormStoreField';
+
 import { type FormEvent } from 'react';
 import {
 	type ValidationEvents,
@@ -24,12 +26,13 @@ function createFormStoreMetadata<FieldsValues, ValidationsHandlers>(
 	baseId: string,
 ) {
 	type FormStore = FormStoreShape<FieldsValues, ValidationsHandlers>;
+
 	if (!params.initialValues || typeof params.initialValues !== 'object')
 		throw new Error('');
 
 	const metadata = {
 		baseId,
-		formId: `${baseId}_form`,
+		formId: `${baseId}-form`,
 		fieldsNames: {},
 		fieldsNamesMap: {},
 		//
@@ -82,6 +85,7 @@ function createFormStoreValidations<FieldsValues, ValidationsHandlers>(
 
 	let fieldValidationEvents: NonNullable<typeof params.validationEvents> = {
 		submit: true,
+		blur: true,
 	};
 	let isFieldHavingPassedValidations = false;
 	let fieldValidationEventKey: ValidationEvents;
@@ -104,19 +108,25 @@ function createFormStoreValidations<FieldsValues, ValidationsHandlers>(
 			failedAttempts: 0,
 			passedAttempts: 0,
 			events: {
-				// blur: { failedAttempts: 0, passedAttempts: 0, isActive: false },
-				// mount: { failedAttempts: 0, passedAttempts: 0, isActive: false },
+				// mount: {  },
+				blur: {
+					failedAttempts: 0,
+					passedAttempts: 0,
+					isActive: params.validationEvents?.blur ?? true,
+					isDirty: false,
+					error: null,
+				},
 				change: {
 					failedAttempts: 0,
 					passedAttempts: 0,
-					isActive: false,
+					isActive: params.validationEvents?.change ?? false,
 					isDirty: false,
 					error: null,
 				},
 				submit: {
 					failedAttempts: 0,
 					passedAttempts: 0,
-					isActive: false,
+					isActive: params.validationEvents?.submit ?? false,
 					isDirty: false,
 					error: null,
 				},
@@ -151,13 +161,10 @@ function createFormStoreFields<FieldsValues, ValidationsHandlers>(
 ) {
 	type FormStore = FormStoreShape<FieldsValues, ValidationsHandlers>;
 
-	const isUpdatingValueOnError = params.isUpdatingFieldsValueOnError ?? true;
-
 	const fields = {} as FormStore['fields'];
 	for (const fieldName of metadata.fieldsNames) {
-		fields[fieldName] = {
+		fields[fieldName] = new FormStoreField({
 			value: params.initialValues[fieldName],
-			isUpdatingValueOnError,
 			valueFromFieldToStore: params.valuesFromFieldsToStore?.[fieldName]
 				? params.valuesFromFieldsToStore[fieldName]
 				: undefined,
@@ -169,30 +176,122 @@ function createFormStoreFields<FieldsValues, ValidationsHandlers>(
 				name: fieldName,
 				initialValue: params.initialValues[fieldName],
 			},
-		} as (typeof fields)[typeof fieldName];
+		} as (typeof fields)[typeof fieldName]);
 	}
 
 	return fields;
 }
 
+function _setFieldError<FieldsValues, ValidationsHandlers>(params: {
+	name: keyof ValidationsHandlers;
+	message: string | null;
+	validationEvent: ValidationEvents;
+}) {
+	return function (
+		currentState: FormStoreShape<FieldsValues, ValidationsHandlers>,
+	): FormStoreShape<FieldsValues, ValidationsHandlers> {
+		if (
+			!currentState.validations[params.name].events[params.validationEvent]
+				.isActive
+		)
+			return currentState;
+
+		let currentDirtyFieldsCounter = currentState.currentDirtyFieldsCounter;
+		const validation = {
+			...currentState.validations[params.name],
+		};
+
+		if (params.message) {
+			validation.failedAttempts++;
+			validation.events[params.validationEvent].failedAttempts++;
+
+			if (!validation.isDirty) {
+				validation.currentDirtyEventsCounter++;
+				if (validation.currentDirtyEventsCounter > 0) {
+					currentDirtyFieldsCounter++;
+				}
+			}
+
+			validation.events[params.validationEvent].error = {
+				message: params.message,
+			};
+			validation.error = { message: params.message };
+			validation.events[params.validationEvent].isDirty = true;
+			validation.isDirty = true;
+		} else {
+			validation.passedAttempts++;
+			validation.events[params.validationEvent].passedAttempts++;
+
+			if (validation.isDirty) {
+				validation.currentDirtyEventsCounter--;
+				if (validation.currentDirtyEventsCounter === 0) {
+					currentDirtyFieldsCounter--;
+				}
+			}
+
+			validation.events[params.validationEvent].error = null;
+			validation.error = null;
+			validation.events[params.validationEvent].isDirty = false;
+			validation.isDirty = false;
+		}
+
+		currentState.currentDirtyFieldsCounter = currentDirtyFieldsCounter;
+		currentState.isDirty = currentDirtyFieldsCounter > 0;
+		currentState.validations = {
+			...currentState.validations,
+			[params.name]: validation,
+		};
+
+		return currentState;
+	};
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type TFunction = (...args: any[]) => any;
+type AnyValueExceptFunctions = // eslint-disable-next-line @typescript-eslint/ban-types
+	Exclude<{} | null | undefined, TFunction>;
+function _setFieldValue<
+	FieldsValues,
+	ValidationsHandlers,
+	Name extends keyof FieldsValues,
+>(
+	name: Name,
+	valueOrUpdater:
+		| AnyValueExceptFunctions
+		| ((value: FieldsValues[Name]) => FieldsValues[Name]),
+) {
+	return function (
+		currentState: FormStoreShape<FieldsValues, ValidationsHandlers>,
+	): FormStoreShape<FieldsValues, ValidationsHandlers> {
+		const field = currentState.fields[name];
+
+		field.value = (
+			typeof valueOrUpdater === 'function'
+				? valueOrUpdater(field.value)
+				: valueOrUpdater
+		) as FieldsValues[typeof name];
+
+		return {
+			...currentState,
+			fields: {
+				...currentState.fields,
+				[name]: field,
+			},
+		};
+	};
+}
+
 const itemsToResetDefaults = {
 	fields: true,
 	validations: true,
-	submitCounter: false,
+	submit: false,
+	focus: true,
 };
 
-// 	{
-// isUpdatingFieldsValueOnError = true,
-// trackValidationHistory = false,
-// valuesFromFieldsToStore,
-// valuesFromStoreToFields,
-// validationSchema: passedValidationSchema,
-// ...params
-// 	}
 export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 	params: CreateFormStoreProps<FieldsValues, ValidationsHandlers>,
 ) {
-	// type FormStore = FormStoreShape<FieldsValues, ValidationsHandlers>;
+	type FormStore = FormStoreShape<FieldsValues, ValidationsHandlers>;
 
 	const baseId = params.baseId ? `${params.baseId}-` : '';
 	const metadata = createFormStoreMetadata(params, baseId);
@@ -200,28 +299,93 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 	const validations = createFormStoreValidations(params, metadata);
 
 	return (
-		set: SetStateInternal<FormStoreShape<FieldsValues, ValidationsHandlers>>,
-		get: () => FormStoreShape<FieldsValues, ValidationsHandlers>,
-	): FormStoreShape<FieldsValues, ValidationsHandlers> => {
+		set: SetStateInternal<FormStore>,
+		get: () => FormStore,
+	): FormStore => {
 		return {
 			baseId,
 			metadata,
 			validations,
 			fields,
-			id: `${baseId}-form`,
+			id: `${baseId}form`,
 			isDirty: false,
-			isSubmitting: false,
-			submitCounter: 0,
+			submit: {
+				counter: 0,
+				passedAttempts: 0,
+				failedAttempts: 0,
+				errorMessage: null,
+				isActive: false,
+			},
+			focus: { isActive: false, field: null },
 			currentDirtyFieldsCounter: 0,
 			utils: {
-				setIsSubmitting(valueOrUpdater) {
-					set(function (currentStore) {
+				setSubmitState(valueOrUpdater) {
+					set(function (currentState) {
 						return {
-							...currentStore,
-							isSubmitting:
-								typeof valueOrUpdater === 'function'
-									? valueOrUpdater(currentStore.isSubmitting)
-									: valueOrUpdater,
+							// ...currentState,
+							submit: {
+								...currentState.submit,
+								...(typeof valueOrUpdater === 'function'
+									? valueOrUpdater(currentState.submit)
+									: valueOrUpdater),
+							},
+						};
+					});
+				},
+				setFocusState(fieldName, validationName, isActive) {
+					set(function (currentState) {
+						let _currentState = currentState;
+
+						if (
+							!isActive &&
+							_currentState.validations[validationName].events.blur.isActive
+						) {
+							try {
+								_currentState.validations[validationName].handler(
+									_currentState.fields[fieldName].value,
+									'blur',
+								);
+								_currentState = _setFieldError<
+									FieldsValues,
+									ValidationsHandlers
+								>({
+									name: validationName,
+									message: null,
+									validationEvent: 'blur',
+								})(_currentState);
+							} catch (error) {
+								const message = _currentState.utils.errorFormatter(
+									error,
+									'blur',
+								);
+								_currentState = _setFieldError<
+									FieldsValues,
+									ValidationsHandlers
+								>({
+									name: validationName,
+									message,
+									validationEvent: 'blur',
+								})(_currentState);
+							}
+
+							if (
+								_currentState.focus.isActive &&
+								_currentState.focus.field.name !== fieldName
+							)
+								return _currentState;
+						}
+
+						return {
+							..._currentState,
+							focus: isActive
+								? {
+										isActive: true,
+										field: {
+											name: fieldName,
+											id: _currentState.fields[fieldName].id,
+										},
+								  }
+								: { isActive: false, field: null },
 						};
 					});
 				},
@@ -230,7 +394,8 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 						const fields = currentState.fields;
 						const validations = currentState.validations;
 						let isDirty = currentState.isDirty;
-						let submitCounter = currentState.submitCounter;
+						let submit = currentState.submit;
+						let focus = currentState.focus;
 
 						if (itemsToReset.fields) {
 							let key: keyof typeof fields;
@@ -257,177 +422,144 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 							}
 							isDirty = false;
 						}
-						if (itemsToReset.submitCounter) {
-							submitCounter = 0;
+						if (itemsToReset.submit) {
+							submit = {
+								counter: 0,
+								passedAttempts: 0,
+								failedAttempts: 0,
+								errorMessage: null,
+								isActive: false,
+							};
+						}
+
+						if (itemsToReset.focus) {
+							focus = {
+								isActive: false,
+								field: null,
+							};
 						}
 
 						return {
-							...currentState,
+							// ...currentState,
 							fields,
 							validations,
 							isDirty,
-							submitCounter,
+							submit,
+							focus,
 						};
 					});
 				},
-				// errorFormatter: (error) => {
-				// 	if (isZodError(error)) return error.format()._errors;
-
-				// 	if (error instanceof Error) return [error.message];
-				// 	return ['Something went wrong!'];
-				// },
 				setFieldValue(name, value) {
-					return set(function (currentState) {
-						return {
-							fields: {
-								...currentState.fields,
-								[name]: {
-									...currentState.fields[name],
-									value:
-										typeof value === 'function'
-											? (value(
-													currentState.fields[name].value,
-											  ) as FieldsValues[typeof name])
-											: value,
-								},
-							},
-						};
-					});
+					return set(_setFieldValue(name, value));
 				},
-				setFieldErrors(params) {
-					set(function (currentState) {
-						if (
-							!currentState.validations[params.name].events[
-								params.validationEvent
-							].isActive
-						)
-							return currentState;
-
-						let currentDirtyFieldsCounter =
-							currentState.currentDirtyFieldsCounter;
-						const validation = currentState.validations[params.name];
-
-						if (params.message) {
-							validation.failedAttempts++;
-							validation.events[params.validationEvent].failedAttempts++;
-
-							if (!validation.isDirty) {
-								validation.currentDirtyEventsCounter++;
-								if (validation.currentDirtyEventsCounter > 0) {
-									currentDirtyFieldsCounter++;
-								}
-							}
-
-							validation.events[params.validationEvent].error = {
-								message: params.message,
-							};
-							validation.error = { message: params.message };
-							validation.events[params.validationEvent].isDirty = true;
-							validation.isDirty = true;
-						} else {
-							validation.passedAttempts++;
-							validation.events[params.validationEvent].passedAttempts++;
-
-							if (validation.isDirty) {
-								validation.currentDirtyEventsCounter--;
-								if (validation.currentDirtyEventsCounter === 0) {
-									currentDirtyFieldsCounter--;
-								}
-							}
-
-							validation.events[params.validationEvent].error = null;
-							validation.error = null;
-							validation.events[params.validationEvent].isDirty = false;
-							validation.isDirty = false;
-						}
-
-						return {
-							...currentState,
-							currentDirtyFieldsCounter,
-							isDirty: currentDirtyFieldsCounter > 0,
-							validations: {
-								...currentState.validations,
-								[params.name]: validation,
-							},
-						};
-					});
+				setFieldError(params) {
+					set(_setFieldError(params));
 				},
 				errorFormatter: params.errorFormatter ?? errorFormatter,
 				handleOnInputChange(name, valueOrUpdater, validationName) {
-					const currentState = get();
+					let currentState = get();
 					const field = currentState.fields[name];
 
-					const value = (
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+					const _value =
 						typeof valueOrUpdater === 'function'
 							? valueOrUpdater(field.value)
-							: field.valueFromFieldToStore
-							? field.valueFromFieldToStore(valueOrUpdater)
-							: valueOrUpdater
-					) as FieldsValues[typeof name];
+							: valueOrUpdater;
+					const value = field.valueFromFieldToStore
+						? field.valueFromFieldToStore(_value)
+						: (_value as FieldsValues[typeof name]);
 
 					const _validationName = (
 						validationName
 							? validationName
 							: // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 							// @ts-ignore
-							currentState.metadata.referencedValidatedFieldsMap[
-									// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-									// @ts-ignore
-									name as (typeof currentState)['metadata']['referencedValidatedFieldsMap']
-							  ]
+							currentState.metadata.referencedValidatedFieldsMap[name]
 							? name
 							: undefined
 					) as typeof validationName;
+
+					const setFieldValue = _setFieldValue<
+						FieldsValues,
+						ValidationsHandlers,
+						typeof name
+					>;
+					const setFieldError = _setFieldError<
+						FieldsValues,
+						ValidationsHandlers
+					>;
 
 					if (
 						_validationName &&
 						currentState.validations[_validationName].events['change'].isActive
 					) {
 						try {
-							currentState.utils.setFieldValue(
+							currentState = setFieldValue(
 								name,
 								currentState.validations[_validationName].handler(
 									value,
 									'change',
 								),
-							);
-							currentState.utils.setFieldErrors({
+							)(currentState);
+							currentState = setFieldError({
 								name: _validationName,
 								message: null,
 								validationEvent: 'change',
-							});
+							})(currentState);
 						} catch (error) {
-							currentState.utils.setFieldErrors({
+							currentState = setFieldError({
 								name: _validationName,
 								message: currentState.utils.errorFormatter(error, 'change'),
 								validationEvent: 'change',
-							});
+							})(currentState);
 
-							if (field.isUpdatingValueOnError)
-								currentState.utils.setFieldValue(name, value);
+							currentState = setFieldValue(name, value)(currentState);
 						}
 					} else {
-						currentState.utils.setFieldValue(name, value);
+						currentState = setFieldValue(name, value)(currentState);
 					}
+
+					set(currentState);
 				},
-				handleSubmit<FieldsValues, ValidationsHandlers>(
-					cb: HandleSubmitCB<FieldsValues, ValidationsHandlers>,
-				) {
+				getFieldEventsListeners(name, validationName) {
+					const currentState = get();
+					const _validationName = validationName ?? name;
+					return {
+						onChange: (event: { target: { value: string } }) => {
+							currentState.utils.handleOnInputChange(name, event.target.value);
+						},
+						onFocus: () => {
+							currentState.utils.setFocusState(
+								name,
+								_validationName as keyof ValidationsHandlers,
+								true,
+							);
+						},
+						onBlur: () => {
+							currentState.utils.setFocusState(
+								name,
+								_validationName as keyof ValidationsHandlers,
+								false,
+							);
+						},
+					};
+				},
+				handleSubmit(cb: HandleSubmitCB<FieldsValues, ValidationsHandlers>) {
 					return async function (
 						event: FormEvent<HTMLFormElement>,
 						// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 						// @ts-ignore
 					): Promise<unknown> | unknown {
 						event.preventDefault();
-						// if (!cb) return;
-						const currentStore = get();
 
-						currentStore.utils.setIsSubmitting(true);
+						const currentState = get();
 
-						const metadata = currentStore.metadata;
-						const fields = currentStore.fields;
-						const validations = currentStore.validations;
-						const values: Record<string, unknown> = {}; // as Fields;
+						currentState.utils.setSubmitState({ isActive: true });
+
+						const metadata = currentState.metadata;
+						const fields = currentState.fields;
+						const validations = currentState.validations;
+						const values: Record<string, unknown> = {};
 						const validatedValues: Record<string, unknown> = {};
 
 						const errors: Record<
@@ -441,11 +573,7 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 
 						let hasError = false;
 
-						// let formFieldName: keyof typeof fields & string;
-						// for (formFieldName in fields) {
-						// 	values[formFieldName] = fields[formFieldName].value;
-						// }
-						let fieldName: keyof typeof fields & string; // (typeof metadata)['referencedValidatedFieldsMap'];
+						let fieldName: keyof typeof fields & string;
 						for (fieldName in fields) {
 							values[fieldName] = fields[fieldName].value;
 
@@ -476,11 +604,9 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 							} catch (error) {
 								errors[fieldName] = {
 									name: fieldName,
-									message: currentStore.utils.errorFormatter(error, 'submit'),
+									message: currentState.utils.errorFormatter(error, 'submit'),
 									validationEvent: 'submit',
 								};
-
-								// hasError = true;
 							}
 						}
 
@@ -488,7 +614,7 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 						for (manualFieldName of metadata.manualValidatedFields) {
 							try {
 								const validationSchema =
-									currentStore.validations[manualFieldName].handler;
+									currentState.validations[manualFieldName].handler;
 								if (typeof validationSchema !== 'function') {
 									continue;
 								}
@@ -506,11 +632,9 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 							} catch (error) {
 								errors[manualFieldName as string] = {
 									name: manualFieldName,
-									message: currentStore.utils.errorFormatter(error, 'submit'),
+									message: currentState.utils.errorFormatter(error, 'submit'),
 									validationEvent: 'submit',
 								};
-
-								// hasError = true;
 							}
 						}
 
@@ -518,7 +642,7 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 							values: FieldsValues;
 							validatedValues: GetValidationValuesFromSchema<ValidationsHandlers>;
 							error: Parameters<
-								(typeof currentStore)['utils']['setFieldErrors']
+								typeof _setFieldError<FieldsValues, ValidationsHandlers> // ['utils']['setFieldError']
 							>[0];
 							errors: {
 								[Key in keyof ValidationsHandlers]: {
@@ -529,34 +653,59 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 							};
 						};
 
+						let _currentState: FormStoreShape<
+							FieldsValues,
+							ValidationsHandlers
+						> = get();
 						let errorKey: keyof typeof errors & string;
 						for (errorKey in errors) {
-							const errorObj = errors[errorKey]; // as NecessaryEvil['errors'][keyof NecessaryEvil['errors']];
+							const errorObj = errors[errorKey];
 
-							currentStore.utils.setFieldErrors(
+							_currentState = _setFieldError<FieldsValues, ValidationsHandlers>(
 								errors[errorKey] as unknown as NecessaryEvil['error'],
-							);
+							)(_currentState);
 
 							if (typeof errorObj.message !== 'string') continue;
 
 							hasError = true;
-							// currentStore.utils.setFieldErrors(
-							// 	errors[errorKey], //  as NecessaryEvil['errors'][keyof NecessaryEvil['errors']],
-							// );
 						}
 
-						currentStore.utils.setIsSubmitting(false);
-
-						if (hasError) return;
-
-						await cb({
-							event,
-							values: values as NecessaryEvil['values'],
-							validatedValues:
-								validatedValues as NecessaryEvil['validatedValues'],
-							hasError,
-							errors: errors as NecessaryEvil['errors'],
-						});
+						if (!hasError) {
+							try {
+								await cb({
+									event,
+									values: values as NecessaryEvil['values'],
+									validatedValues:
+										validatedValues as NecessaryEvil['validatedValues'],
+									hasError,
+									errors: errors as NecessaryEvil['errors'],
+								});
+								currentState.utils.setSubmitState((prev) => ({
+									isActive: false,
+									counter: prev.counter + 1,
+									passedAttempts: prev.counter + 1,
+									errorMessage: null,
+								}));
+							} catch (error) {
+								currentState.utils.setSubmitState((prev) => ({
+									isActive: false,
+									counter: prev.counter + 1,
+									failedAttempts: prev.counter + 1,
+									errorMessage: currentState.utils.errorFormatter(
+										error,
+										'submit',
+									),
+								}));
+							}
+						} else {
+							set(_currentState);
+							currentState.utils.setSubmitState((prev) => ({
+								isActive: false,
+								counter: prev.counter + 1,
+								failedAttempts: prev.counter + 1,
+								errorMessage: null,
+							}));
+						}
 					};
 				},
 			},

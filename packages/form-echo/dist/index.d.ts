@@ -3,6 +3,64 @@ import { ZodSchema, z, ZodError } from 'zod';
 import * as zustand from 'zustand';
 import { StoreApi } from 'zustand';
 
+/**
+ * @template Name
+ * @template Value
+ * @typedef FieldMetadata
+ *
+ * @prop {Name & string} name -
+ * @prop {Value} initialValue -
+ */
+/** @exports FieldMetadata */
+/**
+ * @template FieldsValues
+ * @template {keyof FieldsValues} Key
+ */
+declare class FormStoreField<FieldsValues, Key extends keyof FieldsValues> {
+    /**
+     * @param {{
+     *   id: string;
+     *   value: FieldsValues[Key];
+     *   metadata: FieldMetadata<Key, FieldsValues[Key]>;
+     *   valueFromFieldToStore?: (fieldValue: unknown) => Exclude<FieldsValues[Key], (value: FieldsValues[Key]) => FieldsValues[Key]>;
+     *   valueFromStoreToField?: (StoreValue: FieldsValues[Key]) => string | ReadonlyArray<string> | number | undefined;
+     * }} params
+     */
+    constructor(params: {
+        id: string;
+        value: FieldsValues[Key];
+        metadata: FieldMetadata$1<Key, FieldsValues[Key]>;
+        valueFromFieldToStore?: ((fieldValue: unknown) => Exclude<FieldsValues[Key], (value: FieldsValues[Key]) => FieldsValues[Key]>) | undefined;
+        valueFromStoreToField?: ((StoreValue: FieldsValues[Key]) => string | ReadonlyArray<string> | number | undefined) | undefined;
+    });
+    /** @type {string} */
+    id: string;
+    /** @type {FieldsValues[Key]} */
+    value: FieldsValues[Key];
+    /** @type {FieldMetadata<Key, FieldsValues[Key]>} */
+    metadata: FieldMetadata$1<Key, FieldsValues[Key]>;
+    /** @type {((fieldValue: unknown) => Exclude<FieldsValues[Key], (value: FieldsValues[Key]) => FieldsValues[Key]>) | undefined} */
+    valueFromFieldToStore: ((fieldValue: unknown) => Exclude<FieldsValues[Key], (value: FieldsValues[Key]) => FieldsValues[Key]>) | undefined;
+    /** @type {(StoreValue: FieldsValues[Key]) => string | ReadonlyArray<string> | number | undefined} */
+    valueFromStoreToField: (StoreValue: FieldsValues[Key]) => string | ReadonlyArray<string> | number | undefined;
+    /**
+     * @description Gets the field value converted _(using the passed `valueFromStoreToField` if not it will just return the original value)_ from the store value.
+     *
+     * @type {string | ReadonlyArray<string> | number | undefined}
+     * */
+    get storeToFieldValue(): string | number | readonly string[] | undefined;
+}
+type FieldMetadata$1<Name, Value> = {
+    /**
+     * -
+     */
+    name: Name & string;
+    /**
+     * -
+     */
+    initialValue: Value;
+};
+
 type FormStoreApi<FieldsValues, ValidationsHandlers = Record<keyof FieldsValues, unknown>> = StoreApi<FormStoreShape<FieldsValues, ValidationsHandlers>>;
 type GetFormStoreApiStore<TFormStore, TValueType extends 'values' | 'validationHandlers' | 'validatedValues' = 'values'> = TFormStore extends FormStoreApi<infer FieldsValues, infer ValidationsHandlers> ? TValueType extends 'validationHandlers' ? ValidationsHandlers : TValueType extends 'validatedValues' ? GetValidationValuesFromSchema<ValidationsHandlers> : FieldsValues : never;
 
@@ -24,7 +82,7 @@ type ValidationError = {
         message: string;
     };
 };
-type ValidationEvents = 'submit' | 'change';
+type ValidationEvents = 'submit' | 'change' | 'blur';
 interface HandleValidation<Value> {
     (value: unknown, validationEvent: ValidationEvents): Value;
 }
@@ -52,14 +110,6 @@ interface FieldMetadata<Name, Value> {
     name: Name & string;
     initialValue: Value;
 }
-interface FormStoreField<FieldsValues, Key extends keyof FieldsValues> {
-    id: string;
-    value: FieldsValues[Key];
-    metadata: FieldMetadata<Key, FieldsValues[Key]>;
-    isUpdatingValueOnError: boolean;
-    valueFromFieldToStore?: (fieldValue: unknown) => Exclude<FieldsValues[Key], (value: FieldsValues[Key]) => FieldsValues[Key]>;
-    valueFromStoreToField?: (StoreValue: FieldsValues[Key]) => string;
-}
 /****************        ****************/
 /**********   FormStoreShape   **********/
 /****************        ****************/
@@ -73,13 +123,32 @@ interface FormStoreMetadata<FieldsValues, ValidationsHandlers> {
     referencedValidatedFields: (keyof ValidationsHandlers & keyof FieldsValues)[];
     referencedValidatedFieldsMap: Record<keyof ValidationsHandlers & keyof FieldsValues, true>;
 }
+type SubmitState = {
+    counter: number;
+    passedAttempts: number;
+    failedAttempts: number;
+    errorMessage: string | null;
+    isActive: boolean;
+};
+type FocusActive<FieldsValues> = {
+    isActive: true;
+    field: {
+        id: string;
+        name: keyof FieldsValues;
+    };
+};
+type FocusInActive = {
+    isActive: false;
+    field: null;
+};
+type FocusState<FieldsValues> = FocusActive<FieldsValues> | FocusInActive;
 interface FormStoreShape<FieldsValues, ValidationsHandlers> {
-    submitCounter: number;
+    submit: SubmitState;
     currentDirtyFieldsCounter: number;
-    isSubmitting: boolean;
     isDirty: boolean;
     baseId: string;
     id: string;
+    focus: FocusState<FieldsValues>;
     metadata: FormStoreMetadata<FieldsValues, ValidationsHandlers>;
     validations: {
         [Key in keyof GetValidationValuesFromSchema<ValidationsHandlers>]: FormStoreValidation<GetValidationValuesFromSchema<ValidationsHandlers>, Key>;
@@ -88,21 +157,32 @@ interface FormStoreShape<FieldsValues, ValidationsHandlers> {
         [Key in NonNullable<keyof FieldsValues>]: FormStoreField<FieldsValues, Key>;
     };
     utils: {
-        setIsSubmitting: (valueOrUpdater: boolean | ((value: boolean) => boolean)) => void;
+        setSubmitState: (valueOrUpdater: Partial<SubmitState> | ((value: SubmitState) => Partial<SubmitState>)) => void;
+        setFocusState: (fieldName: keyof FieldsValues, validationName: keyof ValidationsHandlers | (keyof FieldsValues & keyof ValidationsHandlers), isActive: boolean) => void;
         resetFormStore: (itemsToReset?: {
             fields?: boolean;
             validations?: boolean;
-            submitCounter?: boolean;
+            submit?: boolean;
+            focus?: boolean;
         }) => void;
         setFieldValue: <Name extends keyof FieldsValues>(name: Name, valueOrUpdater: ((value: FieldsValues[Name]) => FieldsValues[Name]) | AnyValueExceptFunctions) => void;
         handleOnInputChange: <Name extends keyof FieldsValues, ValidationName extends keyof ValidationsHandlers | undefined = undefined>(name: Name, valueOrUpdater: ((value: FieldsValues[Name]) => FieldsValues[Name]) | AnyValueExceptFunctions, validationName?: ValidationName) => void;
         handleSubmit: (cb: HandleSubmitCB<FieldsValues, ValidationsHandlers>) => (event: FormEvent<HTMLFormElement>) => Promise<unknown> | unknown;
         errorFormatter: (error: unknown, validationEvent: ValidationEvents) => string;
-        setFieldErrors: (params: {
+        setFieldError: (params: {
             name: keyof ValidationsHandlers;
             message: string | null;
             validationEvent: ValidationEvents;
         }) => void;
+        getFieldEventsListeners(name: keyof FieldsValues, validationName?: keyof ValidationsHandlers): {
+            onChange: (event: {
+                target: {
+                    value: string;
+                };
+            }) => void;
+            onFocus: () => void;
+            onBlur: () => void;
+        };
     };
 }
 interface HandleSubmitCB<FieldsValues, ValidationsHandlers> {
@@ -216,4 +296,4 @@ declare const useCreateFormStore: <FieldsValues, ValidationsHandlers>(props: Omi
 type SetStateInternal<T> = (partial: T | Partial<T> | ((state: T) => T | Partial<T>)) => void;
 declare function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(params: CreateFormStoreProps<FieldsValues, ValidationsHandlers>): (set: SetStateInternal<FormStoreShape<FieldsValues, ValidationsHandlers>>, get: () => FormStoreShape<FieldsValues, ValidationsHandlers>) => FormStoreShape<FieldsValues, ValidationsHandlers>;
 
-export { CreateFormStoreProps, FieldMetadata, FormStoreApi, FormStoreField, FormStoreMetadata, FormStoreShape, FormStoreValidation, GetFormStoreApiStore, GetFromFormStoreShape, GetValidationValuesFromSchema, HandleSubmitCB, HandleValidation, InputDateTypes, ValidationEvents, ValidationMetadata, createFormStoreBuilder, errorFormatter, formatDate, getFirstDateOfWeek, getWeekNumber, handleCreateFormStore, inputDateHelpers, isZodError, isZodValidator, parseDate, useCreateFormStore };
+export { CreateFormStoreProps, FieldMetadata, FormStoreApi, FormStoreMetadata, FormStoreShape, FormStoreValidation, GetFormStoreApiStore, GetFromFormStoreShape, GetValidationValuesFromSchema, HandleSubmitCB, HandleValidation, InputDateTypes, ValidationEvents, ValidationMetadata, createFormStoreBuilder, errorFormatter, formatDate, getFirstDateOfWeek, getWeekNumber, handleCreateFormStore, inputDateHelpers, isZodError, isZodValidator, parseDate, useCreateFormStore };

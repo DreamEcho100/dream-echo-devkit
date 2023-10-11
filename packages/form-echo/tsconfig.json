@@ -1,7 +1,15 @@
 {
 	"extends": "tsconfig/react-library.json",
 	"compilerOptions": {
+		"allowJs": true,
+		"checkJs": true,
+		"resolveJsonModule": true,
+		"moduleResolution": "Bundler",
+		"declaration": true,
+		// "composite": true,
+		// "declarationMap": true,
 		"target": "ESNext",
 		"outDir": "./dist"
-	}
+	},
+	"include": ["./src/**/*.js", "./src/**/*.ts"]
 }

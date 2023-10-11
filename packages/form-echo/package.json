@@ -1,6 +1,6 @@
 {
 	"name": "@de100/form-echo",
-	"version": "0.0.11-canary.6",
+	"version": "0.0.11-canary.13",
 	"description": "A form state management for fields validations and errors",
 	"keywords": [
 		"form",
@@ -20,10 +20,10 @@
 	},
 	"readme": "./README.md",
 	"sideEffects": false,
-	"main": "./dist/index.ts",
-	"types": "./dist/index.ts",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
 	"exports": {
-		".": "./dist/index.ts"
+		".": "./dist/index.js"
 	},
 	"scripts": {
 		"lint": "eslint *.ts*",

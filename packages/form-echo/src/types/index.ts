@@ -1,3 +1,4 @@
+import type FormStoreField from '../utils/FormStoreField';
 import { type FormEvent } from 'react';
 import { type ZodSchema, type z } from 'zod';
 
@@ -7,12 +8,6 @@ export * from './zustand';
 type TFunction = (...args: any[]) => any;
 type AnyValueExceptFunctions = // eslint-disable-next-line @typescript-eslint/ban-types
 	Exclude<{} | null | undefined, TFunction>;
-// type ValueOrUpdaterSanitized<ValueOrUpdater, DesiredValue> =
-// 	ValueOrUpdater extends TFunction
-// 		? (value: DesiredValue) => DesiredValue
-// 		: // : ValueOrUpdater extends TFunction
-// 		  // ? never
-// 		  ValueOrUpdater;
 
 export type InputDateTypes =
 	| 'date'
@@ -35,19 +30,10 @@ export type GetValidationValuesFromSchema<Handler> = {
 type ValidationError =
 	| { isDirty: false; error: null }
 	| { isDirty: true; error: { message: string } };
-export type ValidationEvents = 'submit' | 'change'; // | 'mount' | 'blur';
+export type ValidationEvents = 'submit' | 'change' | 'blur'; // | 'mount' | 'blur';
 export interface HandleValidation<Value> {
 	(value: unknown, validationEvent: ValidationEvents): Value;
 }
-/*
-export type HandleValidation2<FieldsValues, Key, Value> =
-	Key extends keyof FieldsValues
-		? (params: { value: unknown; validationEvent: ValidationEvents }) => Value
-		: (params: {
-				fields: FieldsValues;
-				validationEvent: ValidationEvents;
-		  }) => Value;
-			*/
 
 export interface ValidationMetadata<Name> {
 	/* readonly */ name: Name & string;
@@ -79,19 +65,58 @@ export interface FieldMetadata<Name, Value> {
 	/* readonly */ name: Name & string;
 	/* readonly */ initialValue: Value;
 }
-export interface FormStoreField<FieldsValues, Key extends keyof FieldsValues> {
-	id: string;
-	value: FieldsValues[Key];
-	metadata: FieldMetadata<Key, FieldsValues[Key]>;
-	isUpdatingValueOnError: boolean;
-	valueFromFieldToStore?: (
-		fieldValue: unknown,
-	) => Exclude<
-		FieldsValues[Key],
-		(value: FieldsValues[Key]) => FieldsValues[Key]
-	>;
-	valueFromStoreToField?: (StoreValue: FieldsValues[Key]) => string;
-}
+
+// export class FormStoreField<FieldsValues, Key extends keyof FieldsValues> {
+// 	id: string;
+// 	value: FieldsValues[Key];
+// 	metadata: FieldMetadata<Key, FieldsValues[Key]>;
+// 	isUpdatingValueOnError: boolean; // to remove???
+// 	valueFromFieldToStore?: (
+// 		fieldValue: unknown,
+// 	) => Exclude<
+// 		FieldsValues[Key],
+// 		(value: FieldsValues[Key]) => FieldsValues[Key]
+// 	>;
+// 	valueFromStoreToField: (
+// 		StoreValue: FieldsValues[Key],
+// 	) => string | ReadonlyArray<string> | number | undefined;
+
+// 	constructor(params: {
+// 		id: string;
+// 		value: FieldsValues[Key];
+// 		metadata: FieldMetadata<Key, FieldsValues[Key]>;
+// 		isUpdatingValueOnError: boolean; // to remove???
+// 		valueFromFieldToStore?: (
+// 			fieldValue: unknown,
+// 		) => Exclude<
+// 			FieldsValues[Key],
+// 			(value: FieldsValues[Key]) => FieldsValues[Key]
+// 		>;
+// 		valueFromStoreToField?: (
+// 			StoreValue: FieldsValues[Key],
+// 		) => string | ReadonlyArray<string> | number | undefined;
+// 	}) {
+// 		this.id = params.id;
+// 		this.value = params.value;
+// 		this.metadata = params.metadata;
+// 		this.isUpdatingValueOnError = params.isUpdatingValueOnError;
+
+// 		this.valueFromFieldToStore = params.valueFromFieldToStore;
+// 		this.valueFromStoreToField =
+// 			params.valueFromStoreToField ??
+// 			((() => this.value) as (
+// 				StoreValue: FieldsValues[Key],
+// 			) => string | ReadonlyArray<string> | number | undefined);
+// 	}
+
+// 	public get storeToFieldValue():
+// 		| string
+// 		| ReadonlyArray<string>
+// 		| number
+// 		| undefined {
+// 		return this.valueFromStoreToField(this.value);
+// 	}
+// }
 
 /****************        ****************/
 /**********   FormStoreShape   **********/
@@ -123,13 +148,30 @@ export interface FormStoreMetadata<FieldsValues, ValidationsHandlers> {
 		true
 	>;
 }
+type SubmitState = {
+	counter: number;
+	passedAttempts: number;
+	failedAttempts: number;
+	errorMessage: string | null;
+	isActive: boolean;
+};
+
+type FocusActive<FieldsValues> = {
+	isActive: true;
+	field: { id: string; name: keyof FieldsValues };
+};
+type FocusInActive = { isActive: false; field: null };
+type FocusState<FieldsValues> = FocusActive<FieldsValues> | FocusInActive;
+
 export interface FormStoreShape<FieldsValues, ValidationsHandlers> {
-	submitCounter: number;
+	submit: SubmitState;
 	currentDirtyFieldsCounter: number;
-	isSubmitting: boolean;
 	isDirty: boolean;
 	baseId: string;
 	id: string;
+
+	focus: FocusState<FieldsValues>;
+
 	metadata: FormStoreMetadata<FieldsValues, ValidationsHandlers>;
 	validations: {
 		[Key in keyof GetValidationValuesFromSchema<ValidationsHandlers>]: FormStoreValidation<
@@ -141,13 +183,23 @@ export interface FormStoreShape<FieldsValues, ValidationsHandlers> {
 		[Key in NonNullable<keyof FieldsValues>]: FormStoreField<FieldsValues, Key>;
 	};
 	utils: {
-		setIsSubmitting: (
-			valueOrUpdater: boolean | ((value: boolean) => boolean),
+		setSubmitState: (
+			valueOrUpdater:
+				| Partial<SubmitState>
+				| ((value: SubmitState) => Partial<SubmitState>),
+		) => void;
+		setFocusState: (
+			fieldName: keyof FieldsValues,
+			validationName:
+				| keyof ValidationsHandlers
+				| (keyof FieldsValues & keyof ValidationsHandlers),
+			isActive: boolean,
 		) => void;
 		resetFormStore: (itemsToReset?: {
 			fields?: boolean;
 			validations?: boolean;
-			submitCounter?: boolean;
+			submit?: boolean;
+			focus?: boolean;
 		}) => void;
 		setFieldValue: <Name extends keyof FieldsValues>(
 			name: Name,
@@ -173,11 +225,19 @@ export interface FormStoreShape<FieldsValues, ValidationsHandlers> {
 			error: unknown,
 			validationEvent: ValidationEvents,
 		) => string;
-		setFieldErrors: (params: {
+		setFieldError: (params: {
 			name: keyof ValidationsHandlers;
 			message: string | null;
 			validationEvent: ValidationEvents;
 		}) => void;
+		getFieldEventsListeners(
+			name: keyof FieldsValues,
+			validationName?: keyof ValidationsHandlers,
+		): {
+			onChange: (event: { target: { value: string } }) => void;
+			onFocus: () => void;
+			onBlur: () => void;
+		};
 	};
 }
 export interface HandleSubmitCB<FieldsValues, ValidationsHandlers> {
