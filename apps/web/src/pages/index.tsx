@@ -50,16 +50,9 @@ const Form = <FieldsValues, ValidationsHandlers>({
 
 type FieldProps<FieldsValues, ValidationsHandlers> = {
 	store: FormStoreApi<FieldsValues, ValidationsHandlers>;
-} & (
-	| {
-			name: keyof FieldsValues;
-			validationName: keyof ValidationsHandlers;
-	  }
-	| {
-			name: keyof FieldsValues & keyof ValidationsHandlers;
-			validationName?: undefined;
-	  }
-);
+	name: keyof FieldsValues;
+	validationName?: keyof ValidationsHandlers;
+};
 type FieldErrorsProps<FieldsValues, ValidationsHandlers> = {
 	store: FormStoreApi<FieldsValues, ValidationsHandlers>;
 	name: keyof ValidationsHandlers & keyof FieldsValues & string;

@@ -15,6 +15,14 @@ import { errorFormatter, isZodValidator } from './zod';
 export * from './inputDateHelpers';
 export * from './zod';
 export * from './zustand';
+export * from './fieldValueHelpers';
+
+export {
+	/**
+	 * @description field value helpers
+	 */
+	default as fvh,
+} from './fieldValueHelpers';
 
 type SetStateInternal<T> = (
 	partial: T | Partial<T> | ((state: T) => T | Partial<T>),
@@ -319,6 +327,18 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 			focus: { isActive: false, field: null },
 			currentDirtyFieldsCounter: 0,
 			utils: {
+				getFieldValues() {
+					const currentState = get();
+					const fieldsValues = {} as FieldsValues;
+
+					let fieldName: string;
+					for (fieldName in currentState.fields) {
+						fieldsValues[fieldName as keyof FieldsValues] =
+							currentState.fields[fieldName as keyof FieldsValues].value;
+					}
+
+					return fieldsValues;
+				},
 				setSubmitState(valueOrUpdater) {
 					set(function (currentState) {
 						return {
@@ -342,7 +362,9 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 						) {
 							try {
 								_currentState.validations[validationName].handler(
-									_currentState.fields[fieldName].value,
+									validationName && fieldName !== validationName
+										? _currentState.utils.getFieldValues()
+										: _currentState.fields[fieldName].value,
 									'blur',
 								);
 								_currentState = _setFieldError<
@@ -398,9 +420,27 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 						let focus = currentState.focus;
 
 						if (itemsToReset.fields) {
-							let key: keyof typeof fields;
-							for (key in fields) {
-								fields[key].value = fields[key].metadata.initialValue;
+							const resetField =
+								typeof window === 'undefined'
+									? (fieldName: NonNullable<keyof FieldsValues>) => {
+											const field = fields[fieldName];
+											field.value = field.metadata.initialValue;
+									  }
+									: (fieldName: NonNullable<keyof FieldsValues>) => {
+											const field = fields[fieldName];
+											// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+											// @ts-ignore
+											const element = document.getElementById(
+												field.id,
+											) as HTMLInputElement;
+											if (element) element.value = (field.metadata.initialValue ?? '') as string;
+
+											field.value = field.metadata.initialValue;
+									  };
+
+							let fieldName: keyof typeof fields;
+							for (fieldName in fields) {
+								resetField(fieldName);
 							}
 						}
 
@@ -497,7 +537,12 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 							currentState = setFieldValue(
 								name,
 								currentState.validations[_validationName].handler(
-									value,
+									validationName &&
+										// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+										// @ts-ignore
+										validationName !== name
+										? currentState.utils.getFieldValues()
+										: value,
 									'change',
 								),
 							)(currentState);

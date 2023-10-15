@@ -3,8 +3,8 @@
  * @template Value
  * @typedef FieldMetadata
  *
- * @prop {Name & string} name -
- * @prop {Value} initialValue -
+ * @prop {Name & string} name
+ * @prop {Value} initialValue
  */
 
 /** @exports FieldMetadata */
@@ -26,7 +26,7 @@ export default class FormStoreField {
 	/** @type {((fieldValue: unknown) => Exclude<FieldsValues[Key], (value: FieldsValues[Key]) => FieldsValues[Key]>) | undefined} */
 	valueFromFieldToStore;
 
-	/** @type {(StoreValue: FieldsValues[Key]) => string | ReadonlyArray<string> | number | undefined} */
+	/** @type {(storeValue: FieldsValues[Key]) => string | ReadonlyArray<string> | number | undefined} */
 	valueFromStoreToField;
 
 	/**
@@ -60,7 +60,7 @@ export default class FormStoreField {
 			 * @param {FieldsValues[Key]} StoreValue
 			 * @returns string | ReadonlyArray<string> | number | undefined
 			 */
-			(() => this.value);
+			(() => this.value ?? '');
 	}
 
 	/**

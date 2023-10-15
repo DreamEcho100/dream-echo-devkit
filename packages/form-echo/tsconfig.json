@@ -1,6 +1,7 @@
 {
 	"extends": "tsconfig/react-library.json",
 	"compilerOptions": {
+		"lib": ["dom", "dom.iterable", "ES2015"],
 		"allowJs": true,
 		"checkJs": true,
 		"resolveJsonModule": true,
@@ -11,5 +12,5 @@
 		"target": "ESNext",
 		"outDir": "./dist"
 	},
-	"include": ["./src/**/*.js", "./src/**/*.ts"]
+	"include": ["./src/**/*.js", "./src/**/*.ts", "./tsup.config.ts"]
 }

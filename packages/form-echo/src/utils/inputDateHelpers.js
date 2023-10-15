@@ -1,12 +1,10 @@
-import type { InputDateTypes } from '../types';
-
 /**
  * Formats a date object to the desired string format based on the type.
  * @param {Date} date - The Date object to be formatted.
- * @param {string} type - The format type ('date', 'time', 'datetime-local', 'week', or 'month').
+ * @param {import("..").InputDateTypes} type - The format type ('date', 'time', 'datetime-local', 'week', or 'month').
  * @returns {string} A formatted string based on the specified format.
  */
-export function formatDate(date: Date, type: InputDateTypes): string {
+export function formatDate(date, type) {
 	// Initialize an empty string to hold the formatted date
 	let formattedDate = '';
 
@@ -60,16 +58,14 @@ export function formatDate(date: Date, type: InputDateTypes): string {
 
 /**
  * Parses a string in the specified format and returns a Date object.
- * @param {string} dateString - The string to be parsed.
+ * @param {string | number} dateString - The string to be parsed.
  * @param {string} type - The format type ('date', 'time', 'datetime-local', 'week', or 'month').
  * @returns {Date} - The parsed Date object.
  */
-export function parseDate(
-	dateString: string | number,
-	type: InputDateTypes,
-): Date {
+export function parseDate(dateString, type) {
 	// Declare a variable to hold the parsed date
-	let parsedDate: Date;
+	/** @type {Date} */
+	let parsedDate;
 
 	// Use a switch statement to handle the various date/time formats
 	switch (type) {
@@ -117,7 +113,7 @@ export function parseDate(
  * @param {Date} date - The date object for which to calculate the week number.
  * @returns {number} - The week number.
  */
-export function getWeekNumber(date: Date): number {
+export function getWeekNumber(date) {
 	// Get the date for the first day of the year
 	const yearStart = new Date(date.getFullYear(), 0, 1);
 
@@ -137,7 +133,7 @@ export function getWeekNumber(date: Date): number {
  * @param {number} week - The week number (1-53) of the desired week.
  * @returns {Date} - The first date (Monday) of the specified week.
  */
-export function getFirstDateOfWeek(year: number, week: number): Date {
+export function getFirstDateOfWeek(year, week) {
 	// Find the date of January 1st for the given year
 	const januaryFirst = new Date(year, 0, 1);
 

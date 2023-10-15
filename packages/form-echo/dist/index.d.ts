@@ -8,8 +8,8 @@ import { StoreApi } from 'zustand';
  * @template Value
  * @typedef FieldMetadata
  *
- * @prop {Name & string} name -
- * @prop {Value} initialValue -
+ * @prop {Name & string} name
+ * @prop {Value} initialValue
  */
 /** @exports FieldMetadata */
 /**
@@ -41,8 +41,8 @@ declare class FormStoreField<FieldsValues, Key extends keyof FieldsValues> {
     metadata: FieldMetadata$1<Key, FieldsValues[Key]>;
     /** @type {((fieldValue: unknown) => Exclude<FieldsValues[Key], (value: FieldsValues[Key]) => FieldsValues[Key]>) | undefined} */
     valueFromFieldToStore: ((fieldValue: unknown) => Exclude<FieldsValues[Key], (value: FieldsValues[Key]) => FieldsValues[Key]>) | undefined;
-    /** @type {(StoreValue: FieldsValues[Key]) => string | ReadonlyArray<string> | number | undefined} */
-    valueFromStoreToField: (StoreValue: FieldsValues[Key]) => string | ReadonlyArray<string> | number | undefined;
+    /** @type {(storeValue: FieldsValues[Key]) => string | ReadonlyArray<string> | number | undefined} */
+    valueFromStoreToField: (storeValue: FieldsValues[Key]) => string | ReadonlyArray<string> | number | undefined;
     /**
      * @description Gets the field value converted _(using the passed `valueFromStoreToField` if not it will just return the original value)_ from the store value.
      *
@@ -51,13 +51,7 @@ declare class FormStoreField<FieldsValues, Key extends keyof FieldsValues> {
     get storeToFieldValue(): string | number | readonly string[] | undefined;
 }
 type FieldMetadata$1<Name, Value> = {
-    /**
-     * -
-     */
     name: Name & string;
-    /**
-     * -
-     */
     initialValue: Value;
 };
 
@@ -157,6 +151,7 @@ interface FormStoreShape<FieldsValues, ValidationsHandlers> {
         [Key in NonNullable<keyof FieldsValues>]: FormStoreField<FieldsValues, Key>;
     };
     utils: {
+        getFieldValues(): FieldsValues;
         setSubmitState: (valueOrUpdater: Partial<SubmitState> | ((value: SubmitState) => Partial<SubmitState>)) => void;
         setFocusState: (fieldName: keyof FieldsValues, validationName: keyof ValidationsHandlers | (keyof FieldsValues & keyof ValidationsHandlers), isActive: boolean) => void;
         resetFormStore: (itemsToReset?: {
@@ -174,7 +169,7 @@ interface FormStoreShape<FieldsValues, ValidationsHandlers> {
             message: string | null;
             validationEvent: ValidationEvents;
         }) => void;
-        getFieldEventsListeners(name: keyof FieldsValues, validationName?: keyof ValidationsHandlers): {
+        getFieldEventsListeners: (name: keyof FieldsValues, validationName?: keyof ValidationsHandlers) => {
             onChange: (event: {
                 target: {
                     value: string;
@@ -226,17 +221,17 @@ interface CreateFormStoreProps<FieldsValues, ValidationsHandlers = Record<keyof 
 /**
  * Formats a date object to the desired string format based on the type.
  * @param {Date} date - The Date object to be formatted.
- * @param {string} type - The format type ('date', 'time', 'datetime-local', 'week', or 'month').
+ * @param {import("..").InputDateTypes} type - The format type ('date', 'time', 'datetime-local', 'week', or 'month').
  * @returns {string} A formatted string based on the specified format.
  */
 declare function formatDate(date: Date, type: InputDateTypes): string;
 /**
  * Parses a string in the specified format and returns a Date object.
- * @param {string} dateString - The string to be parsed.
+ * @param {string | number} dateString - The string to be parsed.
  * @param {string} type - The format type ('date', 'time', 'datetime-local', 'week', or 'month').
  * @returns {Date} - The parsed Date object.
  */
-declare function parseDate(dateString: string | number, type: InputDateTypes): Date;
+declare function parseDate(dateString: string | number, type: string): Date;
 /**
  * Returns the week number of the year for a given date.
  * @param {Date} date - The date object for which to calculate the week number.
@@ -250,39 +245,12 @@ declare function getWeekNumber(date: Date): number;
  * @returns {Date} - The first date (Monday) of the specified week.
  */
 declare function getFirstDateOfWeek(year: number, week: number): Date;
-/**
- * A collection of helper functions for working with input date values.
- * @namespace
- */
-declare const inputDateHelpers: {
-    /**
-     * Formats a date object to the desired string format based on the type.
-     * @param {Date} date - The Date object to be formatted.
-     * @param {string} type - The format type ('date', 'time', 'datetime-local', 'week', or 'month').
-     * @returns {string} A formatted string based on the specified format.
-     */
-    formatDate: typeof formatDate;
-    /**
-     * Parses a string in the specified format and returns a Date object.
-     * @param {string} dateString - The string to be parsed.
-     * @param {string} type - The format type ('date', 'time', 'datetime-local', 'week', or 'month').
-     * @returns {Date} - The parsed Date object.
-     */
-    parseDate: typeof parseDate;
-    /**
-     * Returns the week number of the year for a given date.
-     * @param {Date} date - The date object for which to calculate the week number.
-     * @returns {number} - The week number.
-     */
-    getWeekNumber: typeof getWeekNumber;
-    /**
-     * Returns the first date (Monday) of a given week in a year.
-     * @param {number} year - The year of the target week.
-     * @param {number} week - The week number (1-53) of the desired week.
-     * @returns {Date} - The first date (Monday) of the specified week.
-     */
-    getFirstDateOfWeek: typeof getFirstDateOfWeek;
-};
+declare namespace inputDateHelpers {
+    export { formatDate };
+    export { parseDate };
+    export { getWeekNumber };
+    export { getFirstDateOfWeek };
+}
 
 declare function isZodValidator(validator: unknown): validator is ZodSchema;
 declare function isZodError(error: unknown): error is ZodError;
@@ -293,7 +261,72 @@ declare const useCreateFormStore: <FieldsValues, ValidationsHandlers>(props: Omi
     baseId?: string | boolean | undefined;
 }) => zustand.StoreApi<FormStoreShape<FieldsValues, ValidationsHandlers>>;
 
+/**
+ * @template DefaultValue
+ * @param {DefaultValue} defaultValue
+ */
+declare function onNotNullableTo<DefaultValue>(defaultValue: DefaultValue): <Value>(value: Value) => OnNullableDefaultReturn<Value, DefaultValue>;
+/**
+ * @template DefaultValue
+ * @param {DefaultValue} defaultValue
+ */
+declare function onTruthyTo<DefaultValue>(defaultValue: DefaultValue): <Value>(value: Value) => OnTruthyDefaultReturn<Value, DefaultValue>;
+declare namespace dateInput {
+    function parse(type: InputDateTypes): (dateString: string | number | false | null | undefined) => Date | null;
+    function format(type: InputDateTypes): (dateString: Date | FalsyValues) => string | null;
+}
+declare namespace onNullable {
+    function toEmptyString<Value>(value: Value): OnNullableDefaultReturn<Value, "">;
+    function toUndefined<Value>(value: Value): OnNullableDefaultReturn<Value, undefined>;
+    function toNull<Value>(value: Value): OnNullableDefaultReturn<Value, null>;
+    function to<DefaultValue>(defaultValue: DefaultValue): <Value>(value: Value) => OnNullableDefaultReturn<Value, DefaultValue>;
+    namespace falsy {
+        export function toEmptyString_1<Value>(value: Value): OnNullableDefaultReturn<Value, "">;
+        export { toEmptyString_1 as toEmptyString };
+        export function toUndefined_1<Value>(value: Value): OnNullableDefaultReturn<Value, undefined>;
+        export { toUndefined_1 as toUndefined };
+        export function toNull_1<Value>(value: Value): OnNullableDefaultReturn<Value, null>;
+        export { toNull_1 as toNull };
+        export { onNotNullableTo as to };
+    }
+}
+declare namespace onFalsy {
+    export function toEmptyString_2<Value>(value: Value): OnFalsyDefaultReturn<Value, "">;
+    export { toEmptyString_2 as toEmptyString };
+    export function toUndefined_2<Value>(value: Value): OnFalsyDefaultReturn<Value, undefined>;
+    export { toUndefined_2 as toUndefined };
+    export function toNull_2<Value>(value: Value): OnFalsyDefaultReturn<Value, null>;
+    export { toNull_2 as toNull };
+    export { onFalsyTo as to };
+}
+declare namespace onTruthy {
+    export function toEmptyString_3<Value>(value: Value): OnTruthyDefaultReturn<Value, "">;
+    export { toEmptyString_3 as toEmptyString };
+    export function toUndefined_3<Value>(value: Value): OnTruthyDefaultReturn<Value, undefined>;
+    export { toUndefined_3 as toUndefined };
+    export function toNull_3<Value>(value: Value): OnTruthyDefaultReturn<Value, null>;
+    export { toNull_3 as toNull };
+    export { onTruthyTo as to };
+}
+
+type FalsyValues = undefined | null | false | 0 | '';
+type OnFalsyDefaultReturn<Value, DefaultValue> = Value extends FalsyValues ? DefaultValue : NonNullable<Value>;
+type OnTruthyDefaultReturn<Value, DefaultValue> = Value extends FalsyValues ? NonNullable<Value> : DefaultValue;
+type OnNullableDefaultReturn<Value, DefaultValue> = Value extends null | undefined ? DefaultValue : Value;
+type OnNotNullableDefaultReturn<Value, DefaultValue> = Value extends null | undefined ? Value : DefaultValue;
+/**
+ * @template DefaultValue
+ * @param {DefaultValue} defaultValue
+ */
+declare function onFalsyTo<DefaultValue>(defaultValue: DefaultValue): <Value>(value: Value) => OnFalsyDefaultReturn<Value, DefaultValue>;
+declare namespace formFieldValueHelpers {
+    export { dateInput as onDateInput };
+    export { onNullable };
+    export { onFalsy };
+    export { onTruthy };
+}
+
 type SetStateInternal<T> = (partial: T | Partial<T> | ((state: T) => T | Partial<T>)) => void;
 declare function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(params: CreateFormStoreProps<FieldsValues, ValidationsHandlers>): (set: SetStateInternal<FormStoreShape<FieldsValues, ValidationsHandlers>>, get: () => FormStoreShape<FieldsValues, ValidationsHandlers>) => FormStoreShape<FieldsValues, ValidationsHandlers>;
 
-export { CreateFormStoreProps, FieldMetadata, FormStoreApi, FormStoreMetadata, FormStoreShape, FormStoreValidation, GetFormStoreApiStore, GetFromFormStoreShape, GetValidationValuesFromSchema, HandleSubmitCB, HandleValidation, InputDateTypes, ValidationEvents, ValidationMetadata, createFormStoreBuilder, errorFormatter, formatDate, getFirstDateOfWeek, getWeekNumber, handleCreateFormStore, inputDateHelpers, isZodError, isZodValidator, parseDate, useCreateFormStore };
+export { CreateFormStoreProps, FalsyValues, FieldMetadata, FormStoreApi, FormStoreMetadata, FormStoreShape, FormStoreValidation, GetFormStoreApiStore, GetFromFormStoreShape, GetValidationValuesFromSchema, HandleSubmitCB, HandleValidation, InputDateTypes, OnFalsyDefaultReturn, OnNotNullableDefaultReturn, OnNullableDefaultReturn, OnTruthyDefaultReturn, ValidationEvents, ValidationMetadata, createFormStoreBuilder, dateInput, errorFormatter, formatDate, formFieldValueHelpers as fvh, getFirstDateOfWeek, getWeekNumber, handleCreateFormStore, inputDateHelpers, isZodError, isZodValidator, onFalsy, onNotNullableTo, onNullable, onTruthy, onTruthyTo, parseDate, useCreateFormStore };

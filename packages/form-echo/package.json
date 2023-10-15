@@ -1,6 +1,6 @@
 {
 	"name": "@de100/form-echo",
-	"version": "0.0.11-canary.13",
+	"version": "0.0.12-canary.9",
 	"description": "A form state management for fields validations and errors",
 	"keywords": [
 		"form",

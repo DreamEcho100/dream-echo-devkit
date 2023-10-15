@@ -183,6 +183,7 @@ export interface FormStoreShape<FieldsValues, ValidationsHandlers> {
 		[Key in NonNullable<keyof FieldsValues>]: FormStoreField<FieldsValues, Key>;
 	};
 	utils: {
+		getFieldValues(): FieldsValues;
 		setSubmitState: (
 			valueOrUpdater:
 				| Partial<SubmitState>
@@ -230,10 +231,10 @@ export interface FormStoreShape<FieldsValues, ValidationsHandlers> {
 			message: string | null;
 			validationEvent: ValidationEvents;
 		}) => void;
-		getFieldEventsListeners(
+		getFieldEventsListeners: (
 			name: keyof FieldsValues,
 			validationName?: keyof ValidationsHandlers,
-		): {
+		) => {
 			onChange: (event: { target: { value: string } }) => void;
 			onFocus: () => void;
 			onBlur: () => void;
