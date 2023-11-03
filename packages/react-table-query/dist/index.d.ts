@@ -65,23 +65,21 @@ type TableStore<TData, TQueryInput extends QueryInput> = {
     sorting: SortingState;
     columnFilters: ColumnFiltersState;
     columnVisibility: VisibilityState;
-    utils: {
-        setQueryInput: (updaterOrValue: TQueryInput | ((prev: TQueryInput) => TQueryInput)) => void;
-        setPagination: (updaterOrValue: {
-            pageIndex: number;
-            pageSize: number;
-        } | ((pagination: {
-            pageIndex: number;
-            pageSize: number;
-        }) => {
-            pageIndex: number;
-            pageSize: number;
-        })) => void;
-        setRowSelection: (updaterOrValue: StoreUpdaterOrValue<TData, TQueryInput, 'rowSelection'>) => void;
-        setSorting: (updaterOrValue: StoreUpdaterOrValue<TData, TQueryInput, 'sorting'>) => void;
-        setColumnFilters: (updaterOrValue: StoreUpdaterOrValue<TData, TQueryInput, 'columnFilters'>) => void;
-        setColumnVisibility: (updaterOrValue: StoreUpdaterOrValue<TData, TQueryInput, 'columnVisibility'>) => void;
-    };
+    setQueryInput: (updaterOrValue: TQueryInput | ((prev: TQueryInput) => TQueryInput)) => void;
+    setPagination: (updaterOrValue: {
+        pageIndex: number;
+        pageSize: number;
+    } | ((pagination: {
+        pageIndex: number;
+        pageSize: number;
+    }) => {
+        pageIndex: number;
+        pageSize: number;
+    })) => void;
+    setRowSelection: (updaterOrValue: StoreUpdaterOrValue<TData, TQueryInput, 'rowSelection'>) => void;
+    setSorting: (updaterOrValue: StoreUpdaterOrValue<TData, TQueryInput, 'sorting'>) => void;
+    setColumnFilters: (updaterOrValue: StoreUpdaterOrValue<TData, TQueryInput, 'columnFilters'>) => void;
+    setColumnVisibility: (updaterOrValue: StoreUpdaterOrValue<TData, TQueryInput, 'columnVisibility'>) => void;
 };
 type HandleCreateTableStoreProps<TQueryInput extends QueryInput> = {
     classNames?: TableClassNames;

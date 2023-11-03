@@ -31,7 +31,7 @@ import { inputDateHelpers } from '.';
  */
 export const dateInput = {
 	/**
-	 * @param {import("..").InputDateTypes} type
+	 * @param {import("../..").InputDateTypes} type
 	 * @description used to handle parsing ("date", "time", "datetime-local", "week", "month") and the cases of falsy values results to `null` like when clearing the input
 	 */
 	parse: function (type) {
@@ -43,7 +43,7 @@ export const dateInput = {
 		};
 	},
 	/**
-	 * @param {import("..").InputDateTypes} type
+	 * @param {import("../..").InputDateTypes} type
 	 * @description used to handle formatting ("date", "time", "datetime-local", "week", "month") and the cases of falsy values results to '' like when clearing the input
 	 */
 	format: function (type) {
@@ -210,7 +210,7 @@ export const onFalsy = {
  * @template DefaultValue
  * @param {DefaultValue} defaultValue
  */
-export function onTruthyTo(defaultValue) {
+function onTruthyTo(defaultValue) {
 	/**
 	 * @template Value
 	 * @param {Value} value
@@ -249,6 +249,7 @@ const formFieldValueHelpers = {
 
 export default formFieldValueHelpers;
 
+/*
 const test_1 = [1, 2, 3];
 const result_1 = {
 	to: formFieldValueHelpers.onFalsy.to('lol')(test_1),
@@ -302,3 +303,4 @@ const result_3_2 = {
 	undefined: formFieldValueHelpers.onNullable.toUndefined(test_3_2),
 };
 result_3_2;
+*/

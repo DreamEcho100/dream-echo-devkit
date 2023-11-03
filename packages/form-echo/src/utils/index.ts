@@ -12,17 +12,16 @@ import {
 } from '../types';
 import { errorFormatter, isZodValidator } from './zod';
 
-export * from './inputDateHelpers';
 export * from './zod';
 export * from './zustand';
-export * from './fieldValueHelpers';
+// export * from './helpers';
 
 export {
 	/**
 	 * @description field value helpers
 	 */
 	default as fvh,
-} from './fieldValueHelpers';
+} from './helpers/fieldValue';
 
 type SetStateInternal<T> = (
 	partial: T | Partial<T> | ((state: T) => T | Partial<T>),
@@ -134,7 +133,7 @@ function createFormStoreValidations<FieldsValues, ValidationsHandlers>(
 				submit: {
 					failedAttempts: 0,
 					passedAttempts: 0,
-					isActive: params.validationEvents?.submit ?? false,
+					isActive: params.validationEvents?.submit ?? true,
 					isDirty: false,
 					error: null,
 				},
@@ -326,433 +325,400 @@ export function createFormStoreBuilder<FieldsValues, ValidationsHandlers>(
 			},
 			focus: { isActive: false, field: null },
 			currentDirtyFieldsCounter: 0,
-			utils: {
-				getFieldValues() {
-					const currentState = get();
-					const fieldsValues = {} as FieldsValues;
+			getFieldValues() {
+				const currentState = get();
+				const fieldsValues = {} as FieldsValues;
 
-					let fieldName: string;
-					for (fieldName in currentState.fields) {
-						fieldsValues[fieldName as keyof FieldsValues] =
-							currentState.fields[fieldName as keyof FieldsValues].value;
-					}
+				let fieldName: string;
+				for (fieldName in currentState.fields) {
+					fieldsValues[fieldName as keyof FieldsValues] =
+						currentState.fields[fieldName as keyof FieldsValues].value;
+				}
 
-					return fieldsValues;
-				},
-				setSubmitState(valueOrUpdater) {
-					set(function (currentState) {
-						return {
-							// ...currentState,
-							submit: {
-								...currentState.submit,
-								...(typeof valueOrUpdater === 'function'
-									? valueOrUpdater(currentState.submit)
-									: valueOrUpdater),
-							},
-						};
-					});
-				},
-				setFocusState(fieldName, validationName, isActive) {
-					set(function (currentState) {
-						let _currentState = currentState;
+				return fieldsValues;
+			},
+			setSubmitState(valueOrUpdater) {
+				set(function (currentState) {
+					return {
+						// ...currentState,
+						submit: {
+							...currentState.submit,
+							...(typeof valueOrUpdater === 'function'
+								? valueOrUpdater(currentState.submit)
+								: valueOrUpdater),
+						},
+					};
+				});
+			},
+			setFocusState(fieldName, validationName, isActive) {
+				set(function (currentState) {
+					let _currentState = currentState;
 
-						if (
-							!isActive &&
-							_currentState.validations[validationName].events.blur.isActive
-						) {
-							try {
-								_currentState.validations[validationName].handler(
-									validationName && fieldName !== validationName
-										? _currentState.utils.getFieldValues()
-										: _currentState.fields[fieldName].value,
-									'blur',
-								);
-								_currentState = _setFieldError<
-									FieldsValues,
-									ValidationsHandlers
-								>({
+					if (
+						!isActive &&
+						_currentState.validations[validationName].events.blur.isActive
+					) {
+						try {
+							_currentState.validations[validationName].handler(
+								validationName && fieldName !== validationName
+									? _currentState.getFieldValues()
+									: _currentState.fields[fieldName].value,
+								'blur',
+							);
+							_currentState = _setFieldError<FieldsValues, ValidationsHandlers>(
+								{
 									name: validationName,
 									message: null,
 									validationEvent: 'blur',
-								})(_currentState);
-							} catch (error) {
-								const message = _currentState.utils.errorFormatter(
-									error,
-									'blur',
-								);
-								_currentState = _setFieldError<
-									FieldsValues,
-									ValidationsHandlers
-								>({
+								},
+							)(_currentState);
+						} catch (error) {
+							const message = _currentState.errorFormatter(error, 'blur');
+							_currentState = _setFieldError<FieldsValues, ValidationsHandlers>(
+								{
 									name: validationName,
 									message,
 									validationEvent: 'blur',
-								})(_currentState);
-							}
-
-							if (
-								_currentState.focus.isActive &&
-								_currentState.focus.field.name !== fieldName
-							)
-								return _currentState;
+								},
+							)(_currentState);
 						}
 
-						return {
-							..._currentState,
-							focus: isActive
-								? {
-										isActive: true,
-										field: {
-											name: fieldName,
-											id: _currentState.fields[fieldName].id,
-										},
-								  }
-								: { isActive: false, field: null },
-						};
-					});
-				},
-				resetFormStore: function (itemsToReset = itemsToResetDefaults) {
-					return set(function (currentState) {
-						const fields = currentState.fields;
-						const validations = currentState.validations;
-						let isDirty = currentState.isDirty;
-						let submit = currentState.submit;
-						let focus = currentState.focus;
-
-						if (itemsToReset.fields) {
-							const resetField =
-								typeof window === 'undefined'
-									? (fieldName: NonNullable<keyof FieldsValues>) => {
-											const field = fields[fieldName];
-											field.value = field.metadata.initialValue;
-									  }
-									: (fieldName: NonNullable<keyof FieldsValues>) => {
-											const field = fields[fieldName];
-											// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-											// @ts-ignore
-											const element = document.getElementById(
-												field.id,
-											) as HTMLInputElement;
-											if (element) element.value = (field.metadata.initialValue ?? '') as string;
-
-											field.value = field.metadata.initialValue;
-									  };
-
-							let fieldName: keyof typeof fields;
-							for (fieldName in fields) {
-								resetField(fieldName);
-							}
-						}
-
-						if (itemsToReset.validations) {
-							for (const key in validations) {
-								validations[key].failedAttempts = 0;
-								validations[key].passedAttempts = 0;
-								validations[key].isDirty = false;
-								validations[key].error = null;
-
-								let eventKey: keyof (typeof validations)[typeof key]['events'];
-								for (eventKey in validations[key].events) {
-									// validations[key].events[eventKey].
-									validations[key].events[eventKey].failedAttempts = 0;
-									validations[key].events[eventKey].passedAttempts = 0;
-									validations[key].events[eventKey].isDirty = false;
-									validations[key].events[eventKey].error = null;
-								}
-							}
-							isDirty = false;
-						}
-						if (itemsToReset.submit) {
-							submit = {
-								counter: 0,
-								passedAttempts: 0,
-								failedAttempts: 0,
-								errorMessage: null,
-								isActive: false,
-							};
-						}
-
-						if (itemsToReset.focus) {
-							focus = {
-								isActive: false,
-								field: null,
-							};
-						}
-
-						return {
-							// ...currentState,
-							fields,
-							validations,
-							isDirty,
-							submit,
-							focus,
-						};
-					});
-				},
-				setFieldValue(name, value) {
-					return set(_setFieldValue(name, value));
-				},
-				setFieldError(params) {
-					set(_setFieldError(params));
-				},
-				errorFormatter: params.errorFormatter ?? errorFormatter,
-				handleOnInputChange(name, valueOrUpdater, validationName) {
-					let currentState = get();
-					const field = currentState.fields[name];
-
-					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-					const _value =
-						typeof valueOrUpdater === 'function'
-							? valueOrUpdater(field.value)
-							: valueOrUpdater;
-					const value = field.valueFromFieldToStore
-						? field.valueFromFieldToStore(_value)
-						: (_value as FieldsValues[typeof name]);
-
-					const _validationName = (
-						validationName
-							? validationName
-							: // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-							// @ts-ignore
-							currentState.metadata.referencedValidatedFieldsMap[name]
-							? name
-							: undefined
-					) as typeof validationName;
-
-					const setFieldValue = _setFieldValue<
-						FieldsValues,
-						ValidationsHandlers,
-						typeof name
-					>;
-					const setFieldError = _setFieldError<
-						FieldsValues,
-						ValidationsHandlers
-					>;
-
-					if (
-						_validationName &&
-						currentState.validations[_validationName].events['change'].isActive
-					) {
-						try {
-							currentState = setFieldValue(
-								name,
-								currentState.validations[_validationName].handler(
-									validationName &&
-										// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-										// @ts-ignore
-										validationName !== name
-										? currentState.utils.getFieldValues()
-										: value,
-									'change',
-								),
-							)(currentState);
-							currentState = setFieldError({
-								name: _validationName,
-								message: null,
-								validationEvent: 'change',
-							})(currentState);
-						} catch (error) {
-							currentState = setFieldError({
-								name: _validationName,
-								message: currentState.utils.errorFormatter(error, 'change'),
-								validationEvent: 'change',
-							})(currentState);
-
-							currentState = setFieldValue(name, value)(currentState);
-						}
-					} else {
-						currentState = setFieldValue(name, value)(currentState);
+						if (
+							_currentState.focus.isActive &&
+							_currentState.focus.field.name !== fieldName
+						)
+							return _currentState;
 					}
 
-					set(currentState);
-				},
-				getFieldEventsListeners(name, validationName) {
-					const currentState = get();
-					const _validationName = validationName ?? name;
 					return {
-						onChange: (event: { target: { value: string } }) => {
-							currentState.utils.handleOnInputChange(name, event.target.value);
-						},
-						onFocus: () => {
-							currentState.utils.setFocusState(
-								name,
-								_validationName as keyof ValidationsHandlers,
-								true,
-							);
-						},
-						onBlur: () => {
-							currentState.utils.setFocusState(
-								name,
-								_validationName as keyof ValidationsHandlers,
-								false,
-							);
-						},
+						..._currentState,
+						focus: isActive
+							? {
+									isActive: true,
+									field: {
+										name: fieldName,
+										id: _currentState.fields[fieldName].id,
+									},
+							  }
+							: { isActive: false, field: null },
 					};
-				},
-				handleSubmit(cb: HandleSubmitCB<FieldsValues, ValidationsHandlers>) {
-					return async function (
-						event: FormEvent<HTMLFormElement>,
-						// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+				});
+			},
+			resetFormStore: function (itemsToReset = itemsToResetDefaults) {
+				return set(function (currentState) {
+					const fields = currentState.fields;
+					const validations = currentState.validations;
+					let isDirty = currentState.isDirty;
+					let submit = currentState.submit;
+					let focus = currentState.focus;
+
+					if (itemsToReset.fields) {
+						let fieldName: keyof typeof fields;
+						for (fieldName in fields) {
+							fields[fieldName].value = fields[fieldName].metadata.initialValue;
+						}
+					}
+
+					if (itemsToReset.validations) {
+						for (const key in validations) {
+							validations[key].failedAttempts = 0;
+							validations[key].passedAttempts = 0;
+							validations[key].isDirty = false;
+							validations[key].error = null;
+
+							let eventKey: keyof (typeof validations)[typeof key]['events'];
+							for (eventKey in validations[key].events) {
+								// validations[key].events[eventKey].
+								validations[key].events[eventKey].failedAttempts = 0;
+								validations[key].events[eventKey].passedAttempts = 0;
+								validations[key].events[eventKey].isDirty = false;
+								validations[key].events[eventKey].error = null;
+							}
+						}
+						isDirty = false;
+					}
+					if (itemsToReset.submit) {
+						submit = {
+							counter: 0,
+							passedAttempts: 0,
+							failedAttempts: 0,
+							errorMessage: null,
+							isActive: false,
+						};
+					}
+
+					if (itemsToReset.focus) {
+						focus = {
+							isActive: false,
+							field: null,
+						};
+					}
+
+					return {
+						// ...currentState,
+						fields,
+						validations,
+						isDirty,
+						submit,
+						focus,
+					};
+				});
+			},
+			setFieldValue(name, value) {
+				return set(_setFieldValue(name, value));
+			},
+			setFieldError(params) {
+				set(_setFieldError(params));
+			},
+			errorFormatter: params.errorFormatter ?? errorFormatter,
+			handleInputChange(name, valueOrUpdater, validationName) {
+				let currentState = get();
+				const field = currentState.fields[name];
+
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+				const _value =
+					typeof valueOrUpdater === 'function'
+						? valueOrUpdater(field.value)
+						: valueOrUpdater;
+				const value = field.valueFromFieldToStore
+					? field.valueFromFieldToStore(_value)
+					: (_value as FieldsValues[typeof name]);
+
+				const _validationName = (
+					validationName
+						? validationName
+						: // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 						// @ts-ignore
-					): Promise<unknown> | unknown {
-						event.preventDefault();
+						currentState.metadata.referencedValidatedFieldsMap[name]
+						? name
+						: undefined
+				) as typeof validationName;
 
-						const currentState = get();
+				const setFieldValue = _setFieldValue<
+					FieldsValues,
+					ValidationsHandlers,
+					typeof name
+				>;
+				const setFieldError = _setFieldError<FieldsValues, ValidationsHandlers>;
 
-						currentState.utils.setSubmitState({ isActive: true });
+				if (
+					_validationName &&
+					currentState.validations[_validationName].events['change'].isActive
+				) {
+					try {
+						currentState = setFieldValue(
+							name,
+							currentState.validations[_validationName].handler(
+								validationName &&
+									// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+									// @ts-ignore
+									validationName !== name
+									? currentState.getFieldValues()
+									: value,
+								'change',
+							),
+						)(currentState);
+						currentState = setFieldError({
+							name: _validationName,
+							message: null,
+							validationEvent: 'change',
+						})(currentState);
+					} catch (error) {
+						currentState = setFieldError({
+							name: _validationName,
+							message: currentState.errorFormatter(error, 'change'),
+							validationEvent: 'change',
+						})(currentState);
 
-						const metadata = currentState.metadata;
-						const fields = currentState.fields;
-						const validations = currentState.validations;
-						const values: Record<string, unknown> = {};
-						const validatedValues: Record<string, unknown> = {};
+						currentState = setFieldValue(name, value)(currentState);
+					}
+				} else {
+					currentState = setFieldValue(name, value)(currentState);
+				}
 
-						const errors: Record<
-							string,
-							{
-								name: string | number | symbol;
+				set(currentState);
+			},
+			getFieldEventsListeners(name, validationName) {
+				const currentState = get();
+				const _validationName = validationName ?? name;
+				return {
+					onChange: (event: { target: { value: string } }) => {
+						currentState.handleInputChange(name, event.target.value);
+					},
+					onFocus: () => {
+						currentState.setFocusState(
+							name,
+							_validationName as keyof ValidationsHandlers,
+							true,
+						);
+					},
+					onBlur: () => {
+						currentState.setFocusState(
+							name,
+							_validationName as keyof ValidationsHandlers,
+							false,
+						);
+					},
+				};
+			},
+			handleSubmit(cb: HandleSubmitCB<FieldsValues, ValidationsHandlers>) {
+				return async function (
+					event: FormEvent<HTMLFormElement>,
+					// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+					// @ts-ignore
+				): Promise<unknown> | unknown {
+					event.preventDefault();
+
+					const currentState = get();
+
+					currentState.setSubmitState({ isActive: true });
+
+					const metadata = currentState.metadata;
+					const fields = currentState.fields;
+					const validations = currentState.validations;
+					const values: Record<string, unknown> = {};
+					const validatedValues: Record<string, unknown> = {};
+
+					const errors: Record<
+						string,
+						{
+							name: string | number | symbol;
+							message: string | null;
+							validationEvent: ValidationEvents;
+						}
+					> = {};
+
+					let hasError = false;
+
+					let fieldName: keyof typeof fields & string;
+					for (fieldName in fields) {
+						values[fieldName] = fields[fieldName].value;
+
+						try {
+							const validationSchema =
+								fieldName in metadata.referencedValidatedFieldsMap &&
+								validations[fieldName as unknown as keyof typeof validations]
+									.handler;
+
+							if (
+								typeof validationSchema !== 'function' ||
+								!validations[fieldName as unknown as keyof typeof validations]
+									.events.submit.isActive
+							) {
+								continue;
+							}
+
+							validatedValues[fieldName] = validationSchema(
+								fields[fieldName].value,
+								'submit',
+							);
+
+							errors[fieldName] = {
+								name: fieldName,
+								message: null,
+								validationEvent: 'submit',
+							};
+						} catch (error) {
+							errors[fieldName] = {
+								name: fieldName,
+								message: currentState.errorFormatter(error, 'submit'),
+								validationEvent: 'submit',
+							};
+						}
+					}
+
+					let manualFieldName: keyof (typeof metadata)['manualValidatedFieldsMap'];
+					for (manualFieldName of metadata.manualValidatedFields) {
+						try {
+							const validationSchema =
+								currentState.validations[manualFieldName].handler;
+							if (typeof validationSchema !== 'function') {
+								continue;
+							}
+
+							validatedValues[manualFieldName as string] = validationSchema(
+								values as FieldsValues,
+								'submit',
+							);
+
+							errors[manualFieldName as string] = {
+								name: manualFieldName,
+								message: null,
+								validationEvent: 'submit',
+							};
+						} catch (error) {
+							errors[manualFieldName as string] = {
+								name: manualFieldName,
+								message: currentState.errorFormatter(error, 'submit'),
+								validationEvent: 'submit',
+							};
+						}
+					}
+
+					type NecessaryEvil = {
+						values: FieldsValues;
+						validatedValues: GetValidationValuesFromSchema<ValidationsHandlers>;
+						error: Parameters<
+							typeof _setFieldError<FieldsValues, ValidationsHandlers> // ['utils']['setFieldError']
+						>[0];
+						errors: {
+							[Key in keyof ValidationsHandlers]: {
+								name: Key;
 								message: string | null;
 								validationEvent: ValidationEvents;
-							}
-						> = {};
-
-						let hasError = false;
-
-						let fieldName: keyof typeof fields & string;
-						for (fieldName in fields) {
-							values[fieldName] = fields[fieldName].value;
-
-							try {
-								const validationSchema =
-									fieldName in metadata.referencedValidatedFieldsMap &&
-									validations[fieldName as unknown as keyof typeof validations]
-										.handler;
-
-								if (
-									typeof validationSchema !== 'function' ||
-									!validations[fieldName as unknown as keyof typeof validations]
-										.events.submit.isActive
-								) {
-									continue;
-								}
-
-								validatedValues[fieldName] = validationSchema(
-									fields[fieldName].value,
-									'submit',
-								);
-
-								errors[fieldName] = {
-									name: fieldName,
-									message: null,
-									validationEvent: 'submit',
-								};
-							} catch (error) {
-								errors[fieldName] = {
-									name: fieldName,
-									message: currentState.utils.errorFormatter(error, 'submit'),
-									validationEvent: 'submit',
-								};
-							}
-						}
-
-						let manualFieldName: keyof (typeof metadata)['manualValidatedFieldsMap'];
-						for (manualFieldName of metadata.manualValidatedFields) {
-							try {
-								const validationSchema =
-									currentState.validations[manualFieldName].handler;
-								if (typeof validationSchema !== 'function') {
-									continue;
-								}
-
-								validatedValues[manualFieldName as string] = validationSchema(
-									values as FieldsValues,
-									'submit',
-								);
-
-								errors[manualFieldName as string] = {
-									name: manualFieldName,
-									message: null,
-									validationEvent: 'submit',
-								};
-							} catch (error) {
-								errors[manualFieldName as string] = {
-									name: manualFieldName,
-									message: currentState.utils.errorFormatter(error, 'submit'),
-									validationEvent: 'submit',
-								};
-							}
-						}
-
-						type NecessaryEvil = {
-							values: FieldsValues;
-							validatedValues: GetValidationValuesFromSchema<ValidationsHandlers>;
-							error: Parameters<
-								typeof _setFieldError<FieldsValues, ValidationsHandlers> // ['utils']['setFieldError']
-							>[0];
-							errors: {
-								[Key in keyof ValidationsHandlers]: {
-									name: Key;
-									message: string | null;
-									validationEvent: ValidationEvents;
-								};
 							};
 						};
+					};
 
-						let _currentState: FormStoreShape<
-							FieldsValues,
-							ValidationsHandlers
-						> = get();
-						let errorKey: keyof typeof errors & string;
-						for (errorKey in errors) {
-							const errorObj = errors[errorKey];
+					let _currentState: FormStoreShape<FieldsValues, ValidationsHandlers> =
+						get();
+					let errorKey: keyof typeof errors & string;
+					for (errorKey in errors) {
+						const errorObj = errors[errorKey];
 
-							_currentState = _setFieldError<FieldsValues, ValidationsHandlers>(
-								errors[errorKey] as unknown as NecessaryEvil['error'],
-							)(_currentState);
+						_currentState = _setFieldError<FieldsValues, ValidationsHandlers>(
+							errors[errorKey] as unknown as NecessaryEvil['error'],
+						)(_currentState);
 
-							if (typeof errorObj.message !== 'string') continue;
+						if (typeof errorObj.message !== 'string') continue;
 
-							hasError = true;
-						}
+						hasError = true;
+					}
 
-						if (!hasError) {
-							try {
-								await cb({
-									event,
-									values: values as NecessaryEvil['values'],
-									validatedValues:
-										validatedValues as NecessaryEvil['validatedValues'],
-									hasError,
-									errors: errors as NecessaryEvil['errors'],
-								});
-								currentState.utils.setSubmitState((prev) => ({
-									isActive: false,
-									counter: prev.counter + 1,
-									passedAttempts: prev.counter + 1,
-									errorMessage: null,
-								}));
-							} catch (error) {
-								currentState.utils.setSubmitState((prev) => ({
-									isActive: false,
-									counter: prev.counter + 1,
-									failedAttempts: prev.counter + 1,
-									errorMessage: currentState.utils.errorFormatter(
-										error,
-										'submit',
-									),
-								}));
-							}
-						} else {
-							set(_currentState);
-							currentState.utils.setSubmitState((prev) => ({
+					if (!hasError) {
+						try {
+							await cb({
+								event,
+								values: values as NecessaryEvil['values'],
+								validatedValues:
+									validatedValues as NecessaryEvil['validatedValues'],
+								hasError,
+								errors: errors as NecessaryEvil['errors'],
+							});
+							currentState.setSubmitState((prev) => ({
+								isActive: false,
+								counter: prev.counter + 1,
+								passedAttempts: prev.counter + 1,
+								errorMessage: null,
+							}));
+						} catch (error) {
+							currentState.setSubmitState((prev) => ({
 								isActive: false,
 								counter: prev.counter + 1,
 								failedAttempts: prev.counter + 1,
-								errorMessage: null,
+								errorMessage: currentState.errorFormatter(error, 'submit'),
 							}));
 						}
-					};
-				},
+					} else {
+						set(_currentState);
+						currentState.setSubmitState((prev) => ({
+							isActive: false,
+							counter: prev.counter + 1,
+							failedAttempts: prev.counter + 1,
+							errorMessage: null,
+						}));
+					}
+				};
 			},
 		};
 	};

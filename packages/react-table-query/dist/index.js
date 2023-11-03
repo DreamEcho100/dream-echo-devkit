@@ -50,39 +50,37 @@ var handleCreateTableStore = ({
   rowSelection: {},
   columnVisibility,
   sorting: [],
-  utils: {
-    setPagination: (updaterOrValue) => set((prevData) => {
-      const pagination = typeof updaterOrValue === "function" ? updaterOrValue({
-        pageIndex: prevData.queryInput.offset || 0,
-        pageSize: prevData.queryInput.limit || 0
-      }) : {
-        pageIndex: updaterOrValue.pageIndex || prevData.queryInput.offset,
-        pageSize: updaterOrValue.pageSize || prevData.queryInput.limit
-      };
-      return {
-        queryInput: {
-          ...prevData.queryInput,
-          limit: pagination.pageSize,
-          offset: pagination.pageIndex
-        }
-      };
-    }),
-    setQueryInput: (updaterOrValue) => set((prevData) => ({
-      queryInput: typeof updaterOrValue === "function" ? updaterOrValue(prevData.queryInput) : updaterOrValue
-    })),
-    setRowSelection: (updaterOrValue) => set((prevData) => ({
-      rowSelection: typeof updaterOrValue === "function" ? updaterOrValue(prevData.rowSelection) : updaterOrValue
-    })),
-    setColumnFilters: (updaterOrValue) => set((prevData) => ({
-      columnFilters: typeof updaterOrValue === "function" ? updaterOrValue(prevData.columnFilters) : updaterOrValue
-    })),
-    setColumnVisibility: (updaterOrValue) => set((prevData) => ({
-      columnVisibility: typeof updaterOrValue === "function" ? updaterOrValue(prevData.columnVisibility) : updaterOrValue
-    })),
-    setSorting: (updaterOrValue) => set((prevData) => ({
-      sorting: typeof updaterOrValue === "function" ? updaterOrValue(prevData.sorting) : updaterOrValue
-    }))
-  }
+  setPagination: (updaterOrValue) => set((prevData) => {
+    const pagination = typeof updaterOrValue === "function" ? updaterOrValue({
+      pageIndex: prevData.queryInput.offset || 0,
+      pageSize: prevData.queryInput.limit || 0
+    }) : {
+      pageIndex: updaterOrValue.pageIndex || prevData.queryInput.offset,
+      pageSize: updaterOrValue.pageSize || prevData.queryInput.limit
+    };
+    return {
+      queryInput: {
+        ...prevData.queryInput,
+        limit: pagination.pageSize,
+        offset: pagination.pageIndex
+      }
+    };
+  }),
+  setQueryInput: (updaterOrValue) => set((prevData) => ({
+    queryInput: typeof updaterOrValue === "function" ? updaterOrValue(prevData.queryInput) : updaterOrValue
+  })),
+  setRowSelection: (updaterOrValue) => set((prevData) => ({
+    rowSelection: typeof updaterOrValue === "function" ? updaterOrValue(prevData.rowSelection) : updaterOrValue
+  })),
+  setColumnFilters: (updaterOrValue) => set((prevData) => ({
+    columnFilters: typeof updaterOrValue === "function" ? updaterOrValue(prevData.columnFilters) : updaterOrValue
+  })),
+  setColumnVisibility: (updaterOrValue) => set((prevData) => ({
+    columnVisibility: typeof updaterOrValue === "function" ? updaterOrValue(prevData.columnVisibility) : updaterOrValue
+  })),
+  setSorting: (updaterOrValue) => set((prevData) => ({
+    sorting: typeof updaterOrValue === "function" ? updaterOrValue(prevData.sorting) : updaterOrValue
+  }))
 }));
 var useCreateTableStore = (props) => {
   const baseId = (0, import_react.useId)();
@@ -158,7 +156,7 @@ var TableLoadMore = ({
   }
 }) => {
   const offset = (0, import_zustand3.useStore)(store, (state) => state.queryInput.offset || 0);
-  const storeUtils = (0, import_zustand3.useStore)(store, (state) => state.utils);
+  const storeUtils = (0, import_zustand3.useStore)(store, (state) => state);
   const { isLastPageEmpty, isInBeforeLastPage } = (0, import_react3.useMemo)(() => {
     const isLastPageEmpty2 = infiniteQuery?.data?.pages?.[infiniteQuery.data.pages.length - 1]?.items.length === 0;
     const isInFirstPage = offset === 0;
@@ -358,7 +356,7 @@ var QueryTable = ({
   store,
   infiniteQuery
 }) => {
-  const storeUtils = (0, import_zustand5.useStore)(store, (store2) => store2.utils);
+  const storeUtils = (0, import_zustand5.useStore)(store, (store2) => store2);
   const canMultiRowSelect = (0, import_zustand5.useStore)(store, (state) => state.canMultiRowSelect);
   const modifiedColumns = (0, import_react5.useMemo)(() => {
     return [

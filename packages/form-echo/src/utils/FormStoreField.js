@@ -60,7 +60,7 @@ export default class FormStoreField {
 			 * @param {FieldsValues[Key]} StoreValue
 			 * @returns string | ReadonlyArray<string> | number | undefined
 			 */
-			(() => this.value ?? '');
+			((value) => value ?? '');
 	}
 
 	/**

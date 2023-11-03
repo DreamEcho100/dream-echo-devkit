@@ -11,11 +11,11 @@ import {
 	useEffect,
 } from 'react';
 import { z } from 'zod';
+import { inputDateHelpers, onFalsy } from '@de100/form-echo/helpers';
 import {
 	FormStoreApi,
 	HandleSubmitCB,
 	useCreateFormStore,
-	inputDateHelpers,
 } from '@de100/form-echo';
 import { useStore } from 'zustand';
 import { cx } from 'class-variance-authority';
@@ -33,7 +33,7 @@ const Form = <FieldsValues, ValidationsHandlers>({
 	onSubmit,
 	...props
 }: FormProps<FieldsValues, ValidationsHandlers>) => {
-	const handleSubmit = useStore(store, (state) => state.utils.handleSubmit);
+	const handleSubmit = useStore(store, (state) => state.handleSubmit);
 	const isDirty = useStore(store, (state) => state.isDirty);
 
 	return (
@@ -52,6 +52,7 @@ type FieldProps<FieldsValues, ValidationsHandlers> = {
 	store: FormStoreApi<FieldsValues, ValidationsHandlers>;
 	name: keyof FieldsValues;
 	validationName?: keyof ValidationsHandlers;
+	isValueWatched?: boolean;
 };
 type FieldErrorsProps<FieldsValues, ValidationsHandlers> = {
 	store: FormStoreApi<FieldsValues, ValidationsHandlers>;
@@ -76,13 +77,6 @@ const FieldErrors = <FieldsValues, ValidationsHandlers>({
 		store,
 		(store) => store.focus.field?.name === name,
 	);
-	const focus = useStore(store, (store) => store.focus);
-
-	console.log('\n\n\n', name, isFocused);
-	console.log('isFocused', isFocused);
-	console.log('errorMessage', errorMessage);
-	console.log('isDirty', isDirty);
-	console.log('focus', focus);
 
 	if (isFocused || !isDirty) return <></>;
 
@@ -97,11 +91,11 @@ type InputFieldProps<FieldsValues, ValidationsHandlers> = Omit<
 
 const InputField = <FieldsValues, ValidationsHandlers>({
 	store,
+	isValueWatched = false,
 	...props
 }: InputFieldProps<FieldsValues, ValidationsHandlers>) => {
-	const value = useStore(
-		store,
-		(store) => store.fields[props.name].storeToFieldValue,
+	const value = useStore(store, (store) =>
+		isValueWatched ? store.fields[props.name].storeToFieldValue : undefined,
 	);
 	const metadata = useStore(
 		store,
@@ -110,7 +104,7 @@ const InputField = <FieldsValues, ValidationsHandlers>({
 	const id = useStore(store, (store) => store.fields[props.name].id);
 	const getFieldEventsListeners = useStore(
 		store,
-		(store) => store.utils.getFieldEventsListeners,
+		(store) => store.getFieldEventsListeners,
 	);
 
 	return (
@@ -134,7 +128,7 @@ type FormFields = {
 };
 
 const FormValidationSchema = {
-	username: (val: unknown) => z.string().min(1).max(4).parse(val),
+	username: (val: unknown) => z.string().min(0).max(100).parse(val),
 	counter: z.number().nonnegative(),
 	dateOfBirth: z.date(),
 	testExtraValidationItem: (fields: FormFields) => fields.counter + 10,
@@ -158,12 +152,12 @@ const Example = () => {
 						.parse(fields.testArr.map((item: { title: any }) => item.title)),
 			},
 			valuesFromFieldsToStore: {
-				counter: (value: any) => Number(value),
+				counter: Number,
 				dateOfBirth: (value: any) =>
 					!value ? null : inputDateHelpers.parseDate(value, 'date'),
 			},
 			valuesFromStoreToFields: {
-				username: (value: any) => value ?? '',
+				username: onFalsy.toEmptyString,
 				dateOfBirth: (value: any) =>
 					value ? inputDateHelpers.formatDate(value, 'date') : '',
 			},
@@ -171,24 +165,45 @@ const Example = () => {
 		},
 	);
 
-	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-	// @ts-ignore
-	if (typeof window !== 'undefined') window.formStore = formStore;
+	if (typeof window !== 'undefined') {
+		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+		// @ts-ignore
+		window.formStore = formStore;
+		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+		// @ts-ignore
+		window.formStoresArr ??= [];
+		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+		// @ts-ignore
+		window.formStoresArr.push(formStore);
+	}
 
-	const formStoreUtils = useStore(formStore, (store) => store.utils);
-	// const username = useStore(formStore, (store) => store.fields.username.value);
+	const username = useStore(formStore, (store) => store.fields.username.value);
 	const submit = useStore(formStore, (store) => store.submit);
 
 	useEffect(() => {
-		formStore.getState().utils.handleOnInputChange('username', '99');
-	}, [formStore, formStoreUtils]);
+		// debugger;
+		formStore.getState().handleInputChange('counter', 0);
+		const intervalId = setInterval(() => {
+			const newCounter = formStore.getState().fields.counter.value + 1;
+			formStore.getState().handleInputChange('counter', newCounter);
+			if (newCounter === 100) clearInterval(intervalId);
+		}, 100);
+
+		return () => {
+			clearInterval(intervalId);
+		};
+	}, [formStore]);
 
 	return (
 		<Form
 			store={formStore}
 			onSubmit={async (params: { values: any; validatedValues: any }) => {
 				console.log('Before submission');
+				console.log('values', params.values);
+				console.log('validatedValues', params.validatedValues);
+
 				await new Promise((res) => {
+					console.log('Submission is pending');
 					console.log('values', params.values);
 					console.log('validatedValues', params.validatedValues);
 					setTimeout(res, 2000);
@@ -197,17 +212,36 @@ const Example = () => {
 			}}
 			className='flex w-fit flex-col gap-2 bg-neutral-500 p-4 text-white'
 		>
-			<InputField store={formStore} name='username' />
+			<InputField store={formStore} name='username' isValueWatched />
 			<FieldErrors store={formStore} name='username' />
-			<InputField store={formStore} name='counter' type='number' />
+			<InputField
+				store={formStore}
+				name='counter'
+				type='number'
+				isValueWatched
+			/>
 			<FieldErrors store={formStore} name='counter' />
-			<InputField store={formStore} name='dateOfBirth' type='date' />
+			<InputField
+				store={formStore}
+				name='dateOfBirth'
+				type='date'
+				isValueWatched
+			/>
 			<FieldErrors store={formStore} name='dateOfBirth' />
 			<RandomListGenerator store={formStore} />
 
-			<button type='submit' className='capitalize'>
-				{submit.isActive ? 'Loading...' : 'submit'}
-			</button>
+			<div className='flex gap-4'>
+				<button type='submit' className='capitalize'>
+					{submit.isActive ? 'Loading...' : 'submit'}
+				</button>
+				<button
+					type='reset'
+					className='capitalize'
+					onClick={() => formStore.getState().resetFormStore()}
+				>
+					reset
+				</button>
+			</div>
 
 			{submit.errorMessage && <p>{submit.errorMessage}</p>}
 		</Form>
@@ -222,7 +256,7 @@ const RandomListGenerator = <
 }: {
 	store: FormStoreApi<FieldsValues, ValidationsHandlers>;
 }) => {
-	const formStoreUtils = useStore(store, (store) => store.utils);
+	const formStoreUtils = useStore(store, (store) => store);
 	const testArr = useStore(store, (store) => store.fields.testArr.value);
 
 	return (

@@ -274,7 +274,7 @@ result;
 // }: FormProps<Fields, ValidatedFields>) => {
 // 	const handlePreSubmit = useFormStore(
 // 		store,
-// 		(state) => state.utils.handlePreSubmit,
+// 		(state) => state.handlePreSubmit,
 // 	);
 
 // 	return <form onSubmit={handlePreSubmit(handleOnSubmit)} {...props} />;
@@ -295,7 +295,7 @@ result;
 // 	validationSchema: validationHandlerSchema,
 // });
 
-// t.getState().utils.handlePreSubmit((_event, { validatedValues, values }) => {
+// t.getState().handlePreSubmit((_event, { validatedValues, values }) => {
 // 	validatedValues.username;
 // 	validatedValues.age;
 // 	values;

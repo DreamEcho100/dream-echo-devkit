@@ -31,67 +31,64 @@ export const handleCreateTableStore = <TData, TQueryInput extends QueryInput>({
 		columnVisibility,
 		sorting: [],
 
-		utils: {
-			setPagination: (updaterOrValue) =>
-				set((prevData) => {
-					const pagination =
-						typeof updaterOrValue === 'function'
-							? updaterOrValue({
-									pageIndex: prevData.queryInput.offset || 0,
-									pageSize: prevData.queryInput.limit || 0,
-							  })
-							: {
-									pageIndex:
-										updaterOrValue.pageIndex || prevData.queryInput.offset,
-									pageSize:
-										updaterOrValue.pageSize || prevData.queryInput.limit,
-							  };
+		setPagination: (updaterOrValue) =>
+			set((prevData) => {
+				const pagination =
+					typeof updaterOrValue === 'function'
+						? updaterOrValue({
+								pageIndex: prevData.queryInput.offset || 0,
+								pageSize: prevData.queryInput.limit || 0,
+						  })
+						: {
+								pageIndex:
+									updaterOrValue.pageIndex || prevData.queryInput.offset,
+								pageSize: updaterOrValue.pageSize || prevData.queryInput.limit,
+						  };
 
-					return {
-						queryInput: {
-							...prevData.queryInput,
-							limit: pagination.pageSize,
-							offset: pagination.pageIndex,
-						},
-					};
-				}),
-			setQueryInput: (updaterOrValue) =>
-				set((prevData) => ({
-					queryInput:
-						typeof updaterOrValue === 'function'
-							? updaterOrValue(prevData.queryInput)
-							: updaterOrValue,
-				})),
+				return {
+					queryInput: {
+						...prevData.queryInput,
+						limit: pagination.pageSize,
+						offset: pagination.pageIndex,
+					},
+				};
+			}),
+		setQueryInput: (updaterOrValue) =>
+			set((prevData) => ({
+				queryInput:
+					typeof updaterOrValue === 'function'
+						? updaterOrValue(prevData.queryInput)
+						: updaterOrValue,
+			})),
 
-			setRowSelection: (updaterOrValue) =>
-				set((prevData) => ({
-					rowSelection:
-						typeof updaterOrValue === 'function'
-							? updaterOrValue(prevData.rowSelection)
-							: updaterOrValue,
-				})),
-			setColumnFilters: (updaterOrValue) =>
-				set((prevData) => ({
-					columnFilters:
-						typeof updaterOrValue === 'function'
-							? updaterOrValue(prevData.columnFilters)
-							: updaterOrValue,
-				})),
-			setColumnVisibility: (updaterOrValue) =>
-				set((prevData) => ({
-					columnVisibility:
-						typeof updaterOrValue === 'function'
-							? updaterOrValue(prevData.columnVisibility)
-							: updaterOrValue,
-				})),
-			setSorting: (updaterOrValue) =>
-				set((prevData) => ({
-					sorting:
-						typeof updaterOrValue === 'function'
-							? updaterOrValue(prevData.sorting)
-							: updaterOrValue,
-				})),
-		},
+		setRowSelection: (updaterOrValue) =>
+			set((prevData) => ({
+				rowSelection:
+					typeof updaterOrValue === 'function'
+						? updaterOrValue(prevData.rowSelection)
+						: updaterOrValue,
+			})),
+		setColumnFilters: (updaterOrValue) =>
+			set((prevData) => ({
+				columnFilters:
+					typeof updaterOrValue === 'function'
+						? updaterOrValue(prevData.columnFilters)
+						: updaterOrValue,
+			})),
+		setColumnVisibility: (updaterOrValue) =>
+			set((prevData) => ({
+				columnVisibility:
+					typeof updaterOrValue === 'function'
+						? updaterOrValue(prevData.columnVisibility)
+						: updaterOrValue,
+			})),
+		setSorting: (updaterOrValue) =>
+			set((prevData) => ({
+				sorting:
+					typeof updaterOrValue === 'function'
+						? updaterOrValue(prevData.sorting)
+						: updaterOrValue,
+			})),
 	}));
 
 export const useCreateTableStore = <TData, TQueryInput extends QueryInput>(

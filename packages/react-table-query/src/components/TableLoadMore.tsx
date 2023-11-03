@@ -24,7 +24,7 @@ const TableLoadMore = <
 }) => {
 	const offset = useStore(store, (state) => state.queryInput.offset || 0);
 
-	const storeUtils = useStore(store, (state) => state.utils);
+	const storeUtils = useStore(store, (state) => state);
 
 	const { isLastPageEmpty, isInBeforeLastPage } = useMemo(() => {
 		const isLastPageEmpty =

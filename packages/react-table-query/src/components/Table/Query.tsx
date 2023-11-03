@@ -109,7 +109,7 @@ const QueryTable = <TData, TQueryInput extends QueryInput, TError = unknown>({
 	infiniteQuery,
 }: DataTableProps<TData, TQueryInput, TError>) => {
 	//
-	const storeUtils = useStore(store, (store) => store.utils);
+	const storeUtils = useStore(store, (store) => store);
 	const canMultiRowSelect = useStore(store, (state) => state.canMultiRowSelect);
 	const modifiedColumns: typeof columns = useMemo(() => {
 		return [

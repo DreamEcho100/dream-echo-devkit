@@ -68,7 +68,7 @@ function Filter<TableItem extends Record<string, unknown>>({
 	);
 	const { setFilterByFormValues } = useStore(
 		store,
-		(state: TableStore<TableItem>) => state.utils,
+		(state: TableStore<TableItem>) => state,
 	);
 
 	const _filterByFormValues = isAFilter(filterByFormValues)
@@ -192,7 +192,7 @@ const StringFilter = <TableItem extends Record<string, unknown>>({
 			type='text'
 			value={value}
 			onChange={onChange}
-			className='px-2 py-1 border rounded shadow w-36'
+			className='w-36 rounded border px-2 py-1 shadow'
 			list={column.id + 'list'}
 			name={column.id}
 		/>

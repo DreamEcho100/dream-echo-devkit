@@ -1,2 +1,883 @@
-"use strict";var $=Object.defineProperty;var ee=Object.getOwnPropertyDescriptor;var te=Object.getOwnPropertyNames;var ne=Object.prototype.hasOwnProperty;var ae=(e,t)=>{for(var n in t)$(e,n,{get:t[n],enumerable:!0})},se=(e,t,n,a)=>{if(t&&typeof t=="object"||typeof t=="function")for(let r of te(t))!ne.call(e,r)&&r!==n&&$(e,r,{get:()=>t[r],enumerable:!(a=ee(t,r))||a.enumerable});return e};var le=e=>se($({},"__esModule",{value:!0}),e);var fe={};ae(fe,{createFormStoreBuilder:()=>O,dateInput:()=>R,errorFormatter:()=>j,formatDate:()=>U,fvh:()=>Q,getFirstDateOfWeek:()=>B,getWeekNumber:()=>Z,handleCreateFormStore:()=>L,inputDateHelpers:()=>k,isZodError:()=>K,isZodValidator:()=>P,onFalsy:()=>z,onNotNullableTo:()=>N,onNullable:()=>q,onTruthy:()=>J,onTruthyTo:()=>h,parseDate:()=>W,useCreateFormStore:()=>oe});module.exports=le(fe);var g=class{id;value;metadata;valueFromFieldToStore;valueFromStoreToField;constructor(t){this.id=t.id,this.value=t.value,this.metadata=t.metadata,this.valueFromFieldToStore=t.valueFromFieldToStore,this.valueFromStoreToField=t.valueFromStoreToField??(()=>this.value??"")}get storeToFieldValue(){return this.valueFromStoreToField(this.value)}};function P(e){return e instanceof Object&&"parseAsync"in e&&typeof e.parseAsync=="function"}function K(e){return e instanceof Object&&"errors"in e}function j(e){return K(e)?e.format()._errors.join(", "):e instanceof Error?e.message:"Something went wrong!"}function U(e,t){let n="";switch(t){case"date":n=e.toISOString().slice(0,10);break;case"time":n=e.toTimeString().slice(0,8);break;case"datetime-local":n=`${e.getFullYear()}-${`${e.getMonth()+1}`.padStart(2,"0")}-${`${e.getDate()}`.padStart(2,"0")}T${`${e.getHours()}`.padStart(2,"0")}:${`${e.getMinutes()}`.padStart(2,"0")}`;break;case"week":let a=e.getFullYear(),r=Z(e);n=`${a}-W${r.toString().length<2?"0"+r.toString():r.toString()}`;break;case"month":n=e.toISOString().slice(0,7);break;default:break}return n}function W(e,t){let n;switch(t){case"date":n=new Date(e);break;case"time":let[a,r,v]=e.toString().split(":");n=new Date,n.setHours(Number(a||0)),n.setMinutes(Number(r||0)),n.setSeconds(Number(v||0));break;case"datetime-local":n=new Date(e.toString().replace(" ","T"));break;case"week":let[y,s]=e.toString().split("-W"),i=Number(y),o=Number(s);n=B(i,o);break;case"month":n=new Date(`${e}-01`);break;default:n=new Date;break}return n}function Z(e){let t=new Date(e.getFullYear(),0,1),n=(e.valueOf()-t.valueOf())/(1e3*60*60*24);return Math.floor(n/7)+1}function B(e,t){let n=new Date(e,0,1),a=(8-n.getDay())%7,r=new Date(n);r.setDate(n.getDate()+a);let v=(t-1)*7,y=new Date(r);return y.setDate(r.getDate()+v),y}var k={formatDate:U,parseDate:W,getWeekNumber:Z,getFirstDateOfWeek:B};var Y=require("zustand");var D=require("react"),L=e=>(0,Y.createStore)(O(e)),oe=e=>{let t=(0,D.useId)();return(0,D.useState)(L({...e,baseId:e.baseId||t}))[0]};var R={parse:function(e){return function(t){return t?k.parseDate(t,e):null}},format:function(e){return function(t){return t?k.formatDate(t,e):null}}};function N(e){return function(t){let n=Symbol();return(t??n)!==n?e:t}}var q={toEmptyString:function(e){return e??""},toUndefined:function(e){return e??void 0},toNull:function(e){return e??null},to:function(e){return function(t){let n=Symbol();return(t??n)===n?e:t}},falsy:{toEmptyString:function(e){return N("")(e)},toUndefined:function(e){return N(void 0)(e)},toNull:function(e){return N(null)(e)},to:N}};function H(e){return function(t){return t||e}}var z={toEmptyString:H(""),toUndefined:H(void 0),toNull:H(null),to:H};function h(e){return function(t){return t&&e}}var J={toEmptyString:h(""),toUndefined:h(void 0),toNull:h(null),to:h},u={onDateInput:R,onNullable:q,onFalsy:z,onTruthy:J},Q=u,A=[1,2,3],Se={to:u.onFalsy.to("lol")(A),emptyString:u.onFalsy.toEmptyString(A),null:u.onFalsy.toNull(A),undefined:u.onFalsy.toUndefined(A)},w=0,be={to:u.onFalsy.to("lol")(w),emptyString:u.onFalsy.toEmptyString(w),null:u.onFalsy.toNull(w),undefined:u.onFalsy.toUndefined(w)},T=[1,2,3],ge={to:u.onNullable.to("lol")(T),emptyString:u.onNullable.toEmptyString(T),null:u.onNullable.toNull(T),undefined:u.onNullable.toUndefined(T)},x=null,Ne={to:u.onNullable.to("lol")(x),emptyString:u.onNullable.toEmptyString(x),null:u.onNullable.toNull(x),undefined:u.onNullable.toUndefined(x)},M=[1,2,3],he={to:u.onNullable.falsy.to("lol")(M),emptyString:u.onNullable.falsy.toEmptyString(M),null:u.onNullable.falsy.toNull(M),undefined:u.onNullable.falsy.toUndefined(M)},_=null,Ee={to:u.onNullable.to("lol")(_),emptyString:u.onNullable.toEmptyString(_),null:u.onNullable.toNull(_),undefined:u.onNullable.toUndefined(_)};function ie(e,t){if(!e.initialValues||typeof e.initialValues!="object")throw new Error("");let n={baseId:t,formId:`${t}-form`,fieldsNames:{},fieldsNamesMap:{},validatedFieldsNames:[],validatedFieldsNamesMap:{},manualValidatedFields:[],manualValidatedFieldsMap:[],referencedValidatedFields:[],referencedValidatedFieldsMap:[]};n.fieldsNames=Object.keys(e.initialValues);for(let a of n.fieldsNames)n.fieldsNamesMap[a]=!0;for(let a in e.validationsHandlers){if(n.validatedFieldsNames.push(a),n.validatedFieldsNamesMap[a]=!0,a in n.fieldsNamesMap){n.referencedValidatedFields.push(a),n.referencedValidatedFieldsMap[a]=!0;continue}n.manualValidatedFields.push(a),n.manualValidatedFieldsMap[a]=!0}return n}function re(e,t){let n={submit:!0,blur:!0},a=!1,r,v={};for(let y of t.validatedFieldsNames){let s=e.validationsHandlers?.[y];if(v[y]={handler:s?P(s)?i=>s.parse(i):s:void 0,currentDirtyEventsCounter:0,failedAttempts:0,passedAttempts:0,events:{blur:{failedAttempts:0,passedAttempts:0,isActive:e.validationEvents?.blur??!0,isDirty:!1,error:null},change:{failedAttempts:0,passedAttempts:0,isActive:e.validationEvents?.change??!1,isDirty:!1,error:null},submit:{failedAttempts:0,passedAttempts:0,isActive:e.validationEvents?.submit??!1,isDirty:!1,error:null}},isDirty:!1,metadata:{name:y}},e.validationEvents&&(a=!0,n={...n,...e.validationEvents}),a)for(r in n)v[y].events[r].isActive=!!typeof n[r]}return v}function de(e,t,n){let a={};for(let r of n.fieldsNames)a[r]=new g({value:e.initialValues[r],valueFromFieldToStore:e.valuesFromFieldsToStore?.[r]?e.valuesFromFieldsToStore[r]:void 0,valueFromStoreToField:e.valuesFromStoreToFields?.[r]?e.valuesFromStoreToFields[r]:void 0,id:`${t}field-${String(r)}`,metadata:{name:r,initialValue:e.initialValues[r]}});return a}function E(e){return function(t){if(!t.validations[e.name].events[e.validationEvent].isActive)return t;let n=t.currentDirtyFieldsCounter,a={...t.validations[e.name]};return e.message?(a.failedAttempts++,a.events[e.validationEvent].failedAttempts++,a.isDirty||(a.currentDirtyEventsCounter++,a.currentDirtyEventsCounter>0&&n++),a.events[e.validationEvent].error={message:e.message},a.error={message:e.message},a.events[e.validationEvent].isDirty=!0,a.isDirty=!0):(a.passedAttempts++,a.events[e.validationEvent].passedAttempts++,a.isDirty&&(a.currentDirtyEventsCounter--,a.currentDirtyEventsCounter===0&&n--),a.events[e.validationEvent].error=null,a.error=null,a.events[e.validationEvent].isDirty=!1,a.isDirty=!1),t.currentDirtyFieldsCounter=n,t.isDirty=n>0,t.validations={...t.validations,[e.name]:a},t}}function X(e,t){return function(n){let a=n.fields[e];return a.value=typeof t=="function"?t(a.value):t,{...n,fields:{...n.fields,[e]:a}}}}var ue={fields:!0,validations:!0,submit:!1,focus:!0};function O(e){let t=e.baseId?`${e.baseId}-`:"",n=ie(e,t),a=de(e,t,n),r=re(e,n);return(v,y)=>({baseId:t,metadata:n,validations:r,fields:a,id:`${t}form`,isDirty:!1,submit:{counter:0,passedAttempts:0,failedAttempts:0,errorMessage:null,isActive:!1},focus:{isActive:!1,field:null},currentDirtyFieldsCounter:0,utils:{getFieldValues(){let s=y(),i={},o;for(o in s.fields)i[o]=s.fields[o].value;return i},setSubmitState(s){v(function(i){return{submit:{...i.submit,...typeof s=="function"?s(i.submit):s}}})},setFocusState(s,i,o){v(function(l){let d=l;if(!o&&d.validations[i].events.blur.isActive){try{d.validations[i].handler(i&&s!==i?d.utils.getFieldValues():d.fields[s].value,"blur"),d=E({name:i,message:null,validationEvent:"blur"})(d)}catch(V){let p=d.utils.errorFormatter(V,"blur");d=E({name:i,message:p,validationEvent:"blur"})(d)}if(d.focus.isActive&&d.focus.field.name!==s)return d}return{...d,focus:o?{isActive:!0,field:{name:s,id:d.fields[s].id}}:{isActive:!1,field:null}}})},resetFormStore:function(s=ue){return v(function(i){let o=i.fields,l=i.validations,d=i.isDirty,V=i.submit,p=i.focus;if(s.fields){let m=typeof window>"u"?S=>{let f=o[S];f.value=f.metadata.initialValue}:S=>{let f=o[S],b=document.getElementById(f.id);b&&(b.value=f.metadata.initialValue??""),f.value=f.metadata.initialValue},c;for(c in o)m(c)}if(s.validations){for(let m in l){l[m].failedAttempts=0,l[m].passedAttempts=0,l[m].isDirty=!1,l[m].error=null;let c;for(c in l[m].events)l[m].events[c].failedAttempts=0,l[m].events[c].passedAttempts=0,l[m].events[c].isDirty=!1,l[m].events[c].error=null}d=!1}return s.submit&&(V={counter:0,passedAttempts:0,failedAttempts:0,errorMessage:null,isActive:!1}),s.focus&&(p={isActive:!1,field:null}),{fields:o,validations:l,isDirty:d,submit:V,focus:p}})},setFieldValue(s,i){return v(X(s,i))},setFieldError(s){v(E(s))},errorFormatter:e.errorFormatter??j,handleOnInputChange(s,i,o){let l=y(),d=l.fields[s],V=typeof i=="function"?i(d.value):i,p=d.valueFromFieldToStore?d.valueFromFieldToStore(V):V,m=o||(l.metadata.referencedValidatedFieldsMap[s]?s:void 0),c=X,S=E;if(m&&l.validations[m].events.change.isActive)try{l=c(s,l.validations[m].handler(o&&o!==s?l.utils.getFieldValues():p,"change"))(l),l=S({name:m,message:null,validationEvent:"change"})(l)}catch(f){l=S({name:m,message:l.utils.errorFormatter(f,"change"),validationEvent:"change"})(l),l=c(s,p)(l)}else l=c(s,p)(l);v(l)},getFieldEventsListeners(s,i){let o=y(),l=i??s;return{onChange:d=>{o.utils.handleOnInputChange(s,d.target.value)},onFocus:()=>{o.utils.setFocusState(s,l,!0)},onBlur:()=>{o.utils.setFocusState(s,l,!1)}}},handleSubmit(s){return async function(i){i.preventDefault();let o=y();o.utils.setSubmitState({isActive:!0});let l=o.metadata,d=o.fields,V=o.validations,p={},m={},c={},S=!1,f;for(f in d){p[f]=d[f].value;try{let F=f in l.referencedValidatedFieldsMap&&V[f].handler;if(typeof F!="function"||!V[f].events.submit.isActive)continue;m[f]=F(d[f].value,"submit"),c[f]={name:f,message:null,validationEvent:"submit"}}catch(F){c[f]={name:f,message:o.utils.errorFormatter(F,"submit"),validationEvent:"submit"}}}let b;for(b of l.manualValidatedFields)try{let F=o.validations[b].handler;if(typeof F!="function")continue;m[b]=F(p,"submit"),c[b]={name:b,message:null,validationEvent:"submit"}}catch(F){c[b]={name:b,message:o.utils.errorFormatter(F,"submit"),validationEvent:"submit"}}let C=y(),I;for(I in c){let F=c[I];C=E(c[I])(C),typeof F.message=="string"&&(S=!0)}if(S)v(C),o.utils.setSubmitState(F=>({isActive:!1,counter:F.counter+1,failedAttempts:F.counter+1,errorMessage:null}));else try{await s({event:i,values:p,validatedValues:m,hasError:S,errors:c}),o.utils.setSubmitState(F=>({isActive:!1,counter:F.counter+1,passedAttempts:F.counter+1,errorMessage:null}))}catch(F){o.utils.setSubmitState(G=>({isActive:!1,counter:G.counter+1,failedAttempts:G.counter+1,errorMessage:o.utils.errorFormatter(F,"submit")}))}}}}})}0&&(module.exports={createFormStoreBuilder,dateInput,errorFormatter,formatDate,fvh,getFirstDateOfWeek,getWeekNumber,handleCreateFormStore,inputDateHelpers,isZodError,isZodValidator,onFalsy,onNotNullableTo,onNullable,onTruthy,onTruthyTo,parseDate,useCreateFormStore});
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+// src/index.ts
+var src_exports = {};
+__export(src_exports, {
+  createFormStoreBuilder: () => createFormStoreBuilder,
+  errorFormatter: () => errorFormatter,
+  fvh: () => fieldValue_default,
+  handleCreateFormStore: () => handleCreateFormStore,
+  isZodError: () => isZodError,
+  isZodValidator: () => isZodValidator,
+  useCreateFormStore: () => useCreateFormStore
+});
+module.exports = __toCommonJS(src_exports);
+
+// src/utils/FormStoreField.js
+var FormStoreField = class {
+  /** @type {string} */
+  id;
+  /** @type {FieldsValues[Key]} */
+  value;
+  /** @type {FieldMetadata<Key, FieldsValues[Key]>} */
+  metadata;
+  /** @type {((fieldValue: unknown) => Exclude<FieldsValues[Key], (value: FieldsValues[Key]) => FieldsValues[Key]>) | undefined} */
+  valueFromFieldToStore;
+  /** @type {(storeValue: FieldsValues[Key]) => string | ReadonlyArray<string> | number | undefined} */
+  valueFromStoreToField;
+  /**
+   * @param {{
+   *   id: string;
+   *   value: FieldsValues[Key];
+   *   metadata: FieldMetadata<Key, FieldsValues[Key]>;
+   *   valueFromFieldToStore?: (fieldValue: unknown) => Exclude<FieldsValues[Key], (value: FieldsValues[Key]) => FieldsValues[Key]>;
+   *   valueFromStoreToField?: (StoreValue: FieldsValues[Key]) => string | ReadonlyArray<string> | number | undefined;
+   * }} params
+   */
+  constructor(params) {
+    this.id = params.id;
+    this.value = params.value;
+    this.metadata = params.metadata;
+    this.valueFromFieldToStore = params.valueFromFieldToStore;
+    this.valueFromStoreToField = params.valueFromStoreToField ?? /**
+     * @param {FieldsValues[Key]} StoreValue
+     * @returns string | ReadonlyArray<string> | number | undefined
+     */
+    ((value) => value ?? "");
+  }
+  /**
+   * @description Gets the field value converted _(using the passed `valueFromStoreToField` if not it will just return the original value)_ from the store value.
+   *
+   * @type {string | ReadonlyArray<string> | number | undefined}
+   * */
+  get storeToFieldValue() {
+    return this.valueFromStoreToField(this.value);
+  }
+};
+
+// src/utils/zod.ts
+function isZodValidator(validator) {
+  return !!(validator instanceof Object && "parseAsync" in validator && typeof validator.parseAsync === "function");
+}
+function isZodError(error) {
+  return error instanceof Object && "errors" in error;
+}
+function errorFormatter(error) {
+  if (isZodError(error))
+    return error.format()._errors.join(", ");
+  if (error instanceof Error)
+    return error.message;
+  return "Something went wrong!";
+}
+
+// src/utils/zustand.ts
+var import_zustand = require("zustand");
+var import_react = require("react");
+var handleCreateFormStore = (params) => (0, import_zustand.createStore)(createFormStoreBuilder(params));
+var useCreateFormStore = (props) => {
+  const baseId = (0, import_react.useId)();
+  const formStore = (0, import_react.useState)(
+    handleCreateFormStore({ ...props, baseId: props.baseId || baseId })
+  );
+  return formStore[0];
+};
+
+// src/utils/helpers/inputDate.js
+function formatDate(date, type) {
+  let formattedDate = "";
+  switch (type) {
+    case "date":
+      formattedDate = date.toISOString().slice(0, 10);
+      break;
+    case "time":
+      formattedDate = date.toTimeString().slice(0, 8);
+      break;
+    case "datetime-local":
+      formattedDate = `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, "0")}-${`${date.getDate()}`.padStart(
+        2,
+        "0"
+      )}T${`${date.getHours()}`.padStart(
+        2,
+        "0"
+      )}:${`${date.getMinutes()}`.padStart(2, "0")}`;
+      break;
+    case "week":
+      const year = date.getFullYear();
+      const weekNumber = getWeekNumber(date);
+      formattedDate = `${year}-W${weekNumber.toString().length < 2 ? "0" + weekNumber.toString() : weekNumber.toString()}`;
+      break;
+    case "month":
+      formattedDate = date.toISOString().slice(0, 7);
+      break;
+    default:
+      break;
+  }
+  return formattedDate;
+}
+function parseDate(dateString, type) {
+  let parsedDate;
+  switch (type) {
+    case "date":
+      parsedDate = new Date(dateString);
+      break;
+    case "time":
+      const [hours, minutes, seconds] = dateString.toString().split(":");
+      parsedDate = /* @__PURE__ */ new Date();
+      parsedDate.setHours(Number(hours || 0));
+      parsedDate.setMinutes(Number(minutes || 0));
+      parsedDate.setSeconds(Number(seconds || 0));
+      break;
+    case "datetime-local":
+      parsedDate = new Date(dateString.toString().replace(" ", "T"));
+      break;
+    case "week":
+      const [yearString, weekString] = dateString.toString().split("-W");
+      const year = Number(yearString);
+      const week = Number(weekString);
+      parsedDate = getFirstDateOfWeek(year, week);
+      break;
+    case "month":
+      parsedDate = /* @__PURE__ */ new Date(`${dateString}-01`);
+      break;
+    default:
+      parsedDate = /* @__PURE__ */ new Date();
+      break;
+  }
+  return parsedDate;
+}
+function getWeekNumber(date) {
+  const yearStart = new Date(date.getFullYear(), 0, 1);
+  const daysSinceYearStart = (date.valueOf() - yearStart.valueOf()) / (1e3 * 60 * 60 * 24);
+  const weekNumber = Math.floor(daysSinceYearStart / 7) + 1;
+  return weekNumber;
+}
+function getFirstDateOfWeek(year, week) {
+  const januaryFirst = new Date(year, 0, 1);
+  const daysToFirstMonday = (8 - januaryFirst.getDay()) % 7;
+  const firstMonday = new Date(januaryFirst);
+  firstMonday.setDate(januaryFirst.getDate() + daysToFirstMonday);
+  const daysToTargetMonday = (week - 1) * 7;
+  const targetMonday = new Date(firstMonday);
+  targetMonday.setDate(firstMonday.getDate() + daysToTargetMonday);
+  return targetMonday;
+}
+var inputDateHelpers = {
+  /**
+   * Formats a date object to the desired string format based on the type.
+   * @param {Date} date - The Date object to be formatted.
+   * @param {string} type - The format type ('date', 'time', 'datetime-local', 'week', or 'month').
+   * @returns {string} A formatted string based on the specified format.
+   */
+  formatDate,
+  /**
+   * Parses a string in the specified format and returns a Date object.
+   * @param {string} dateString - The string to be parsed.
+   * @param {string} type - The format type ('date', 'time', 'datetime-local', 'week', or 'month').
+   * @returns {Date} - The parsed Date object.
+   */
+  parseDate,
+  /**
+   * Returns the week number of the year for a given date.
+   * @param {Date} date - The date object for which to calculate the week number.
+   * @returns {number} - The week number.
+   */
+  getWeekNumber,
+  /**
+   * Returns the first date (Monday) of a given week in a year.
+   * @param {number} year - The year of the target week.
+   * @param {number} week - The week number (1-53) of the desired week.
+   * @returns {Date} - The first date (Monday) of the specified week.
+   */
+  getFirstDateOfWeek
+};
+
+// src/utils/helpers/fieldValue.js
+var dateInput = {
+  /**
+   * @param {import("../..").InputDateTypes} type
+   * @description used to handle parsing ("date", "time", "datetime-local", "week", "month") and the cases of falsy values results to `null` like when clearing the input
+   */
+  parse: function(type) {
+    return function(dateString) {
+      return !dateString ? null : inputDateHelpers.parseDate(dateString, type);
+    };
+  },
+  /**
+   * @param {import("../..").InputDateTypes} type
+   * @description used to handle formatting ("date", "time", "datetime-local", "week", "month") and the cases of falsy values results to '' like when clearing the input
+   */
+  format: function(type) {
+    return function(dateString) {
+      return !dateString ? null : inputDateHelpers.formatDate(dateString, type);
+    };
+  }
+};
+function onNotNullableTo(defaultValue) {
+  return function(value) {
+    const symbol = Symbol();
+    const isNullable = value ?? symbol;
+    if (isNullable !== symbol) {
+      return (
+        /** @type {OnNullableDefaultReturn<Value, DefaultValue>} */
+        defaultValue
+      );
+    }
+    return (
+      /** @type {OnNullableDefaultReturn<Value, DefaultValue>} */
+      value
+    );
+  };
+}
+var onNullable = {
+  /**
+   * @template Value
+   * @param {Value} value
+   */
+  toEmptyString: function(value) {
+    return (
+      /** @type {OnNullableDefaultReturn<Value, "">} */
+      value ?? ""
+    );
+  },
+  /**
+   * @template Value
+   * @param {Value} value
+   */
+  toUndefined: function(value) {
+    return (
+      /** @type {OnNullableDefaultReturn<Value, undefined>} */
+      value ?? void 0
+    );
+  },
+  /**
+   * @template Value
+   * @param {Value} value
+   */
+  toNull: function(value) {
+    return (
+      /** @type {OnNullableDefaultReturn<Value, null>} */
+      value ?? null
+    );
+  },
+  /**
+   * @template DefaultValue
+   * @param {DefaultValue} defaultValue
+   */
+  to: function(defaultValue) {
+    return function(value) {
+      const symbol = Symbol();
+      const isNullable = value ?? symbol;
+      if (isNullable === symbol) {
+        return (
+          /** @type {OnNullableDefaultReturn<Value, DefaultValue>} */
+          defaultValue
+        );
+      }
+      return (
+        /** @type {OnNullableDefaultReturn<Value, DefaultValue>} */
+        value
+      );
+    };
+  },
+  falsy: {
+    /**
+     * @template Value
+     * @param {Value} value
+     */
+    toEmptyString: function(value) {
+      return onNotNullableTo(
+        /** @type {""} */
+        ""
+      )(value);
+    },
+    /**
+     * @template Value
+     * @param {Value} value
+     */
+    toUndefined: function(value) {
+      return onNotNullableTo(void 0)(value);
+    },
+    /**
+     * @template Value
+     * @param {Value} value
+     */
+    toNull: function(value) {
+      return onNotNullableTo(null)(value);
+    },
+    /**
+     * @template DefaultValue
+     * @param {DefaultValue} defaultValue
+     */
+    to: onNotNullableTo
+  }
+};
+function onFalsyTo(defaultValue) {
+  return function(value) {
+    return (
+      /** @type {OnFalsyDefaultReturn<Value, DefaultValue>} */
+      !value ? defaultValue : value
+    );
+  };
+}
+var onFalsy = {
+  toEmptyString: onFalsyTo(
+    /** @type {""} */
+    ""
+  ),
+  toUndefined: onFalsyTo(void 0),
+  toNull: onFalsyTo(null),
+  to: onFalsyTo
+};
+function onTruthyTo(defaultValue) {
+  return function(value) {
+    return (
+      /** @type {OnTruthyDefaultReturn<Value, DefaultValue>} */
+      !value ? value : defaultValue
+    );
+  };
+}
+var onTruthy = {
+  toEmptyString: onTruthyTo(
+    /** @type {""} */
+    ""
+  ),
+  toUndefined: onTruthyTo(void 0),
+  toNull: onTruthyTo(null),
+  to: onTruthyTo
+};
+var formFieldValueHelpers = {
+  onDateInput: dateInput,
+  onNullable,
+  onFalsy,
+  onTruthy
+};
+var fieldValue_default = formFieldValueHelpers;
+
+// src/utils/index.ts
+function createFormStoreMetadata(params, baseId) {
+  if (!params.initialValues || typeof params.initialValues !== "object")
+    throw new Error("");
+  const metadata = {
+    baseId,
+    formId: `${baseId}-form`,
+    fieldsNames: {},
+    fieldsNamesMap: {},
+    //
+    validatedFieldsNames: [],
+    validatedFieldsNamesMap: {},
+    // //
+    manualValidatedFields: [],
+    manualValidatedFieldsMap: [],
+    // //
+    referencedValidatedFields: [],
+    referencedValidatedFieldsMap: []
+  };
+  metadata.fieldsNames = Object.keys(
+    params.initialValues
+  );
+  for (const fieldName of metadata.fieldsNames) {
+    metadata.fieldsNamesMap[fieldName] = true;
+  }
+  for (const key in params.validationsHandlers) {
+    metadata.validatedFieldsNames.push(key);
+    metadata.validatedFieldsNamesMap[key] = true;
+    if (key in metadata.fieldsNamesMap) {
+      metadata.referencedValidatedFields.push(
+        key
+      );
+      metadata.referencedValidatedFieldsMap[key] = true;
+      continue;
+    }
+    metadata.manualValidatedFields.push(
+      key
+    );
+    metadata.manualValidatedFieldsMap[
+      key
+      // as unknown as (typeof metadata)['manualValidatedFieldsMap'][number]
+    ] = true;
+  }
+  return metadata;
+}
+function createFormStoreValidations(params, metadata) {
+  let fieldValidationEvents = {
+    submit: true,
+    blur: true
+  };
+  let isFieldHavingPassedValidations = false;
+  let fieldValidationEventKey;
+  const validations = {};
+  for (const fieldName of metadata.validatedFieldsNames) {
+    const fieldValidationsHandler = params.validationsHandlers?.[fieldName];
+    validations[fieldName] = {
+      handler: !fieldValidationsHandler ? void 0 : isZodValidator(fieldValidationsHandler) ? (value) => fieldValidationsHandler.parse(value) : fieldValidationsHandler,
+      currentDirtyEventsCounter: 0,
+      failedAttempts: 0,
+      passedAttempts: 0,
+      events: {
+        // mount: {  },
+        blur: {
+          failedAttempts: 0,
+          passedAttempts: 0,
+          isActive: params.validationEvents?.blur ?? true,
+          isDirty: false,
+          error: null
+        },
+        change: {
+          failedAttempts: 0,
+          passedAttempts: 0,
+          isActive: params.validationEvents?.change ?? false,
+          isDirty: false,
+          error: null
+        },
+        submit: {
+          failedAttempts: 0,
+          passedAttempts: 0,
+          isActive: params.validationEvents?.submit ?? true,
+          isDirty: false,
+          error: null
+        }
+      },
+      isDirty: false,
+      metadata: { name: fieldName }
+    };
+    if (params.validationEvents) {
+      isFieldHavingPassedValidations = true;
+      fieldValidationEvents = {
+        ...fieldValidationEvents,
+        ...params.validationEvents
+      };
+    }
+    if (isFieldHavingPassedValidations) {
+      for (fieldValidationEventKey in fieldValidationEvents) {
+        validations[fieldName].events[fieldValidationEventKey].isActive = !!typeof fieldValidationEvents[fieldValidationEventKey];
+      }
+    }
+  }
+  return validations;
+}
+function createFormStoreFields(params, baseId, metadata) {
+  const fields = {};
+  for (const fieldName of metadata.fieldsNames) {
+    fields[fieldName] = new FormStoreField({
+      value: params.initialValues[fieldName],
+      valueFromFieldToStore: params.valuesFromFieldsToStore?.[fieldName] ? params.valuesFromFieldsToStore[fieldName] : void 0,
+      valueFromStoreToField: params.valuesFromStoreToFields?.[fieldName] ? params.valuesFromStoreToFields[fieldName] : void 0,
+      id: `${baseId}field-${String(fieldName)}`,
+      metadata: {
+        name: fieldName,
+        initialValue: params.initialValues[fieldName]
+      }
+    });
+  }
+  return fields;
+}
+function _setFieldError(params) {
+  return function(currentState) {
+    if (!currentState.validations[params.name].events[params.validationEvent].isActive)
+      return currentState;
+    let currentDirtyFieldsCounter = currentState.currentDirtyFieldsCounter;
+    const validation = {
+      ...currentState.validations[params.name]
+    };
+    if (params.message) {
+      validation.failedAttempts++;
+      validation.events[params.validationEvent].failedAttempts++;
+      if (!validation.isDirty) {
+        validation.currentDirtyEventsCounter++;
+        if (validation.currentDirtyEventsCounter > 0) {
+          currentDirtyFieldsCounter++;
+        }
+      }
+      validation.events[params.validationEvent].error = {
+        message: params.message
+      };
+      validation.error = { message: params.message };
+      validation.events[params.validationEvent].isDirty = true;
+      validation.isDirty = true;
+    } else {
+      validation.passedAttempts++;
+      validation.events[params.validationEvent].passedAttempts++;
+      if (validation.isDirty) {
+        validation.currentDirtyEventsCounter--;
+        if (validation.currentDirtyEventsCounter === 0) {
+          currentDirtyFieldsCounter--;
+        }
+      }
+      validation.events[params.validationEvent].error = null;
+      validation.error = null;
+      validation.events[params.validationEvent].isDirty = false;
+      validation.isDirty = false;
+    }
+    currentState.currentDirtyFieldsCounter = currentDirtyFieldsCounter;
+    currentState.isDirty = currentDirtyFieldsCounter > 0;
+    currentState.validations = {
+      ...currentState.validations,
+      [params.name]: validation
+    };
+    return currentState;
+  };
+}
+function _setFieldValue(name, valueOrUpdater) {
+  return function(currentState) {
+    const field = currentState.fields[name];
+    field.value = typeof valueOrUpdater === "function" ? valueOrUpdater(field.value) : valueOrUpdater;
+    return {
+      ...currentState,
+      fields: {
+        ...currentState.fields,
+        [name]: field
+      }
+    };
+  };
+}
+var itemsToResetDefaults = {
+  fields: true,
+  validations: true,
+  submit: false,
+  focus: true
+};
+function createFormStoreBuilder(params) {
+  const baseId = params.baseId ? `${params.baseId}-` : "";
+  const metadata = createFormStoreMetadata(params, baseId);
+  const fields = createFormStoreFields(params, baseId, metadata);
+  const validations = createFormStoreValidations(params, metadata);
+  return (set, get) => {
+    return {
+      baseId,
+      metadata,
+      validations,
+      fields,
+      id: `${baseId}form`,
+      isDirty: false,
+      submit: {
+        counter: 0,
+        passedAttempts: 0,
+        failedAttempts: 0,
+        errorMessage: null,
+        isActive: false
+      },
+      focus: { isActive: false, field: null },
+      currentDirtyFieldsCounter: 0,
+      getFieldValues() {
+        const currentState = get();
+        const fieldsValues = {};
+        let fieldName;
+        for (fieldName in currentState.fields) {
+          fieldsValues[fieldName] = currentState.fields[fieldName].value;
+        }
+        return fieldsValues;
+      },
+      setSubmitState(valueOrUpdater) {
+        set(function(currentState) {
+          return {
+            // ...currentState,
+            submit: {
+              ...currentState.submit,
+              ...typeof valueOrUpdater === "function" ? valueOrUpdater(currentState.submit) : valueOrUpdater
+            }
+          };
+        });
+      },
+      setFocusState(fieldName, validationName, isActive) {
+        set(function(currentState) {
+          let _currentState = currentState;
+          if (!isActive && _currentState.validations[validationName].events.blur.isActive) {
+            try {
+              _currentState.validations[validationName].handler(
+                validationName && fieldName !== validationName ? _currentState.getFieldValues() : _currentState.fields[fieldName].value,
+                "blur"
+              );
+              _currentState = _setFieldError(
+                {
+                  name: validationName,
+                  message: null,
+                  validationEvent: "blur"
+                }
+              )(_currentState);
+            } catch (error) {
+              const message = _currentState.errorFormatter(error, "blur");
+              _currentState = _setFieldError(
+                {
+                  name: validationName,
+                  message,
+                  validationEvent: "blur"
+                }
+              )(_currentState);
+            }
+            if (_currentState.focus.isActive && _currentState.focus.field.name !== fieldName)
+              return _currentState;
+          }
+          return {
+            ..._currentState,
+            focus: isActive ? {
+              isActive: true,
+              field: {
+                name: fieldName,
+                id: _currentState.fields[fieldName].id
+              }
+            } : { isActive: false, field: null }
+          };
+        });
+      },
+      resetFormStore: function(itemsToReset = itemsToResetDefaults) {
+        return set(function(currentState) {
+          const fields2 = currentState.fields;
+          const validations2 = currentState.validations;
+          let isDirty = currentState.isDirty;
+          let submit = currentState.submit;
+          let focus = currentState.focus;
+          if (itemsToReset.fields) {
+            let fieldName;
+            for (fieldName in fields2) {
+              fields2[fieldName].value = fields2[fieldName].metadata.initialValue;
+            }
+          }
+          if (itemsToReset.validations) {
+            for (const key in validations2) {
+              validations2[key].failedAttempts = 0;
+              validations2[key].passedAttempts = 0;
+              validations2[key].isDirty = false;
+              validations2[key].error = null;
+              let eventKey;
+              for (eventKey in validations2[key].events) {
+                validations2[key].events[eventKey].failedAttempts = 0;
+                validations2[key].events[eventKey].passedAttempts = 0;
+                validations2[key].events[eventKey].isDirty = false;
+                validations2[key].events[eventKey].error = null;
+              }
+            }
+            isDirty = false;
+          }
+          if (itemsToReset.submit) {
+            submit = {
+              counter: 0,
+              passedAttempts: 0,
+              failedAttempts: 0,
+              errorMessage: null,
+              isActive: false
+            };
+          }
+          if (itemsToReset.focus) {
+            focus = {
+              isActive: false,
+              field: null
+            };
+          }
+          return {
+            // ...currentState,
+            fields: fields2,
+            validations: validations2,
+            isDirty,
+            submit,
+            focus
+          };
+        });
+      },
+      setFieldValue(name, value) {
+        return set(_setFieldValue(name, value));
+      },
+      setFieldError(params2) {
+        set(_setFieldError(params2));
+      },
+      errorFormatter: params.errorFormatter ?? errorFormatter,
+      handleInputChange(name, valueOrUpdater, validationName) {
+        let currentState = get();
+        const field = currentState.fields[name];
+        const _value = typeof valueOrUpdater === "function" ? valueOrUpdater(field.value) : valueOrUpdater;
+        const value = field.valueFromFieldToStore ? field.valueFromFieldToStore(_value) : _value;
+        const _validationName = validationName ? validationName : (
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          currentState.metadata.referencedValidatedFieldsMap[name] ? name : void 0
+        );
+        const setFieldValue = _setFieldValue;
+        const setFieldError = _setFieldError;
+        if (_validationName && currentState.validations[_validationName].events["change"].isActive) {
+          try {
+            currentState = setFieldValue(
+              name,
+              currentState.validations[_validationName].handler(
+                validationName && // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                validationName !== name ? currentState.getFieldValues() : value,
+                "change"
+              )
+            )(currentState);
+            currentState = setFieldError({
+              name: _validationName,
+              message: null,
+              validationEvent: "change"
+            })(currentState);
+          } catch (error) {
+            currentState = setFieldError({
+              name: _validationName,
+              message: currentState.errorFormatter(error, "change"),
+              validationEvent: "change"
+            })(currentState);
+            currentState = setFieldValue(name, value)(currentState);
+          }
+        } else {
+          currentState = setFieldValue(name, value)(currentState);
+        }
+        set(currentState);
+      },
+      getFieldEventsListeners(name, validationName) {
+        const currentState = get();
+        const _validationName = validationName ?? name;
+        return {
+          onChange: (event) => {
+            currentState.handleInputChange(name, event.target.value);
+          },
+          onFocus: () => {
+            currentState.setFocusState(
+              name,
+              _validationName,
+              true
+            );
+          },
+          onBlur: () => {
+            currentState.setFocusState(
+              name,
+              _validationName,
+              false
+            );
+          }
+        };
+      },
+      handleSubmit(cb) {
+        return async function(event) {
+          event.preventDefault();
+          const currentState = get();
+          currentState.setSubmitState({ isActive: true });
+          const metadata2 = currentState.metadata;
+          const fields2 = currentState.fields;
+          const validations2 = currentState.validations;
+          const values = {};
+          const validatedValues = {};
+          const errors = {};
+          let hasError = false;
+          let fieldName;
+          for (fieldName in fields2) {
+            values[fieldName] = fields2[fieldName].value;
+            try {
+              const validationSchema = fieldName in metadata2.referencedValidatedFieldsMap && validations2[fieldName].handler;
+              if (typeof validationSchema !== "function" || !validations2[fieldName].events.submit.isActive) {
+                continue;
+              }
+              validatedValues[fieldName] = validationSchema(
+                fields2[fieldName].value,
+                "submit"
+              );
+              errors[fieldName] = {
+                name: fieldName,
+                message: null,
+                validationEvent: "submit"
+              };
+            } catch (error) {
+              errors[fieldName] = {
+                name: fieldName,
+                message: currentState.errorFormatter(error, "submit"),
+                validationEvent: "submit"
+              };
+            }
+          }
+          let manualFieldName;
+          for (manualFieldName of metadata2.manualValidatedFields) {
+            try {
+              const validationSchema = currentState.validations[manualFieldName].handler;
+              if (typeof validationSchema !== "function") {
+                continue;
+              }
+              validatedValues[manualFieldName] = validationSchema(
+                values,
+                "submit"
+              );
+              errors[manualFieldName] = {
+                name: manualFieldName,
+                message: null,
+                validationEvent: "submit"
+              };
+            } catch (error) {
+              errors[manualFieldName] = {
+                name: manualFieldName,
+                message: currentState.errorFormatter(error, "submit"),
+                validationEvent: "submit"
+              };
+            }
+          }
+          let _currentState = get();
+          let errorKey;
+          for (errorKey in errors) {
+            const errorObj = errors[errorKey];
+            _currentState = _setFieldError(
+              errors[errorKey]
+            )(_currentState);
+            if (typeof errorObj.message !== "string")
+              continue;
+            hasError = true;
+          }
+          if (!hasError) {
+            try {
+              await cb({
+                event,
+                values,
+                validatedValues,
+                hasError,
+                errors
+              });
+              currentState.setSubmitState((prev) => ({
+                isActive: false,
+                counter: prev.counter + 1,
+                passedAttempts: prev.counter + 1,
+                errorMessage: null
+              }));
+            } catch (error) {
+              currentState.setSubmitState((prev) => ({
+                isActive: false,
+                counter: prev.counter + 1,
+                failedAttempts: prev.counter + 1,
+                errorMessage: currentState.errorFormatter(error, "submit")
+              }));
+            }
+          } else {
+            set(_currentState);
+            currentState.setSubmitState((prev) => ({
+              isActive: false,
+              counter: prev.counter + 1,
+              failedAttempts: prev.counter + 1,
+              errorMessage: null
+            }));
+          }
+        };
+      }
+    };
+  };
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  createFormStoreBuilder,
+  errorFormatter,
+  fvh,
+  handleCreateFormStore,
+  isZodError,
+  isZodValidator,
+  useCreateFormStore
+});
 //# sourceMappingURL=index.js.map

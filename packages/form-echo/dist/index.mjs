@@ -1,2 +1,583 @@
-var g=class{id;value;metadata;valueFromFieldToStore;valueFromStoreToField;constructor(n){this.id=n.id,this.value=n.value,this.metadata=n.metadata,this.valueFromFieldToStore=n.valueFromFieldToStore,this.valueFromStoreToField=n.valueFromStoreToField??(()=>this.value??"")}get storeToFieldValue(){return this.valueFromStoreToField(this.value)}};function $(e){return e instanceof Object&&"parseAsync"in e&&typeof e.parseAsync=="function"}function G(e){return e instanceof Object&&"errors"in e}function P(e){return G(e)?e.format()._errors.join(", "):e instanceof Error?e.message:"Something went wrong!"}function K(e,n){let t="";switch(n){case"date":t=e.toISOString().slice(0,10);break;case"time":t=e.toTimeString().slice(0,8);break;case"datetime-local":t=`${e.getFullYear()}-${`${e.getMonth()+1}`.padStart(2,"0")}-${`${e.getDate()}`.padStart(2,"0")}T${`${e.getHours()}`.padStart(2,"0")}:${`${e.getMinutes()}`.padStart(2,"0")}`;break;case"week":let a=e.getFullYear(),d=j(e);t=`${a}-W${d.toString().length<2?"0"+d.toString():d.toString()}`;break;case"month":t=e.toISOString().slice(0,7);break;default:break}return t}function U(e,n){let t;switch(n){case"date":t=new Date(e);break;case"time":let[a,d,v]=e.toString().split(":");t=new Date,t.setHours(Number(a||0)),t.setMinutes(Number(d||0)),t.setSeconds(Number(v||0));break;case"datetime-local":t=new Date(e.toString().replace(" ","T"));break;case"week":let[y,s]=e.toString().split("-W"),i=Number(y),o=Number(s);t=Z(i,o);break;case"month":t=new Date(`${e}-01`);break;default:t=new Date;break}return t}function j(e){let n=new Date(e.getFullYear(),0,1),t=(e.valueOf()-n.valueOf())/(1e3*60*60*24);return Math.floor(t/7)+1}function Z(e,n){let t=new Date(e,0,1),a=(8-t.getDay())%7,d=new Date(t);d.setDate(t.getDate()+a);let v=(n-1)*7,y=new Date(d);return y.setDate(d.getDate()+v),y}var C={formatDate:K,parseDate:U,getWeekNumber:j,getFirstDateOfWeek:Z};import{createStore as W}from"zustand";import{useId as Y,useState as L}from"react";var R=e=>W(B(e)),ue=e=>{let n=Y();return L(R({...e,baseId:e.baseId||n}))[0]};var q={parse:function(e){return function(n){return n?C.parseDate(n,e):null}},format:function(e){return function(n){return n?C.formatDate(n,e):null}}};function h(e){return function(n){let t=Symbol();return(n??t)!==t?e:n}}var z={toEmptyString:function(e){return e??""},toUndefined:function(e){return e??void 0},toNull:function(e){return e??null},to:function(e){return function(n){let t=Symbol();return(n??t)===t?e:n}},falsy:{toEmptyString:function(e){return h("")(e)},toUndefined:function(e){return h(void 0)(e)},toNull:function(e){return h(null)(e)},to:h}};function E(e){return function(n){return n||e}}var J={toEmptyString:E(""),toUndefined:E(void 0),toNull:E(null),to:E};function k(e){return function(n){return n&&e}}var Q={toEmptyString:k(""),toUndefined:k(void 0),toNull:k(null),to:k},u={onDateInput:q,onNullable:z,onFalsy:J,onTruthy:Q},X=u,D=[1,2,3],ce={to:u.onFalsy.to("lol")(D),emptyString:u.onFalsy.toEmptyString(D),null:u.onFalsy.toNull(D),undefined:u.onFalsy.toUndefined(D)},H=0,Fe={to:u.onFalsy.to("lol")(H),emptyString:u.onFalsy.toEmptyString(H),null:u.onFalsy.toNull(H),undefined:u.onFalsy.toUndefined(H)},A=[1,2,3],ve={to:u.onNullable.to("lol")(A),emptyString:u.onNullable.toEmptyString(A),null:u.onNullable.toNull(A),undefined:u.onNullable.toUndefined(A)},w=null,ye={to:u.onNullable.to("lol")(w),emptyString:u.onNullable.toEmptyString(w),null:u.onNullable.toNull(w),undefined:u.onNullable.toUndefined(w)},T=[1,2,3],pe={to:u.onNullable.falsy.to("lol")(T),emptyString:u.onNullable.falsy.toEmptyString(T),null:u.onNullable.falsy.toNull(T),undefined:u.onNullable.falsy.toUndefined(T)},x=null,Ve={to:u.onNullable.to("lol")(x),emptyString:u.onNullable.toEmptyString(x),null:u.onNullable.toNull(x),undefined:u.onNullable.toUndefined(x)};function ee(e,n){if(!e.initialValues||typeof e.initialValues!="object")throw new Error("");let t={baseId:n,formId:`${n}-form`,fieldsNames:{},fieldsNamesMap:{},validatedFieldsNames:[],validatedFieldsNamesMap:{},manualValidatedFields:[],manualValidatedFieldsMap:[],referencedValidatedFields:[],referencedValidatedFieldsMap:[]};t.fieldsNames=Object.keys(e.initialValues);for(let a of t.fieldsNames)t.fieldsNamesMap[a]=!0;for(let a in e.validationsHandlers){if(t.validatedFieldsNames.push(a),t.validatedFieldsNamesMap[a]=!0,a in t.fieldsNamesMap){t.referencedValidatedFields.push(a),t.referencedValidatedFieldsMap[a]=!0;continue}t.manualValidatedFields.push(a),t.manualValidatedFieldsMap[a]=!0}return t}function te(e,n){let t={submit:!0,blur:!0},a=!1,d,v={};for(let y of n.validatedFieldsNames){let s=e.validationsHandlers?.[y];if(v[y]={handler:s?$(s)?i=>s.parse(i):s:void 0,currentDirtyEventsCounter:0,failedAttempts:0,passedAttempts:0,events:{blur:{failedAttempts:0,passedAttempts:0,isActive:e.validationEvents?.blur??!0,isDirty:!1,error:null},change:{failedAttempts:0,passedAttempts:0,isActive:e.validationEvents?.change??!1,isDirty:!1,error:null},submit:{failedAttempts:0,passedAttempts:0,isActive:e.validationEvents?.submit??!1,isDirty:!1,error:null}},isDirty:!1,metadata:{name:y}},e.validationEvents&&(a=!0,t={...t,...e.validationEvents}),a)for(d in t)v[y].events[d].isActive=!!typeof t[d]}return v}function ne(e,n,t){let a={};for(let d of t.fieldsNames)a[d]=new g({value:e.initialValues[d],valueFromFieldToStore:e.valuesFromFieldsToStore?.[d]?e.valuesFromFieldsToStore[d]:void 0,valueFromStoreToField:e.valuesFromStoreToFields?.[d]?e.valuesFromStoreToFields[d]:void 0,id:`${n}field-${String(d)}`,metadata:{name:d,initialValue:e.initialValues[d]}});return a}function N(e){return function(n){if(!n.validations[e.name].events[e.validationEvent].isActive)return n;let t=n.currentDirtyFieldsCounter,a={...n.validations[e.name]};return e.message?(a.failedAttempts++,a.events[e.validationEvent].failedAttempts++,a.isDirty||(a.currentDirtyEventsCounter++,a.currentDirtyEventsCounter>0&&t++),a.events[e.validationEvent].error={message:e.message},a.error={message:e.message},a.events[e.validationEvent].isDirty=!0,a.isDirty=!0):(a.passedAttempts++,a.events[e.validationEvent].passedAttempts++,a.isDirty&&(a.currentDirtyEventsCounter--,a.currentDirtyEventsCounter===0&&t--),a.events[e.validationEvent].error=null,a.error=null,a.events[e.validationEvent].isDirty=!1,a.isDirty=!1),n.currentDirtyFieldsCounter=t,n.isDirty=t>0,n.validations={...n.validations,[e.name]:a},n}}function O(e,n){return function(t){let a=t.fields[e];return a.value=typeof n=="function"?n(a.value):n,{...t,fields:{...t.fields,[e]:a}}}}var ae={fields:!0,validations:!0,submit:!1,focus:!0};function B(e){let n=e.baseId?`${e.baseId}-`:"",t=ee(e,n),a=ne(e,n,t),d=te(e,t);return(v,y)=>({baseId:n,metadata:t,validations:d,fields:a,id:`${n}form`,isDirty:!1,submit:{counter:0,passedAttempts:0,failedAttempts:0,errorMessage:null,isActive:!1},focus:{isActive:!1,field:null},currentDirtyFieldsCounter:0,utils:{getFieldValues(){let s=y(),i={},o;for(o in s.fields)i[o]=s.fields[o].value;return i},setSubmitState(s){v(function(i){return{submit:{...i.submit,...typeof s=="function"?s(i.submit):s}}})},setFocusState(s,i,o){v(function(l){let r=l;if(!o&&r.validations[i].events.blur.isActive){try{r.validations[i].handler(i&&s!==i?r.utils.getFieldValues():r.fields[s].value,"blur"),r=N({name:i,message:null,validationEvent:"blur"})(r)}catch(V){let p=r.utils.errorFormatter(V,"blur");r=N({name:i,message:p,validationEvent:"blur"})(r)}if(r.focus.isActive&&r.focus.field.name!==s)return r}return{...r,focus:o?{isActive:!0,field:{name:s,id:r.fields[s].id}}:{isActive:!1,field:null}}})},resetFormStore:function(s=ae){return v(function(i){let o=i.fields,l=i.validations,r=i.isDirty,V=i.submit,p=i.focus;if(s.fields){let m=typeof window>"u"?S=>{let f=o[S];f.value=f.metadata.initialValue}:S=>{let f=o[S],b=document.getElementById(f.id);b&&(b.value=f.metadata.initialValue??""),f.value=f.metadata.initialValue},c;for(c in o)m(c)}if(s.validations){for(let m in l){l[m].failedAttempts=0,l[m].passedAttempts=0,l[m].isDirty=!1,l[m].error=null;let c;for(c in l[m].events)l[m].events[c].failedAttempts=0,l[m].events[c].passedAttempts=0,l[m].events[c].isDirty=!1,l[m].events[c].error=null}r=!1}return s.submit&&(V={counter:0,passedAttempts:0,failedAttempts:0,errorMessage:null,isActive:!1}),s.focus&&(p={isActive:!1,field:null}),{fields:o,validations:l,isDirty:r,submit:V,focus:p}})},setFieldValue(s,i){return v(O(s,i))},setFieldError(s){v(N(s))},errorFormatter:e.errorFormatter??P,handleOnInputChange(s,i,o){let l=y(),r=l.fields[s],V=typeof i=="function"?i(r.value):i,p=r.valueFromFieldToStore?r.valueFromFieldToStore(V):V,m=o||(l.metadata.referencedValidatedFieldsMap[s]?s:void 0),c=O,S=N;if(m&&l.validations[m].events.change.isActive)try{l=c(s,l.validations[m].handler(o&&o!==s?l.utils.getFieldValues():p,"change"))(l),l=S({name:m,message:null,validationEvent:"change"})(l)}catch(f){l=S({name:m,message:l.utils.errorFormatter(f,"change"),validationEvent:"change"})(l),l=c(s,p)(l)}else l=c(s,p)(l);v(l)},getFieldEventsListeners(s,i){let o=y(),l=i??s;return{onChange:r=>{o.utils.handleOnInputChange(s,r.target.value)},onFocus:()=>{o.utils.setFocusState(s,l,!0)},onBlur:()=>{o.utils.setFocusState(s,l,!1)}}},handleSubmit(s){return async function(i){i.preventDefault();let o=y();o.utils.setSubmitState({isActive:!0});let l=o.metadata,r=o.fields,V=o.validations,p={},m={},c={},S=!1,f;for(f in r){p[f]=r[f].value;try{let F=f in l.referencedValidatedFieldsMap&&V[f].handler;if(typeof F!="function"||!V[f].events.submit.isActive)continue;m[f]=F(r[f].value,"submit"),c[f]={name:f,message:null,validationEvent:"submit"}}catch(F){c[f]={name:f,message:o.utils.errorFormatter(F,"submit"),validationEvent:"submit"}}}let b;for(b of l.manualValidatedFields)try{let F=o.validations[b].handler;if(typeof F!="function")continue;m[b]=F(p,"submit"),c[b]={name:b,message:null,validationEvent:"submit"}}catch(F){c[b]={name:b,message:o.utils.errorFormatter(F,"submit"),validationEvent:"submit"}}let M=y(),_;for(_ in c){let F=c[_];M=N(c[_])(M),typeof F.message=="string"&&(S=!0)}if(S)v(M),o.utils.setSubmitState(F=>({isActive:!1,counter:F.counter+1,failedAttempts:F.counter+1,errorMessage:null}));else try{await s({event:i,values:p,validatedValues:m,hasError:S,errors:c}),o.utils.setSubmitState(F=>({isActive:!1,counter:F.counter+1,passedAttempts:F.counter+1,errorMessage:null}))}catch(F){o.utils.setSubmitState(I=>({isActive:!1,counter:I.counter+1,failedAttempts:I.counter+1,errorMessage:o.utils.errorFormatter(F,"submit")}))}}}}})}export{B as createFormStoreBuilder,q as dateInput,P as errorFormatter,K as formatDate,X as fvh,Z as getFirstDateOfWeek,j as getWeekNumber,R as handleCreateFormStore,C as inputDateHelpers,G as isZodError,$ as isZodValidator,J as onFalsy,h as onNotNullableTo,z as onNullable,Q as onTruthy,k as onTruthyTo,U as parseDate,ue as useCreateFormStore};
+import {
+  fieldValue_default
+} from "./chunk-QSGSZBJY.mjs";
+
+// src/utils/FormStoreField.js
+var FormStoreField = class {
+  /** @type {string} */
+  id;
+  /** @type {FieldsValues[Key]} */
+  value;
+  /** @type {FieldMetadata<Key, FieldsValues[Key]>} */
+  metadata;
+  /** @type {((fieldValue: unknown) => Exclude<FieldsValues[Key], (value: FieldsValues[Key]) => FieldsValues[Key]>) | undefined} */
+  valueFromFieldToStore;
+  /** @type {(storeValue: FieldsValues[Key]) => string | ReadonlyArray<string> | number | undefined} */
+  valueFromStoreToField;
+  /**
+   * @param {{
+   *   id: string;
+   *   value: FieldsValues[Key];
+   *   metadata: FieldMetadata<Key, FieldsValues[Key]>;
+   *   valueFromFieldToStore?: (fieldValue: unknown) => Exclude<FieldsValues[Key], (value: FieldsValues[Key]) => FieldsValues[Key]>;
+   *   valueFromStoreToField?: (StoreValue: FieldsValues[Key]) => string | ReadonlyArray<string> | number | undefined;
+   * }} params
+   */
+  constructor(params) {
+    this.id = params.id;
+    this.value = params.value;
+    this.metadata = params.metadata;
+    this.valueFromFieldToStore = params.valueFromFieldToStore;
+    this.valueFromStoreToField = params.valueFromStoreToField ?? /**
+     * @param {FieldsValues[Key]} StoreValue
+     * @returns string | ReadonlyArray<string> | number | undefined
+     */
+    ((value) => value ?? "");
+  }
+  /**
+   * @description Gets the field value converted _(using the passed `valueFromStoreToField` if not it will just return the original value)_ from the store value.
+   *
+   * @type {string | ReadonlyArray<string> | number | undefined}
+   * */
+  get storeToFieldValue() {
+    return this.valueFromStoreToField(this.value);
+  }
+};
+
+// src/utils/zod.ts
+function isZodValidator(validator) {
+  return !!(validator instanceof Object && "parseAsync" in validator && typeof validator.parseAsync === "function");
+}
+function isZodError(error) {
+  return error instanceof Object && "errors" in error;
+}
+function errorFormatter(error) {
+  if (isZodError(error))
+    return error.format()._errors.join(", ");
+  if (error instanceof Error)
+    return error.message;
+  return "Something went wrong!";
+}
+
+// src/utils/zustand.ts
+import { createStore } from "zustand";
+import { useId, useState } from "react";
+var handleCreateFormStore = (params) => createStore(createFormStoreBuilder(params));
+var useCreateFormStore = (props) => {
+  const baseId = useId();
+  const formStore = useState(
+    handleCreateFormStore({ ...props, baseId: props.baseId || baseId })
+  );
+  return formStore[0];
+};
+
+// src/utils/index.ts
+function createFormStoreMetadata(params, baseId) {
+  if (!params.initialValues || typeof params.initialValues !== "object")
+    throw new Error("");
+  const metadata = {
+    baseId,
+    formId: `${baseId}-form`,
+    fieldsNames: {},
+    fieldsNamesMap: {},
+    //
+    validatedFieldsNames: [],
+    validatedFieldsNamesMap: {},
+    // //
+    manualValidatedFields: [],
+    manualValidatedFieldsMap: [],
+    // //
+    referencedValidatedFields: [],
+    referencedValidatedFieldsMap: []
+  };
+  metadata.fieldsNames = Object.keys(
+    params.initialValues
+  );
+  for (const fieldName of metadata.fieldsNames) {
+    metadata.fieldsNamesMap[fieldName] = true;
+  }
+  for (const key in params.validationsHandlers) {
+    metadata.validatedFieldsNames.push(key);
+    metadata.validatedFieldsNamesMap[key] = true;
+    if (key in metadata.fieldsNamesMap) {
+      metadata.referencedValidatedFields.push(
+        key
+      );
+      metadata.referencedValidatedFieldsMap[key] = true;
+      continue;
+    }
+    metadata.manualValidatedFields.push(
+      key
+    );
+    metadata.manualValidatedFieldsMap[
+      key
+      // as unknown as (typeof metadata)['manualValidatedFieldsMap'][number]
+    ] = true;
+  }
+  return metadata;
+}
+function createFormStoreValidations(params, metadata) {
+  let fieldValidationEvents = {
+    submit: true,
+    blur: true
+  };
+  let isFieldHavingPassedValidations = false;
+  let fieldValidationEventKey;
+  const validations = {};
+  for (const fieldName of metadata.validatedFieldsNames) {
+    const fieldValidationsHandler = params.validationsHandlers?.[fieldName];
+    validations[fieldName] = {
+      handler: !fieldValidationsHandler ? void 0 : isZodValidator(fieldValidationsHandler) ? (value) => fieldValidationsHandler.parse(value) : fieldValidationsHandler,
+      currentDirtyEventsCounter: 0,
+      failedAttempts: 0,
+      passedAttempts: 0,
+      events: {
+        // mount: {  },
+        blur: {
+          failedAttempts: 0,
+          passedAttempts: 0,
+          isActive: params.validationEvents?.blur ?? true,
+          isDirty: false,
+          error: null
+        },
+        change: {
+          failedAttempts: 0,
+          passedAttempts: 0,
+          isActive: params.validationEvents?.change ?? false,
+          isDirty: false,
+          error: null
+        },
+        submit: {
+          failedAttempts: 0,
+          passedAttempts: 0,
+          isActive: params.validationEvents?.submit ?? true,
+          isDirty: false,
+          error: null
+        }
+      },
+      isDirty: false,
+      metadata: { name: fieldName }
+    };
+    if (params.validationEvents) {
+      isFieldHavingPassedValidations = true;
+      fieldValidationEvents = {
+        ...fieldValidationEvents,
+        ...params.validationEvents
+      };
+    }
+    if (isFieldHavingPassedValidations) {
+      for (fieldValidationEventKey in fieldValidationEvents) {
+        validations[fieldName].events[fieldValidationEventKey].isActive = !!typeof fieldValidationEvents[fieldValidationEventKey];
+      }
+    }
+  }
+  return validations;
+}
+function createFormStoreFields(params, baseId, metadata) {
+  const fields = {};
+  for (const fieldName of metadata.fieldsNames) {
+    fields[fieldName] = new FormStoreField({
+      value: params.initialValues[fieldName],
+      valueFromFieldToStore: params.valuesFromFieldsToStore?.[fieldName] ? params.valuesFromFieldsToStore[fieldName] : void 0,
+      valueFromStoreToField: params.valuesFromStoreToFields?.[fieldName] ? params.valuesFromStoreToFields[fieldName] : void 0,
+      id: `${baseId}field-${String(fieldName)}`,
+      metadata: {
+        name: fieldName,
+        initialValue: params.initialValues[fieldName]
+      }
+    });
+  }
+  return fields;
+}
+function _setFieldError(params) {
+  return function(currentState) {
+    if (!currentState.validations[params.name].events[params.validationEvent].isActive)
+      return currentState;
+    let currentDirtyFieldsCounter = currentState.currentDirtyFieldsCounter;
+    const validation = {
+      ...currentState.validations[params.name]
+    };
+    if (params.message) {
+      validation.failedAttempts++;
+      validation.events[params.validationEvent].failedAttempts++;
+      if (!validation.isDirty) {
+        validation.currentDirtyEventsCounter++;
+        if (validation.currentDirtyEventsCounter > 0) {
+          currentDirtyFieldsCounter++;
+        }
+      }
+      validation.events[params.validationEvent].error = {
+        message: params.message
+      };
+      validation.error = { message: params.message };
+      validation.events[params.validationEvent].isDirty = true;
+      validation.isDirty = true;
+    } else {
+      validation.passedAttempts++;
+      validation.events[params.validationEvent].passedAttempts++;
+      if (validation.isDirty) {
+        validation.currentDirtyEventsCounter--;
+        if (validation.currentDirtyEventsCounter === 0) {
+          currentDirtyFieldsCounter--;
+        }
+      }
+      validation.events[params.validationEvent].error = null;
+      validation.error = null;
+      validation.events[params.validationEvent].isDirty = false;
+      validation.isDirty = false;
+    }
+    currentState.currentDirtyFieldsCounter = currentDirtyFieldsCounter;
+    currentState.isDirty = currentDirtyFieldsCounter > 0;
+    currentState.validations = {
+      ...currentState.validations,
+      [params.name]: validation
+    };
+    return currentState;
+  };
+}
+function _setFieldValue(name, valueOrUpdater) {
+  return function(currentState) {
+    const field = currentState.fields[name];
+    field.value = typeof valueOrUpdater === "function" ? valueOrUpdater(field.value) : valueOrUpdater;
+    return {
+      ...currentState,
+      fields: {
+        ...currentState.fields,
+        [name]: field
+      }
+    };
+  };
+}
+var itemsToResetDefaults = {
+  fields: true,
+  validations: true,
+  submit: false,
+  focus: true
+};
+function createFormStoreBuilder(params) {
+  const baseId = params.baseId ? `${params.baseId}-` : "";
+  const metadata = createFormStoreMetadata(params, baseId);
+  const fields = createFormStoreFields(params, baseId, metadata);
+  const validations = createFormStoreValidations(params, metadata);
+  return (set, get) => {
+    return {
+      baseId,
+      metadata,
+      validations,
+      fields,
+      id: `${baseId}form`,
+      isDirty: false,
+      submit: {
+        counter: 0,
+        passedAttempts: 0,
+        failedAttempts: 0,
+        errorMessage: null,
+        isActive: false
+      },
+      focus: { isActive: false, field: null },
+      currentDirtyFieldsCounter: 0,
+      getFieldValues() {
+        const currentState = get();
+        const fieldsValues = {};
+        let fieldName;
+        for (fieldName in currentState.fields) {
+          fieldsValues[fieldName] = currentState.fields[fieldName].value;
+        }
+        return fieldsValues;
+      },
+      setSubmitState(valueOrUpdater) {
+        set(function(currentState) {
+          return {
+            // ...currentState,
+            submit: {
+              ...currentState.submit,
+              ...typeof valueOrUpdater === "function" ? valueOrUpdater(currentState.submit) : valueOrUpdater
+            }
+          };
+        });
+      },
+      setFocusState(fieldName, validationName, isActive) {
+        set(function(currentState) {
+          let _currentState = currentState;
+          if (!isActive && _currentState.validations[validationName].events.blur.isActive) {
+            try {
+              _currentState.validations[validationName].handler(
+                validationName && fieldName !== validationName ? _currentState.getFieldValues() : _currentState.fields[fieldName].value,
+                "blur"
+              );
+              _currentState = _setFieldError(
+                {
+                  name: validationName,
+                  message: null,
+                  validationEvent: "blur"
+                }
+              )(_currentState);
+            } catch (error) {
+              const message = _currentState.errorFormatter(error, "blur");
+              _currentState = _setFieldError(
+                {
+                  name: validationName,
+                  message,
+                  validationEvent: "blur"
+                }
+              )(_currentState);
+            }
+            if (_currentState.focus.isActive && _currentState.focus.field.name !== fieldName)
+              return _currentState;
+          }
+          return {
+            ..._currentState,
+            focus: isActive ? {
+              isActive: true,
+              field: {
+                name: fieldName,
+                id: _currentState.fields[fieldName].id
+              }
+            } : { isActive: false, field: null }
+          };
+        });
+      },
+      resetFormStore: function(itemsToReset = itemsToResetDefaults) {
+        return set(function(currentState) {
+          const fields2 = currentState.fields;
+          const validations2 = currentState.validations;
+          let isDirty = currentState.isDirty;
+          let submit = currentState.submit;
+          let focus = currentState.focus;
+          if (itemsToReset.fields) {
+            let fieldName;
+            for (fieldName in fields2) {
+              fields2[fieldName].value = fields2[fieldName].metadata.initialValue;
+            }
+          }
+          if (itemsToReset.validations) {
+            for (const key in validations2) {
+              validations2[key].failedAttempts = 0;
+              validations2[key].passedAttempts = 0;
+              validations2[key].isDirty = false;
+              validations2[key].error = null;
+              let eventKey;
+              for (eventKey in validations2[key].events) {
+                validations2[key].events[eventKey].failedAttempts = 0;
+                validations2[key].events[eventKey].passedAttempts = 0;
+                validations2[key].events[eventKey].isDirty = false;
+                validations2[key].events[eventKey].error = null;
+              }
+            }
+            isDirty = false;
+          }
+          if (itemsToReset.submit) {
+            submit = {
+              counter: 0,
+              passedAttempts: 0,
+              failedAttempts: 0,
+              errorMessage: null,
+              isActive: false
+            };
+          }
+          if (itemsToReset.focus) {
+            focus = {
+              isActive: false,
+              field: null
+            };
+          }
+          return {
+            // ...currentState,
+            fields: fields2,
+            validations: validations2,
+            isDirty,
+            submit,
+            focus
+          };
+        });
+      },
+      setFieldValue(name, value) {
+        return set(_setFieldValue(name, value));
+      },
+      setFieldError(params2) {
+        set(_setFieldError(params2));
+      },
+      errorFormatter: params.errorFormatter ?? errorFormatter,
+      handleInputChange(name, valueOrUpdater, validationName) {
+        let currentState = get();
+        const field = currentState.fields[name];
+        const _value = typeof valueOrUpdater === "function" ? valueOrUpdater(field.value) : valueOrUpdater;
+        const value = field.valueFromFieldToStore ? field.valueFromFieldToStore(_value) : _value;
+        const _validationName = validationName ? validationName : (
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          currentState.metadata.referencedValidatedFieldsMap[name] ? name : void 0
+        );
+        const setFieldValue = _setFieldValue;
+        const setFieldError = _setFieldError;
+        if (_validationName && currentState.validations[_validationName].events["change"].isActive) {
+          try {
+            currentState = setFieldValue(
+              name,
+              currentState.validations[_validationName].handler(
+                validationName && // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                validationName !== name ? currentState.getFieldValues() : value,
+                "change"
+              )
+            )(currentState);
+            currentState = setFieldError({
+              name: _validationName,
+              message: null,
+              validationEvent: "change"
+            })(currentState);
+          } catch (error) {
+            currentState = setFieldError({
+              name: _validationName,
+              message: currentState.errorFormatter(error, "change"),
+              validationEvent: "change"
+            })(currentState);
+            currentState = setFieldValue(name, value)(currentState);
+          }
+        } else {
+          currentState = setFieldValue(name, value)(currentState);
+        }
+        set(currentState);
+      },
+      getFieldEventsListeners(name, validationName) {
+        const currentState = get();
+        const _validationName = validationName ?? name;
+        return {
+          onChange: (event) => {
+            currentState.handleInputChange(name, event.target.value);
+          },
+          onFocus: () => {
+            currentState.setFocusState(
+              name,
+              _validationName,
+              true
+            );
+          },
+          onBlur: () => {
+            currentState.setFocusState(
+              name,
+              _validationName,
+              false
+            );
+          }
+        };
+      },
+      handleSubmit(cb) {
+        return async function(event) {
+          event.preventDefault();
+          const currentState = get();
+          currentState.setSubmitState({ isActive: true });
+          const metadata2 = currentState.metadata;
+          const fields2 = currentState.fields;
+          const validations2 = currentState.validations;
+          const values = {};
+          const validatedValues = {};
+          const errors = {};
+          let hasError = false;
+          let fieldName;
+          for (fieldName in fields2) {
+            values[fieldName] = fields2[fieldName].value;
+            try {
+              const validationSchema = fieldName in metadata2.referencedValidatedFieldsMap && validations2[fieldName].handler;
+              if (typeof validationSchema !== "function" || !validations2[fieldName].events.submit.isActive) {
+                continue;
+              }
+              validatedValues[fieldName] = validationSchema(
+                fields2[fieldName].value,
+                "submit"
+              );
+              errors[fieldName] = {
+                name: fieldName,
+                message: null,
+                validationEvent: "submit"
+              };
+            } catch (error) {
+              errors[fieldName] = {
+                name: fieldName,
+                message: currentState.errorFormatter(error, "submit"),
+                validationEvent: "submit"
+              };
+            }
+          }
+          let manualFieldName;
+          for (manualFieldName of metadata2.manualValidatedFields) {
+            try {
+              const validationSchema = currentState.validations[manualFieldName].handler;
+              if (typeof validationSchema !== "function") {
+                continue;
+              }
+              validatedValues[manualFieldName] = validationSchema(
+                values,
+                "submit"
+              );
+              errors[manualFieldName] = {
+                name: manualFieldName,
+                message: null,
+                validationEvent: "submit"
+              };
+            } catch (error) {
+              errors[manualFieldName] = {
+                name: manualFieldName,
+                message: currentState.errorFormatter(error, "submit"),
+                validationEvent: "submit"
+              };
+            }
+          }
+          let _currentState = get();
+          let errorKey;
+          for (errorKey in errors) {
+            const errorObj = errors[errorKey];
+            _currentState = _setFieldError(
+              errors[errorKey]
+            )(_currentState);
+            if (typeof errorObj.message !== "string")
+              continue;
+            hasError = true;
+          }
+          if (!hasError) {
+            try {
+              await cb({
+                event,
+                values,
+                validatedValues,
+                hasError,
+                errors
+              });
+              currentState.setSubmitState((prev) => ({
+                isActive: false,
+                counter: prev.counter + 1,
+                passedAttempts: prev.counter + 1,
+                errorMessage: null
+              }));
+            } catch (error) {
+              currentState.setSubmitState((prev) => ({
+                isActive: false,
+                counter: prev.counter + 1,
+                failedAttempts: prev.counter + 1,
+                errorMessage: currentState.errorFormatter(error, "submit")
+              }));
+            }
+          } else {
+            set(_currentState);
+            currentState.setSubmitState((prev) => ({
+              isActive: false,
+              counter: prev.counter + 1,
+              failedAttempts: prev.counter + 1,
+              errorMessage: null
+            }));
+          }
+        };
+      }
+    };
+  };
+}
+export {
+  createFormStoreBuilder,
+  errorFormatter,
+  fieldValue_default as fvh,
+  handleCreateFormStore,
+  isZodError,
+  isZodValidator,
+  useCreateFormStore
+};
 //# sourceMappingURL=index.mjs.map

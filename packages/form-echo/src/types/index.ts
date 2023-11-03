@@ -182,63 +182,58 @@ export interface FormStoreShape<FieldsValues, ValidationsHandlers> {
 	fields: {
 		[Key in NonNullable<keyof FieldsValues>]: FormStoreField<FieldsValues, Key>;
 	};
-	utils: {
-		getFieldValues(): FieldsValues;
-		setSubmitState: (
-			valueOrUpdater:
-				| Partial<SubmitState>
-				| ((value: SubmitState) => Partial<SubmitState>),
-		) => void;
-		setFocusState: (
-			fieldName: keyof FieldsValues,
-			validationName:
-				| keyof ValidationsHandlers
-				| (keyof FieldsValues & keyof ValidationsHandlers),
-			isActive: boolean,
-		) => void;
-		resetFormStore: (itemsToReset?: {
-			fields?: boolean;
-			validations?: boolean;
-			submit?: boolean;
-			focus?: boolean;
-		}) => void;
-		setFieldValue: <Name extends keyof FieldsValues>(
-			name: Name,
-			valueOrUpdater:
-				| ((value: FieldsValues[Name]) => FieldsValues[Name])
-				| AnyValueExceptFunctions,
-		) => void;
-		handleOnInputChange: <
-			Name extends keyof FieldsValues,
-			ValidationName extends keyof ValidationsHandlers | undefined = undefined,
-		>(
-			name: Name,
-			valueOrUpdater:
-				| ((value: FieldsValues[Name]) => FieldsValues[Name])
-				| AnyValueExceptFunctions,
-			validationName?: ValidationName,
-		) => void;
-		handleSubmit: (
-			cb: HandleSubmitCB<FieldsValues, ValidationsHandlers>,
-		) => (event: FormEvent<HTMLFormElement>) => Promise<unknown> | unknown;
+	getFieldValues(): FieldsValues;
+	setSubmitState: (
+		valueOrUpdater:
+			| Partial<SubmitState>
+			| ((value: SubmitState) => Partial<SubmitState>),
+	) => void;
+	setFocusState: (
+		fieldName: keyof FieldsValues,
+		validationName:
+			| keyof ValidationsHandlers
+			| (keyof FieldsValues & keyof ValidationsHandlers),
+		isActive: boolean,
+	) => void;
+	resetFormStore: (itemsToReset?: {
+		fields?: boolean;
+		validations?: boolean;
+		submit?: boolean;
+		focus?: boolean;
+	}) => void;
+	setFieldValue: <Name extends keyof FieldsValues>(
+		name: Name,
+		valueOrUpdater:
+			| ((value: FieldsValues[Name]) => FieldsValues[Name])
+			| AnyValueExceptFunctions,
+	) => void;
+	handleInputChange: <
+		Name extends keyof FieldsValues,
+		ValidationName extends keyof ValidationsHandlers | undefined = undefined,
+	>(
+		name: Name,
+		valueOrUpdater:
+			| ((value: FieldsValues[Name]) => FieldsValues[Name])
+			| AnyValueExceptFunctions,
+		validationName?: ValidationName,
+	) => void;
+	handleSubmit: (
+		cb: HandleSubmitCB<FieldsValues, ValidationsHandlers>,
+	) => (event: FormEvent<HTMLFormElement>) => Promise<unknown> | unknown;
 
-		errorFormatter: (
-			error: unknown,
-			validationEvent: ValidationEvents,
-		) => string;
-		setFieldError: (params: {
-			name: keyof ValidationsHandlers;
-			message: string | null;
-			validationEvent: ValidationEvents;
-		}) => void;
-		getFieldEventsListeners: (
-			name: keyof FieldsValues,
-			validationName?: keyof ValidationsHandlers,
-		) => {
-			onChange: (event: { target: { value: string } }) => void;
-			onFocus: () => void;
-			onBlur: () => void;
-		};
+	errorFormatter: (error: unknown, validationEvent: ValidationEvents) => string;
+	setFieldError: (params: {
+		name: keyof ValidationsHandlers;
+		message: string | null;
+		validationEvent: ValidationEvents;
+	}) => void;
+	getFieldEventsListeners: (
+		name: keyof FieldsValues,
+		validationName?: keyof ValidationsHandlers,
+	) => {
+		onChange: (event: { target: { value: string } }) => void;
+		onFocus: () => void;
+		onBlur: () => void;
 	};
 }
 export interface HandleSubmitCB<FieldsValues, ValidationsHandlers> {

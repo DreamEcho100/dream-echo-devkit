@@ -37,7 +37,7 @@ const TableMetaData = <
 		incrementCurrentPageIndex,
 		decrementCurrentPageIndex,
 		setRowSelection,
-	} = useStore(store, (state) => state.utils);
+	} = useStore(store, (state) => state);
 
 	const {
 		isLastPageEmpty,

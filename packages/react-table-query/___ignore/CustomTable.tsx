@@ -96,7 +96,7 @@ export const CustomTable = <
 
 	const { setRowSelection, setColumnFilters } = useStore(
 		store,
-		(state) => state.utils,
+		(state) => state,
 	);
 
 	const columns: ColumnDef<TableItem>[] = useMemo(() => {

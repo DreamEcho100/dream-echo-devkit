@@ -26,7 +26,7 @@ const TableLoadMore = <
 }) => {
 	const offset = useStore(store, (state) => state.offset);
 
-	const { incrementCurrentPageIndex } = useStore(store, (state) => state.utils);
+	const { incrementCurrentPageIndex } = useStore(store, (state) => state);
 
 	const { isLastPageEmpty, isInBeforeLastPage } = useMemo(() => {
 		const isLastPageEmpty =
