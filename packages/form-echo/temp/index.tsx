@@ -282,7 +282,7 @@ result;
 
 // Form2;
 
-// const validationHandlerSchema = {
+// const validationSchemaSchema = {
 // 	username: z.string(), //.optional(),
 // 	age: (val: unknown) => z.number().parse(val),
 // };
@@ -292,7 +292,7 @@ result;
 // 		username?: null | string;
 // 		age: string;
 // 	},
-// 	validationSchema: validationHandlerSchema,
+// 	validationSchema: validationSchemaSchema,
 // });
 
 // t.getState().handlePreSubmit((_event, { validatedValues, values }) => {
@@ -309,7 +309,7 @@ result;
 
 // type IV = { username: null | string; age: string };
 
-// type FF = CreateCreateFormStore<IV, typeof validationHandlerSchema>;
+// type FF = CreateCreateFormStore<IV, typeof validationSchemaSchema>;
 
 // const tt = {} as FF;
 

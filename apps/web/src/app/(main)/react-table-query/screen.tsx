@@ -1,6 +1,7 @@
+'use client';
+
 import type { Product } from '~/appData/products';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { ProductsAPIInput, ProductsAPIOutput } from './api/products';
 
 import { useCustomInfiniteQuery } from '~/utils/hooks';
 import { createColumnHelper } from '@tanstack/react-table';
@@ -13,6 +14,7 @@ import {
 } from '@de100/react-table-query';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { cx } from 'class-variance-authority';
+import type { ProductsAPIInput, ProductsAPIOutput } from '~/pages/api/products';
 
 const initialCursor: {
 	offset: ProductsAPIInput['offset'];
@@ -141,7 +143,7 @@ const QData: Parameters<
 	filterBy: filterByFormValues as any,
 };
 
-const Home = () => {
+export default function ReactTableQueryScreen() {
 	const tableStore = useCreateTableStore<Columns, typeof initialCursor>({
 		classNames: tableClassNames,
 		pageViewMode: 'INFINITE_SCROLL',
@@ -287,15 +289,15 @@ const Home = () => {
 				className={`max-w-full bg-white p-8 text-black dark:bg-black dark:text-white`}
 			>
 				{/* <div className='max-w-full overflow-auto'>
-					<TableMetaData infiniteQuery={infiniteQuery} store={tableStore} />
-					<QueryTable
-						columns={columns}
-						infiniteQuery={infiniteQuery}
-						store={tableStore}
-						canMultiRowSelect
-					/>
-					<TableMetaData infiniteQuery={infiniteQuery} store={tableStore} />
-				</div> */}
+                <TableMetaData infiniteQuery={infiniteQuery} store={tableStore} />
+                <QueryTable
+                    columns={columns}
+                    infiniteQuery={infiniteQuery}
+                    store={tableStore}
+                    canMultiRowSelect
+                />
+                <TableMetaData infiniteQuery={infiniteQuery} store={tableStore} />
+            </div> */}
 				<div className='max-w-full overflow-auto'>
 					<QueryTable
 						columns={columns}
@@ -312,6 +314,4 @@ const Home = () => {
 			</main>
 		</>
 	);
-};
-
-export default Home;
+}

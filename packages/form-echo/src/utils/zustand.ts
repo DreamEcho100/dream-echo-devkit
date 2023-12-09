@@ -1,18 +1,24 @@
 import { createStore } from 'zustand';
-import { type CreateFormStoreProps } from '../types';
+import type { CreateFormStoreProps, ValidValidationSchema } from '../types';
 import { createFormStoreBuilder } from '.';
 import { useId, useState } from 'react';
 
-export const handleCreateFormStore = <FieldsValues, ValidationsHandlers>(
-	params: CreateFormStoreProps<FieldsValues, ValidationsHandlers>,
+export const handleCreateFormStore = <
+	FieldsValues,
+	ValidationSchema extends ValidValidationSchema<FieldsValues>,
+>(
+	params: CreateFormStoreProps<FieldsValues, ValidationSchema>,
 ) => createStore(createFormStoreBuilder(params));
 
-export const useCreateFormStore = <FieldsValues, ValidationsHandlers>(
+export const useCreateFormStore = <
+	FieldsValues,
+	ValidationSchema extends ValidValidationSchema<FieldsValues>,
+>(
 	props: Omit<
-		CreateFormStoreProps<FieldsValues, ValidationsHandlers>,
+		CreateFormStoreProps<FieldsValues, ValidationSchema>,
 		'baseId'
 	> & {
-		baseId?: CreateFormStoreProps<FieldsValues, ValidationsHandlers>['baseId'];
+		baseId?: CreateFormStoreProps<FieldsValues, ValidationSchema>['baseId'];
 	},
 ) => {
 	const baseId = useId();

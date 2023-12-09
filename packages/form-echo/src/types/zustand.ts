@@ -3,33 +3,30 @@ import type { StoreApi } from 'zustand';
 
 export type FormStoreApi<
 	FieldsValues,
-	ValidationsHandlers = Record<keyof FieldsValues, unknown>,
-> = StoreApi<FormStoreShape<FieldsValues, ValidationsHandlers>>;
+	ValidationSchema = Record<keyof FieldsValues, unknown>,
+> = StoreApi<FormStoreShape<FieldsValues, ValidationSchema>>;
 
 export type GetFormStoreApiStore<
 	TFormStore,
 	TValueType extends
 		| 'values'
-		| 'validationHandlers'
+		| 'validationSchemas'
 		| 'validatedValues' = 'values',
-> = TFormStore extends FormStoreApi<
-	infer FieldsValues,
-	infer ValidationsHandlers
->
-	? TValueType extends 'validationHandlers'
-		? ValidationsHandlers
+> = TFormStore extends FormStoreApi<infer FieldsValues, infer ValidationSchema>
+	? TValueType extends 'validationSchemas'
+		? ValidationSchema
 		: TValueType extends 'validatedValues'
-		? GetValidationValuesFromSchema<ValidationsHandlers>
+		? GetValidationValuesFromSchema<ValidationSchema>
 		: FieldsValues
 	: never;
 
 // type TValues = GetFromFieldStore<FormStore>;
-// type TSchema = GetFromFieldStore<FormStore, "validationHandlers">;
+// type TSchema = GetFromFieldStore<FormStore, "validationSchemas">;
 // type TValidatedValues = GetFromFieldStore<FormStore, "validatedValues">;
 
 // const values = {} as TValues;
 // values.category;
-// const validationHandlers = {} as TSchema;
-// validationHandlers.categoryName;
+// const validationSchemas = {} as TSchema;
+// validationSchemas.categoryName;
 // const validatedValues = {} as TValidatedValues;
 // validatedValues.categoryName;

@@ -119,7 +119,7 @@ const QueryTable = <TData, TQueryInput extends QueryInput, TError = unknown>({
 					<IndeterminateCheckbox
 						checked={table.getIsAllRowsSelected()}
 						indeterminate={table.getIsSomeRowsSelected()}
-						onChange={table.getToggleAllRowsSelectedHandler()}
+						onChange={table.getToggleAllRowsSelectedSchema()}
 						tContainerType='thead'
 						store={store}
 						// className={cx(classNames.thead?.th?.checkboxContainer?.checkBox)}
@@ -129,7 +129,7 @@ const QueryTable = <TData, TQueryInput extends QueryInput, TError = unknown>({
 					<IndeterminateCheckbox
 						checked={row.getIsSelected()}
 						indeterminate={row.getIsSomeSelected()}
-						onChange={row.getToggleSelectedHandler()}
+						onChange={row.getToggleSelectedSchema()}
 						tContainerType='tbody'
 						store={store}
 						// className={cx(classNames.tbody?.td?.checkboxContainer?.checkBox)}

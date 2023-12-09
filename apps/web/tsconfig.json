@@ -18,7 +18,7 @@
 		// // "noUnusedParameters": false,
 		// // "preserveWatchOutput": true,
 		// // "skipLibCheck": true,
-		// // "strict": true,
+		"strict": true,
 		"jsx": "preserve",
 		// "target": "ESNext",
 		// "composite": false,
@@ -31,8 +31,10 @@
 		// "preserveWatchOutput": true,
 		"baseUrl": ".",
 		"paths": { "~/*": ["./src/*"] },
-		"moduleResolution": "NodeNext"
+		"moduleResolution": "NodeNext",
+		"plugins": [{ "name": "next" }],
+		"strictNullChecks": true
 	},
-	"include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+	"include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
 	"exclude": ["node_modules"]
 }
