@@ -5,7 +5,9 @@
 	"keywords": [
 		"form",
 		"store",
-		"manage"
+		"manage",
+		"react",
+		"zustand"
 	],
 	"license": "MIT",
 	"author": {
@@ -43,7 +45,8 @@
 		"lint": "eslint *.ts*",
 		"build": "cross-env NODE_ENV=production tsup --config=./tsup.config.ts",
 		"build:react:zustand": "cross-env NODE_ENV=production tsup --config=./src/react/zustand/tsup.config.ts",
-		"dev": "pnpm run build -- --watch"
+		"dev": "pnpm run build -- --watch",
+		"typechecking": "tsc --noEmit"
 	},
 	"devDependencies": {
 		"@types/node": "^20.1.3",

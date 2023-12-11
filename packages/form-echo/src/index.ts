@@ -1,5 +1,9 @@
 export * from './types';
 export * from './zod';
+export {
+	/** @description field value helpers */
+	default as fvh,
+} from './helpers/field-value';
 
 import FormStoreField from './form-store-field';
 
@@ -9,23 +13,12 @@ import type {
 	CreateFormStoreProps,
 	FormStoreShape,
 	GetFromFormStoreShape,
-	//  HandlePreSubmit,
 	HandleSubmitCB,
 	GetValidationValuesFromSchema,
 	FormStoreShapeBaseMethods,
 	ValidValidationSchema,
 } from './types';
 import { errorFormatter as defaultErrorFormatter, isZodValidator } from './zod';
-
-// export * from './zustand';
-// export * from './helpers';
-
-export {
-	/**
-	 * @description field value helpers
-	 */
-	default as fvh,
-} from './helpers/field-value';
 
 type SetStateInternal<T> = (
 	partial: T | Partial<T> | ((state: T) => T | Partial<T>),
