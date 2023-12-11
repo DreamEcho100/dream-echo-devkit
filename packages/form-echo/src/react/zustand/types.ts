@@ -1,7 +1,7 @@
 import type {
 	FormStoreShape,
 	GetValidationValuesFromSchema,
-} from '../../../types';
+} from '../../types';
 import type { StoreApi } from 'zustand';
 
 export type FormStoreApi<

@@ -27,22 +27,22 @@
 			"types": "./dist/index.d.ts"
 		},
 		"./helpers": {
-			"import": "./dist/utils/helpers/index.mjs",
-			"require": "./dist/utils/helpers/index.js",
-			"default": "./dist/utils/helpers/index.js",
-			"types": "./dist/utils/helpers/index.d.ts"
+			"import": "./dist/helpers/index.mjs",
+			"require": "./dist/helpers/index.js",
+			"default": "./dist/helpers/index.js",
+			"types": "./dist/helpers/index.d.ts"
 		},
 		"./react/zustand": {
-			"import": "./src/utils/react/zustand/dist/index.mjs",
-			"require": "./src/utils/react/zustand/dist/index.js",
-			"default": "./src/utils/react/zustand/dist/index.js",
-			"types": "./src/utils/react/zustand/dist/index.d.ts"
+			"import": "./src/react/zustand/dist/index.mjs",
+			"require": "./src/react/zustand/dist/index.js",
+			"default": "./src/react/zustand/dist/index.js",
+			"types": "./src/react/zustand/dist/index.d.ts"
 		}
 	},
 	"scripts": {
 		"lint": "eslint *.ts*",
 		"build": "cross-env NODE_ENV=production tsup --config=./tsup.config.ts",
-		"build:react:zustand": "cross-env NODE_ENV=production tsup --config=./src/utils/react/zustand/tsup.config.ts",
+		"build:react:zustand": "cross-env NODE_ENV=production tsup --config=./src/react/zustand/tsup.config.ts",
 		"dev": "pnpm run build -- --watch"
 	},
 	"devDependencies": {

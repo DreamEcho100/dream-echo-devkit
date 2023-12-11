@@ -348,7 +348,7 @@ var QueryTable = ({
           {
             checked: table2.getIsAllRowsSelected(),
             indeterminate: table2.getIsSomeRowsSelected(),
-            onChange: table2.getToggleAllRowsSelectedHandler(),
+            onChange: table2.getToggleAllRowsSelectedSchema(),
             tContainerType: "thead",
             store
           }
@@ -358,7 +358,7 @@ var QueryTable = ({
           {
             checked: row.getIsSelected(),
             indeterminate: row.getIsSomeSelected(),
-            onChange: row.getToggleSelectedHandler(),
+            onChange: row.getToggleSelectedSchema(),
             tContainerType: "tbody",
             store
           }

@@ -1,4 +1,4 @@
-import type FormStoreField from '../utils/form-store-field';
+import type FormStoreField from '../form-store-field';
 import { type FormEvent } from 'react';
 import { type ZodSchema, type z } from 'zod';
 

@@ -7,16 +7,16 @@ export * from './types';
 
 /**
  * @template FieldsValues
- * @template {import("../../../types").ValidValidationSchema<FieldsValues>} ValidationSchema
- * @param {import("../../../types").CreateFormStoreProps<FieldsValues, ValidationSchema>} params
+ * @template {import("../../types").ValidValidationSchema<FieldsValues>} ValidationSchema
+ * @param {import("../../types").CreateFormStoreProps<FieldsValues, ValidationSchema>} params
  */
 export const handleCreateFormStore = (params) =>
 	createStore(createFormStoreBuilder(params));
 
 /**
  * @template FieldsValues
- * @template {import("../../../types").ValidValidationSchema<FieldsValues>} ValidationSchema
- * @param {import("../../../types").CreateFormStoreProps<FieldsValues, ValidationSchema>} props
+ * @template {import("../../types").ValidValidationSchema<FieldsValues>} ValidationSchema
+ * @param {import("../../types").CreateFormStoreProps<FieldsValues, ValidationSchema>} props
  */
 export const useCreateFormStore = (props) => {
 	const baseId = useId();

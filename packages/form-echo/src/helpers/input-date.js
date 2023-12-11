@@ -1,7 +1,7 @@
 /**
  * Formats a date object to the desired string format based on the type.
  * @param {Date} date - The Date object to be formatted.
- * @param {import("../..").InputDateTypes} type - The format type ('date', 'time', 'datetime-local', 'week', or 'month').
+ * @param {import("..").InputDateTypes} type - The format type ('date', 'time', 'datetime-local', 'week', or 'month').
  * @returns {string} A formatted string based on the specified format.
  */
 export function formatDate(date, type) {

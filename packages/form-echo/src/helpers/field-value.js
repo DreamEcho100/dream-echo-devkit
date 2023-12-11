@@ -31,7 +31,7 @@ import { inputDateHelpers } from '.';
  */
 export const dateInput = {
 	/**
-	 * @param {import("../..").InputDateTypes} type
+	 * @param {import("..").InputDateTypes} type
 	 * @description used to handle parsing ("date", "time", "datetime-local", "week", "month") and the cases of falsy values results to `null` like when clearing the input
 	 */
 	parse: function (type) {
@@ -43,7 +43,7 @@ export const dateInput = {
 		};
 	},
 	/**
-	 * @param {import("../..").InputDateTypes} type
+	 * @param {import("..").InputDateTypes} type
 	 * @description used to handle formatting ("date", "time", "datetime-local", "week", "month") and the cases of falsy values results to '' like when clearing the input
 	 */
 	format: function (type) {
