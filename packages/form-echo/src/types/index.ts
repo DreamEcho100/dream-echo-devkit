@@ -36,11 +36,18 @@ type ValidationError =
 			error: { message: string };
 	  };
 
+type FormStoreShapeBaseGetMethods<FieldsValues, ValidationSchema> = {
+	[Key in 'getValue' | 'getValues']: FormStoreShapeBaseMethods<
+		FieldsValues,
+		ValidationSchema
+	>[Key];
+};
+
 export type HandleValidation2Props<
 	FieldsValues,
 	ValidationSchema,
 	Key extends keyof ValidationSchema,
-> = FormStoreShapeBaseMethods<FieldsValues, ValidationSchema> & {
+> = FormStoreShapeBaseGetMethods<FieldsValues, ValidationSchema> & {
 	validationEvent: ValidationEvents;
 	get: () => FormStoreShape<FieldsValues, ValidationSchema>;
 
@@ -162,10 +169,10 @@ interface FocusInActive {
 type FocusState<FieldsValues> = FocusActive<FieldsValues> | FocusInActive;
 
 export interface FormStoreShapeBaseMethods<FieldsValues, ValidationSchema> {
-	getValues(): FieldsValues;
-	getValue<Key extends keyof FieldsValues>(
+	getValues: () => FieldsValues;
+	getValue: <Key extends keyof FieldsValues>(
 		name: Key,
-	): FieldsValues[typeof name];
+	) => FieldsValues[typeof name];
 	setSubmitState: (
 		valueOrUpdater:
 			| Partial<SubmitState>

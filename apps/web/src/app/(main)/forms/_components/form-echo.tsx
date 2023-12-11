@@ -1,8 +1,5 @@
 'use client';
 
-import { FormHTMLAttributes, InputHTMLAttributes, useEffect } from 'react';
-import { z } from 'zod';
-import { inputDateHelpers, onFalsy } from '@de100/form-echo/helpers';
 import type {
 	GetValidationValuesFromSchema,
 	HandleSubmitCB,
@@ -12,7 +9,11 @@ import type {
 	FormStoreApi,
 	GetFormStoreApiStore,
 } from '@de100/form-echo/react/zustand';
+import type { FormEvent } from 'react';
 
+import { FormHTMLAttributes, InputHTMLAttributes, useEffect } from 'react';
+import { z } from 'zod';
+import { inputDateHelpers, onFalsy } from '@de100/form-echo/helpers';
 import { useCreateFormStore } from '@de100/form-echo/react/zustand';
 import { useStore } from 'zustand';
 import { cx } from 'class-variance-authority';
@@ -51,7 +52,11 @@ type FormProps<FieldsValues, ValidationSchema> = Omit<
 	'onSubmit'
 > & {
 	store: FormStoreApi<FieldsValues, ValidationSchema>;
-	onSubmit: HandleSubmitCB<FieldsValues, ValidationSchema>;
+	onSubmit: HandleSubmitCB<
+		FieldsValues,
+		ValidationSchema,
+		FormEvent<HTMLFormElement>
+	>;
 };
 
 function Form<FieldsValues, ValidationSchema>({

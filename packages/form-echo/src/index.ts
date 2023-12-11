@@ -369,9 +369,10 @@ function getFormStoreBaseMethods<
 							? _currentState.getValues()
 							: _currentState.fields[fieldName].value) as never,
 						name: fieldName as never,
-						get,
 						validationEvent: 'blur',
-						..._currentState._baseMethods,
+						get,
+						getValue: _currentState._baseMethods.getValue,
+						getValues: _currentState._baseMethods.getValues,
 					});
 					_currentState = _setFieldError<FieldsValues, ValidationSchema>({
 						name: validationName,
@@ -395,7 +396,8 @@ function getFormStoreBaseMethods<
 			}
 
 			return {
-				..._currentState,
+				getValue: _currentState._baseMethods.getValue,
+				getValues: _currentState._baseMethods.getValues,
 				focus: isActive
 					? {
 							isActive: true,
@@ -536,7 +538,8 @@ function getFormStoreBaseMethods<
 							name: name as never,
 							get,
 							validationEvent: 'change',
-							...currentState._baseMethods,
+							getValue: currentState._baseMethods.getValue,
+							getValues: currentState._baseMethods.getValues,
 						},
 						// validationName &&
 						// 	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
