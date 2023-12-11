@@ -1,6 +1,8 @@
-import { type ZodError, type ZodSchema } from 'zod';
-
-export function isZodValidator(validator: unknown): validator is ZodSchema {
+/**
+ * @param {unknown} validator
+ * @returns {validator is import("zod").ZodSchema}
+ */
+export function isZodValidator(validator) {
 	return !!(
 		validator instanceof Object &&
 		'parseAsync' in validator &&
@@ -8,7 +10,11 @@ export function isZodValidator(validator: unknown): validator is ZodSchema {
 	);
 }
 
-export function isZodError(error: unknown): error is ZodError {
+/**
+ * @param {unknown} error
+ * @returns {error is import("zod").ZodError}
+ */
+export function isZodError(error) {
 	return error instanceof Object && 'errors' in error;
 }
 
@@ -19,8 +25,13 @@ export function isZodError(error: unknown): error is ZodError {
 // 		return v.toString(16);
 // 	});
 
-export function errorFormatter(error: unknown) {
-	if (isZodError(error)) return error.format()._errors.join(', ');
+/** @param {unknown} error  */
+export function errorFormatter(error) {
+	if (isZodError(error)) {
+		const errors = error.errors.map((err) => err.message);
+
+		return errors.join('\n');
+	}
 
 	if (error instanceof Error) return error.message;
 

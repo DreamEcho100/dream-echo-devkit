@@ -1,4 +1,4 @@
-import FormStoreField from './FormStoreField';
+import FormStoreField from './form-store-field';
 
 import type { FormEvent } from 'react';
 import type {
@@ -15,7 +15,7 @@ import type {
 import { errorFormatter as defaultErrorFormatter, isZodValidator } from './zod';
 
 export * from './zod';
-export * from './zustand';
+// export * from './zustand';
 // export * from './helpers';
 
 export {
@@ -23,11 +23,10 @@ export {
 	 * @description field value helpers
 	 */
 	default as fvh,
-} from './helpers/fieldValue';
+} from './helpers/field-value';
 
 type SetStateInternal<T> = (
 	partial: T | Partial<T> | ((state: T) => T | Partial<T>),
-	// replace?: boolean | undefined,
 ) => void;
 
 function createFormStoreMetadata<
@@ -586,14 +585,14 @@ function getFormStoreBaseMethods<
 				onFocus: () => {
 					currentState.setFocusState(
 						name,
-						_validationName as keyof ValidationSchema,
+						_validationName, // as keyof ValidationSchema,
 						true,
 					);
 				},
 				onBlur: () => {
 					currentState.setFocusState(
 						name,
-						_validationName as keyof ValidationSchema,
+						_validationName, //as keyof ValidationSchema,
 						false,
 					);
 				},

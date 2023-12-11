@@ -1,19 +1,50 @@
 'use client';
+
 import { FormHTMLAttributes, InputHTMLAttributes, useEffect } from 'react';
-import { ZodSchema, z } from 'zod';
+import { z } from 'zod';
 import { inputDateHelpers, onFalsy } from '@de100/form-echo/helpers';
-import {
-	FormStoreApi,
-	GetFormStoreApiStore,
+import type {
 	GetValidationValuesFromSchema,
 	HandleSubmitCB,
-	HandleValidation2,
 	ValidValidationSchema,
-	createFormStoreBuilder,
-	useCreateFormStore,
 } from '@de100/form-echo';
+import type {
+	FormStoreApi,
+	GetFormStoreApiStore,
+} from '@de100/form-echo/react/zustand';
+
+import { useCreateFormStore } from '@de100/form-echo/react/zustand';
 import { useStore } from 'zustand';
 import { cx } from 'class-variance-authority';
+
+type FormFields = {
+	username?: string;
+	counter: number;
+	dateOfBirth: null | Date;
+	testArr: { key: string; title: string }[];
+};
+
+const validationSchema = {
+	username: (params) => z.string().min(0).max(100).parse(params.value),
+	counter: z.number().nonnegative(),
+	dateOfBirth: z.date(),
+	testExtraValidationItem: (params) => params.getValue('counter') + 10,
+	testArrTitles: (params) => {
+		console.log('?', params.getValue('testArr'));
+		return z
+			.array(z.string())
+			.parse(params.getValue('testArr').map((item) => item.title));
+		// const testArr = params.getValue('testArr');
+
+		// for (const item of testArr) {
+		// 	if (typeof item.title === 'number') {
+		// 		throw new Error("`testArr` shouldn't contain numbers");
+		// 	}
+		// }
+
+		// return testArr;
+	},
+} satisfies ValidValidationSchema<FormFields>;
 
 type FormProps<FieldsValues, ValidationSchema> = Omit<
 	FormHTMLAttributes<HTMLFormElement>,
@@ -23,17 +54,21 @@ type FormProps<FieldsValues, ValidationSchema> = Omit<
 	onSubmit: HandleSubmitCB<FieldsValues, ValidationSchema>;
 };
 
-const Form = <FieldsValues, ValidationSchema>({
+function Form<FieldsValues, ValidationSchema>({
 	store,
 	onSubmit,
 	...props
-}: FormProps<FieldsValues, ValidationSchema>) => {
+}: FormProps<FieldsValues, ValidationSchema>) {
 	const handleSubmit = useStore(store, (state) => state.handleSubmit);
 	const isDirty = useStore(store, (state) => state.isDirty);
 
 	return (
 		<form
-			onSubmit={handleSubmit(onSubmit)}
+			onSubmit={(event) => {
+				debugger;
+
+				handleSubmit(onSubmit)(event);
+			}}
 			{...props}
 			className={cx(
 				isDirty && 'ring-2 ring-inset ring-red-500',
@@ -41,58 +76,54 @@ const Form = <FieldsValues, ValidationSchema>({
 			)}
 		/>
 	);
-};
+}
 
-type FieldProps<FieldsValues, ValidationSchema> = {
+interface FieldProps<FieldsValues, ValidationSchema> {
 	store: FormStoreApi<FieldsValues, ValidationSchema>;
 	name: keyof FieldsValues;
 	validationName?: keyof ValidationSchema;
-	isValueWatched?: boolean;
-};
-type FieldErrorsProps<FieldsValues, ValidationSchema> = {
+}
+interface FieldErrorsProps<FieldsValues, ValidationSchema> {
 	store: FormStoreApi<FieldsValues, ValidationSchema>;
-	name?: keyof ValidationSchema & keyof FieldsValues & string;
+	name?: keyof FieldsValues & string;
 	validationName?: keyof ValidationSchema;
-};
+}
 
-const FieldErrors = <FieldsValues, ValidationSchema>({
-	store,
-	name,
-	validationName,
-}: FieldErrorsProps<FieldsValues, ValidationSchema>) => {
-	const isDirty = useStore(
-		store,
-		(store) => store.validations[validationName ?? name].isDirty,
-	);
-	const errorMessage = useStore(store, (store) => {
-		if (!validationName || !name) return;
+function FieldErrors<FieldsValues, ValidationSchema>(
+	props: FieldErrorsProps<FieldsValues, ValidationSchema>,
+) {
+	const errorMessage = useStore(props.store, (store) => {
+		if (!props.validationName && !props.name) return;
 
-		const validation = store.validations[validationName ?? name];
-		return validation.isDirty && validation.error.message;
+		return store.validations[props.validationName ?? props.name].error?.message;
 	});
 	const isFocused = useStore(
-		store,
-		(store) => store.focus.field?.name === name,
+		props.store,
+		(store) => store.focus.field?.name === props.name,
 	);
 
-	if (isFocused || !isDirty) return <></>;
+	console.log(props.name, 'errorMessage', errorMessage);
 
-	return <ul>{errorMessage && <li>{errorMessage}</li>}</ul>;
-};
+	if (isFocused || !errorMessage) return null;
 
-type InputFieldProps<FieldsValues, ValidationSchema> = Omit<
-	InputHTMLAttributes<HTMLInputElement>,
-	'name'
-> &
-	FieldProps<FieldsValues, ValidationSchema>;
+	return (
+		<ul>
+			<li>{errorMessage}</li>
+		</ul>
+	);
+}
+
+type InputFieldProps<FieldsValues, ValidationSchema> =
+	InputHTMLAttributes<HTMLInputElement> &
+		FieldProps<FieldsValues, ValidationSchema>;
 
 const InputField = <FieldsValues, ValidationSchema>({
 	store,
-	isValueWatched = false,
 	...props
 }: InputFieldProps<FieldsValues, ValidationSchema>) => {
-	const value = useStore(store, (store) =>
-		isValueWatched ? store.fields[props.name].storeToFieldValue : undefined,
+	const value = useStore(
+		store,
+		(store) => store.fields[props.name].storeToFieldValue,
 	);
 	const metadata = useStore(
 		store,
@@ -123,58 +154,14 @@ const InputField = <FieldsValues, ValidationSchema>({
 	);
 };
 
-type FormFields = {
-	username?: string;
-	counter: number;
-	dateOfBirth: null | Date;
-	testArr: { key: string; title: string }[];
-};
-
-const validationSchema = {
-	username: (params) => z.string().min(0).max(100).parse(params.value),
-	counter: z.number().nonnegative(),
-	dateOfBirth: z.date(),
-	testExtraValidationItem: (params) => params.getValue('counter') + 10,
-	testArrTitles: (params) => {
-		const testArr = params.getValue('testArr');
-		z.array(z.string()).parse(
-			params.getValue('testArr').map((item) => item.title),
-		);
-		debugger;
-
-		for (const item of testArr) {
-			if (typeof item.title === 'number') {
-				throw new Error("`testArr` shouldn't contain numbers");
-			}
-		}
-
-		return testArr;
-	},
-} satisfies {
-	[Key in keyof FormFields | (string & {})]?: Key extends keyof FormFields
-		? HandleValidation2<FormFields, Record<string, unknown>, Key> | ZodSchema
-		:
-				| HandleValidation2<FormFields, Record<string, unknown>, string>
-				| ZodSchema;
-};
-
-/*
-Record<
-	string,
-	HandleValidation2<FormFields, Record<string, unknown>, string> | ZodSchema
->;
-*/
-
 const RandomListGenerator = <
 	FieldsValues extends { testArr: FormFields['testArr'] },
 	ValidationSchema,
->({
-	store,
-}: {
+>(props: {
 	store: FormStoreApi<FieldsValues, ValidationSchema>;
 }) => {
-	const setFieldValue = useStore(store, (store) => store.setFieldValue);
-	const testArr = useStore(store, (store) => store.fields.testArr.value);
+	const setFieldValue = useStore(props.store, (store) => store.setFieldValue);
+	const testArr = useStore(props.store, (store) => store.fields.testArr.value);
 
 	return (
 		<>
@@ -225,26 +212,7 @@ export default function FormEcho() {
 			dateOfBirth: null, // new Date(),
 			testArr: [],
 		} as FormFields,
-		validationSchema: {
-			username: (params) => z.string().min(0).max(100).parse(params.value),
-			counter: z.number().nonnegative(),
-			dateOfBirth: z.date(),
-			testExtraValidationItem: (params) => params.getValue('counter') + 10,
-			testArrTitles: (params) => {
-				return z
-					.array(z.string())
-					.parse(params.getValue('testArr').map((item) => item.title));
-				// const testArr = params.getValue('testArr');
-
-				// for (const item of testArr) {
-				// 	if (typeof item.title === 'number') {
-				// 		throw new Error("`testArr` shouldn't contain numbers");
-				// 	}
-				// }
-
-				// return testArr;
-			},
-		} satisfies ValidValidationSchema<FormFields>, //validationSchema,
+		validationSchema,
 		valuesFromFieldsToStore: {
 			counter: Number,
 			dateOfBirth: (value: any) =>
@@ -311,24 +279,26 @@ export default function FormEcho() {
 			}}
 			className='flex w-fit flex-col gap-2 bg-neutral-500 p-4 text-white'
 		>
-			<InputField store={formStore} name='username' isValueWatched />
-			<FieldErrors store={formStore} name='username' />
-			<InputField
+			<InputField store={formStore} name='username' />
+			<FieldErrors
 				store={formStore}
-				name='counter'
-				type='number'
-				isValueWatched
+				validationName='username'
+				name='username'
 			/>
-			<FieldErrors store={formStore} name='counter' />
-			<InputField
+			<InputField store={formStore} name='counter' type='number' />
+			<FieldErrors store={formStore} validationName='counter' name='counter' />
+			<InputField store={formStore} name='dateOfBirth' type='date' />
+			<FieldErrors
 				store={formStore}
+				validationName='dateOfBirth'
 				name='dateOfBirth'
-				type='date'
-				isValueWatched
 			/>
-			<FieldErrors store={formStore} name='dateOfBirth' />
 			<RandomListGenerator store={formStore} />
-			<FieldErrors store={formStore} validationName='testArrTitles' />
+			<FieldErrors
+				store={formStore}
+				validationName='testArrTitles'
+				name='testArr'
+			/>
 
 			<div className='flex gap-4'>
 				<button type='submit' className='capitalize'>

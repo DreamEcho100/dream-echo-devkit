@@ -9,14 +9,14 @@ export default defineConfig([
 		dts: true,
 		minify: true,
 		splitting: true,
-		entry: ['./src/index.ts', './src/utils/helpers/index.js'],
+		entry: ['./src/utils/react/zustand/index.js'],
 		// Credit to: <https://stackoverflow.com/a/74604287/13961420>
 		esbuildOptions(options) {
-			options.external = ['zod'];
+			options.external = ['use-sync-external-store', 'zustand', 'react'];
 		},
 		format: ['esm', 'cjs'],
 		sourcemap: true,
 		tsconfig: path.resolve(process.cwd(), './tsconfig.build.json'),
-		outDir: 'dist',
+		outDir: './src/utils/react/zustand/dist',
 	},
 ]);

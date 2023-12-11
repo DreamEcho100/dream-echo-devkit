@@ -1,4 +1,7 @@
-import { type FormStoreShape, type GetValidationValuesFromSchema } from '.';
+import type {
+	FormStoreShape,
+	GetValidationValuesFromSchema,
+} from '../../../types';
 import type { StoreApi } from 'zustand';
 
 export type FormStoreApi<
@@ -19,14 +22,3 @@ export type GetFormStoreApiStore<
 		? GetValidationValuesFromSchema<ValidationSchema>
 		: FieldsValues
 	: never;
-
-// type TValues = GetFromFieldStore<FormStore>;
-// type TSchema = GetFromFieldStore<FormStore, "validationSchemas">;
-// type TValidatedValues = GetFromFieldStore<FormStore, "validatedValues">;
-
-// const values = {} as TValues;
-// values.category;
-// const validationSchemas = {} as TSchema;
-// validationSchemas.categoryName;
-// const validatedValues = {} as TValidatedValues;
-// validatedValues.categoryName;
