@@ -4,7 +4,7 @@ import type {
 	GetValidationValuesFromSchema,
 	HandleSubmitCB,
 	ValidValidationSchema,
-} from '@de100/form-echo';
+} from '@de100/form-echo/';
 import type {
 	FormStoreApi,
 	GetFormStoreApiStore,
@@ -34,6 +34,7 @@ const validationSchema = {
 		console.log('?', params.getValue('testArr'));
 		return z
 			.array(z.string())
+			.min(1)
 			.parse(params.getValue('testArr').map((item) => item.title));
 		// const testArr = params.getValue('testArr');
 
@@ -69,11 +70,7 @@ function Form<FieldsValues, ValidationSchema>({
 
 	return (
 		<form
-			onSubmit={(event) => {
-				debugger;
-
-				handleSubmit(onSubmit)(event);
-			}}
+			onSubmit={handleSubmit(onSubmit)}
 			{...props}
 			className={cx(
 				isDirty && 'ring-2 ring-inset ring-red-500',

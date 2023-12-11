@@ -10,10 +10,11 @@ export default defineConfig([
 		minify: true,
 		splitting: true,
 		entry: ['./src/index.ts', './src/helpers/index.js'],
+		treeshake: true,
 		// Credit to: <https://stackoverflow.com/a/74604287/13961420>
-		esbuildOptions(options) {
-			options.external = ['zod'];
-		},
+		// esbuildOptions(options) {
+		// 	options.external = ['zod'];
+		// },
 		format: ['esm', 'cjs'],
 		sourcemap: true,
 		tsconfig: path.resolve(process.cwd(), './tsconfig.build.json'),

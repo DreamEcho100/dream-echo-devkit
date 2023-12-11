@@ -230,12 +230,8 @@ function _setFieldError<FieldsValues, ValidationSchema>(params: {
 				}
 			}
 
-			// validation.events[params.validationEvent].error = {
-			// 	message: params.message,
-			// };
-			validation.error = { message: params.message };
-			// validation.events[params.validationEvent].isDirty = true;
 			validation.isDirty = true;
+			validation.error = { message: params.message };
 		} else {
 			validation.passedAttempts++;
 			validation.events[params.validationEvent].passedAttempts++;
@@ -247,10 +243,8 @@ function _setFieldError<FieldsValues, ValidationSchema>(params: {
 				}
 			}
 
-			// validation.events[params.validationEvent].error = null;
-			validation.error = null;
-			// validation.events[params.validationEvent].isDirty = false;
 			validation.isDirty = false;
+			validation.error = null;
 		}
 
 		currentState.currentDirtyFieldsCounter = currentDirtyFieldsCounter;
