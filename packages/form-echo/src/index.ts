@@ -7,7 +7,6 @@ export {
 
 import FormStoreField from './form-store-field';
 
-import type { FormEvent } from 'react';
 import type {
 	ValidationEvents,
 	CreateFormStoreProps,
@@ -593,15 +592,15 @@ function getFormStoreBaseMethods<
 				},
 			};
 		};
-	const handleSubmit: FormStoreBaseMethods['handleSubmit'] = (
-		cb: HandleSubmitCB<FieldsValues, ValidationSchema>,
+	const handleSubmit: FormStoreBaseMethods['handleSubmit'] = <Event>(
+		cb: HandleSubmitCB<FieldsValues, ValidationSchema, Event>,
 	) => {
 		return async function (
-			event: FormEvent<HTMLFormElement>,
+			event: Event,
 			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 			// @ts-ignore
 		): Promise<unknown> | unknown {
-			event.preventDefault();
+			(event as { preventDefault: () => void }).preventDefault();
 
 			const currentState = get();
 

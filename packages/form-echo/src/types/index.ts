@@ -1,6 +1,5 @@
 import type FormStoreField from '../form-store-field';
-import { type FormEvent } from 'react';
-import { type ZodSchema, type z } from 'zod';
+import type { ZodSchema, z } from 'zod';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TFunction = (...args: any[]) => any;
@@ -201,9 +200,9 @@ export interface FormStoreShapeBaseMethods<FieldsValues, ValidationSchema> {
 			| AnyValueExceptFunctions,
 		validationName?: ValidationName,
 	) => void;
-	handleSubmit: (
-		cb: HandleSubmitCB<FieldsValues, ValidationSchema>,
-	) => (event: FormEvent<HTMLFormElement>) => Promise<unknown> | unknown;
+	handleSubmit: <Event>(
+		cb: HandleSubmitCB<FieldsValues, ValidationSchema, Event>,
+	) => (event: Event) => Promise<unknown> | unknown;
 
 	errorFormatter: (error: unknown, validationEvent: ValidationEvents) => string;
 	setFieldError: (params: {
@@ -245,9 +244,9 @@ export interface FormStoreShape<FieldsValues, ValidationSchema>
 	_baseMethods: FormStoreShapeBaseMethods<FieldsValues, ValidationSchema>;
 }
 
-export interface HandleSubmitCB<FieldsValues, ValidationSchema> {
+export interface HandleSubmitCB<FieldsValues, ValidationSchema, Event> {
 	(params: {
-		event: FormEvent<HTMLFormElement>;
+		event: Event;
 		validatedValues: GetValidationValuesFromSchema<ValidationSchema>;
 		values: FieldsValues;
 		hasError: boolean;
@@ -283,9 +282,7 @@ export type GetFromFormStoreShape<
 /****************        ****************/
 export interface CreateFormStoreProps<
 	FieldsValues,
-	// eslint-disable-next-line @typescript-eslint/ban-types
 	ValidationSchema extends ValidValidationSchema<FieldsValues>,
-	// | undefined = undefined, // Record<keyof FieldsValues | (string & {}), unknown>,
 > {
 	initialValues: FieldsValues;
 	isUpdatingFieldsValueOnError?: boolean;
@@ -296,22 +293,6 @@ export interface CreateFormStoreProps<
 	validationSchema?: ValidationSchema extends ValidValidationSchema<FieldsValues>
 		? ValidationSchema
 		: undefined;
-	// {
-	// 	[Key in keyof ValidationSchema]:
-	// 		| HandleValidation2<FieldsValues, ValidationSchema, Key>
-	// 		| ZodSchema<unknown>;
-	// 	/*
-	// 	Key extends keyof FieldsValues
-	// 		? ValidationSchema[Key] extends
-	// 				| ZodSchema<unknown>
-	// 				| HandleValidation<unknown>
-	// 			? ValidationSchema[Key]
-	// 			: never
-	// 		: Key extends Exclude<string, keyof FieldsValues>
-	// 		? (fields: FieldsValues, validationEvent: ValidationEvents) => unknown
-	// 		: never;
-	// 		*/
-	// };
 	valuesFromFieldsToStore?: {
 		[Key in keyof FieldsValues]?: (fieldValue: string) => FieldsValues[Key];
 	};
