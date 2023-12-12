@@ -5,8 +5,6 @@ export {
 	default as fvh,
 } from './helpers/field-value';
 
-import FormStoreField from './form-store-field';
-
 import type {
 	ValidationEvents,
 	CreateFormStoreProps,
@@ -17,6 +15,9 @@ import type {
 	FormStoreShapeBaseMethods,
 	ValidValidationSchema,
 } from './types';
+import type { FormErrorShape } from './types/_internal';
+
+import FormStoreField from './form-store-field';
 import { errorFormatter as defaultErrorFormatter, isZodValidator } from './zod';
 
 type SetStateInternal<T> = (
@@ -199,11 +200,9 @@ function createFormStoreFields<
 	return fields;
 }
 
-function _setFieldError<FieldsValues, ValidationSchema>(params: {
-	name: keyof ValidationSchema;
-	message: string | null;
-	validationEvent: ValidationEvents;
-}) {
+function _setFieldError<FieldsValues, ValidationSchema>(
+	params: FormErrorShape<keyof ValidationSchema>,
+) {
 	return function (
 		currentState: FormStoreShape<FieldsValues, ValidationSchema>,
 	): FormStoreShape<FieldsValues, ValidationSchema> {
@@ -219,7 +218,7 @@ function _setFieldError<FieldsValues, ValidationSchema>(params: {
 		};
 		validation.currentEvent = params.validationEvent;
 
-		if (params.message) {
+		if (params.error) {
 			validation.failedAttempts++;
 			validation.events[params.validationEvent].failedAttempts++;
 
@@ -231,7 +230,7 @@ function _setFieldError<FieldsValues, ValidationSchema>(params: {
 			}
 
 			validation.isDirty = true;
-			validation.error = { message: params.message };
+			validation.error = params.error;
 		} else {
 			validation.passedAttempts++;
 			validation.events[params.validationEvent].passedAttempts++;
@@ -370,14 +369,14 @@ function getFormStoreBaseMethods<
 					});
 					_currentState = _setFieldError<FieldsValues, ValidationSchema>({
 						name: validationName,
-						message: null,
+						error: null,
 						validationEvent: 'blur',
 					})(_currentState);
 				} catch (error) {
-					const message = _currentState.errorFormatter(error, 'blur');
+					const formattedError = _currentState.errorFormatter(error, 'blur');
 					_currentState = _setFieldError<FieldsValues, ValidationSchema>({
 						name: validationName,
-						message,
+						error: formattedError,
 						validationEvent: 'blur',
 					})(_currentState);
 				}
@@ -446,7 +445,7 @@ function getFormStoreBaseMethods<
 					counter: 0,
 					passedAttempts: 0,
 					failedAttempts: 0,
-					errorMessage: null,
+					error: null,
 					isActive: false,
 				};
 			}
@@ -547,13 +546,13 @@ function getFormStoreBaseMethods<
 
 				currentState = setFieldError({
 					name: _validationName,
-					message: null,
+					error: null,
 					validationEvent: 'change',
 				})(currentState);
 			} catch (error) {
 				currentState = setFieldError({
 					name: _validationName,
-					message: currentState.errorFormatter(error, 'change'),
+					error: currentState.errorFormatter(error, 'change'),
 					validationEvent: 'change',
 				})(currentState);
 
@@ -609,14 +608,7 @@ function getFormStoreBaseMethods<
 			const values: Record<string, unknown> = {};
 			const validatedValues: Record<string, unknown> = {};
 
-			const errors: Record<
-				string,
-				{
-					name: string | number | symbol;
-					message: string | null;
-					validationEvent: ValidationEvents;
-				}
-			> = {};
+			const errors: Record<string, FormErrorShape<keyof ValidationSchema>> = {};
 
 			let hasError = false;
 
@@ -648,13 +640,13 @@ function getFormStoreBaseMethods<
 
 					errors[fieldName] = {
 						name: fieldName,
-						message: null,
+						error: null,
 						validationEvent: 'submit',
 					};
 				} catch (error) {
 					errors[fieldName] = {
 						name: fieldName,
-						message: currentState.errorFormatter(error, 'submit'),
+						error: currentState.errorFormatter(error, 'submit'),
 						validationEvent: 'submit',
 					};
 				}
@@ -683,13 +675,13 @@ function getFormStoreBaseMethods<
 
 					errors[manualFieldName as string] = {
 						name: manualFieldName,
-						message: null,
+						error: null,
 						validationEvent: 'submit',
 					};
 				} catch (error) {
 					errors[manualFieldName as string] = {
 						name: manualFieldName,
-						message: currentState.errorFormatter(error, 'submit'),
+						error: currentState.errorFormatter(error, 'submit'),
 						validationEvent: 'submit',
 					};
 				}
@@ -698,9 +690,10 @@ function getFormStoreBaseMethods<
 			type NecessaryEvil = {
 				values: FieldsValues;
 				validatedValues: GetValidationValuesFromSchema<ValidationSchema>;
-				error: Parameters<
-					typeof _setFieldError<FieldsValues, ValidationSchema> // ['utils']['setFieldError']
-				>[0];
+				error: { [Key in keyof ValidationSchema]: FormErrorShape<Key> };
+				// Parameters<
+				// 	typeof _setFieldError<FieldsValues, ValidationSchema> // ['utils']['setFieldError']
+				// >[0];
 				errors: {
 					[Key in keyof ValidationSchema]: {
 						name: Key;
@@ -716,10 +709,10 @@ function getFormStoreBaseMethods<
 				const errorObj = errors[errorKey];
 
 				_currentState = _setFieldError<FieldsValues, ValidationSchema>(
-					errors[errorKey] as unknown as NecessaryEvil['error'],
+					errors[errorKey],
 				)(_currentState);
 
-				if (typeof errorObj.message !== 'string') continue;
+				if (!errorObj.error) continue;
 
 				hasError = true;
 			}
@@ -732,20 +725,20 @@ function getFormStoreBaseMethods<
 						validatedValues:
 							validatedValues as NecessaryEvil['validatedValues'],
 						hasError,
-						errors: errors as NecessaryEvil['errors'],
+						errors: errors as unknown as NecessaryEvil['errors'],
 					});
 					currentState.setSubmitState((prev) => ({
 						isActive: false,
 						counter: prev.counter + 1,
 						passedAttempts: prev.counter + 1,
-						errorMessage: null,
+						error: null,
 					}));
 				} catch (error) {
 					currentState.setSubmitState((prev) => ({
 						isActive: false,
 						counter: prev.counter + 1,
 						failedAttempts: prev.counter + 1,
-						errorMessage: currentState.errorFormatter(error, 'submit'),
+						error: currentState.errorFormatter(error, 'submit'),
 					}));
 				}
 			} else {
@@ -754,7 +747,7 @@ function getFormStoreBaseMethods<
 					isActive: false,
 					counter: prev.counter + 1,
 					failedAttempts: prev.counter + 1,
-					errorMessage: null,
+					error: null,
 				}));
 			}
 		};
@@ -803,7 +796,7 @@ export function createFormStoreBuilder<
 				counter: 0,
 				passedAttempts: 0,
 				failedAttempts: 0,
-				errorMessage: null,
+				error: null,
 				isActive: false,
 			},
 			focus: { isActive: false, field: null },

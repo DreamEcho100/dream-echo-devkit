@@ -1,15 +1,12 @@
 'use client';
 
-import type {
-	GetValidationValuesFromSchema,
-	HandleSubmitCB,
-	ValidValidationSchema,
-} from '@de100/form-echo/';
+import type { FormError, ValidValidationSchema } from '@de100/form-echo';
 import type {
 	FormStoreApi,
-	GetFormStoreApiStore,
+	FormStoreFieldProps,
+	FormStoreFormProps,
+	FormStoreValidationProps,
 } from '@de100/form-echo/react/zustand';
-import type { FormEvent } from 'react';
 
 import { FormHTMLAttributes, InputHTMLAttributes, useEffect } from 'react';
 import { z } from 'zod';
@@ -31,7 +28,6 @@ const validationSchema = {
 	dateOfBirth: z.date(),
 	testExtraValidationItem: (params) => params.getValue('counter') + 10,
 	testArrTitles: (params) => {
-		console.log('?', params.getValue('testArr'));
 		return z
 			.array(z.string())
 			.min(1)
@@ -51,14 +47,8 @@ const validationSchema = {
 type FormProps<FieldsValues, ValidationSchema> = Omit<
 	FormHTMLAttributes<HTMLFormElement>,
 	'onSubmit'
-> & {
-	store: FormStoreApi<FieldsValues, ValidationSchema>;
-	onSubmit: HandleSubmitCB<
-		FieldsValues,
-		ValidationSchema,
-		FormEvent<HTMLFormElement>
-	>;
-};
+> &
+	FormStoreFormProps<FieldsValues, ValidationSchema>;
 
 function Form<FieldsValues, ValidationSchema>({
 	store,
@@ -80,49 +70,54 @@ function Form<FieldsValues, ValidationSchema>({
 	);
 }
 
-interface FieldProps<FieldsValues, ValidationSchema> {
-	store: FormStoreApi<FieldsValues, ValidationSchema>;
-	name: keyof FieldsValues;
-	validationName?: keyof ValidationSchema;
-}
-interface FieldErrorsProps<FieldsValues, ValidationSchema> {
-	store: FormStoreApi<FieldsValues, ValidationSchema>;
-	name?: keyof FieldsValues & string;
-	validationName?: keyof ValidationSchema;
+type FieldErrorsProps<FieldsValues, ValidationSchema> =
+	FormStoreValidationProps<FieldsValues, ValidationSchema>;
+
+function FieldErrorsBase(props: { error: FormError }) {
+	if (Array.isArray(props.error)) {
+		return (
+			<ul>
+				{props.error.map((err, index) => (
+					<li key={index}>
+						<p>
+							<strong>{err.path.join(' -> ')}:&nbsp;</strong>
+							{err.message}
+						</p>
+					</li>
+				))}
+			</ul>
+		);
+	}
+
+	return <p>{props.error.message}</p>;
 }
 
 function FieldErrors<FieldsValues, ValidationSchema>(
 	props: FieldErrorsProps<FieldsValues, ValidationSchema>,
 ) {
-	const errorMessage = useStore(props.store, (store) => {
+	const error = useStore(props.store, (store) => {
 		if (!props.validationName && !props.name) return;
 
-		return store.validations[props.validationName ?? props.name].error?.message;
+		return store.validations[props.validationName ?? props.name].error;
 	});
 	const isFocused = useStore(
 		props.store,
 		(store) => store.focus.field?.name === props.name,
 	);
 
-	console.log(props.name, 'errorMessage', errorMessage);
+	if (isFocused || !error) return null;
 
-	if (isFocused || !errorMessage) return null;
-
-	return (
-		<ul>
-			<li>{errorMessage}</li>
-		</ul>
-	);
+	return <FieldErrorsBase error={error} />;
 }
 
 type InputFieldProps<FieldsValues, ValidationSchema> =
 	InputHTMLAttributes<HTMLInputElement> &
-		FieldProps<FieldsValues, ValidationSchema>;
+		FormStoreFieldProps<FieldsValues, ValidationSchema>;
 
-const InputField = <FieldsValues, ValidationSchema>({
+function InputField<FieldsValues, ValidationSchema>({
 	store,
 	...props
-}: InputFieldProps<FieldsValues, ValidationSchema>) => {
+}: InputFieldProps<FieldsValues, ValidationSchema>) {
 	const value = useStore(
 		store,
 		(store) => store.fields[props.name].storeToFieldValue,
@@ -154,14 +149,12 @@ const InputField = <FieldsValues, ValidationSchema>({
 			{...fieldEventsListeners}
 		/>
 	);
-};
+}
 
-const RandomListGenerator = <
+function RandomListGenerator<
 	FieldsValues extends { testArr: FormFields['testArr'] },
 	ValidationSchema,
->(props: {
-	store: FormStoreApi<FieldsValues, ValidationSchema>;
-}) => {
+>(props: { store: FormStoreApi<FieldsValues, ValidationSchema> }) {
 	const setFieldValue = useStore(props.store, (store) => store.setFieldValue);
 	const testArr = useStore(props.store, (store) => store.fields.testArr.value);
 
@@ -203,15 +196,14 @@ const RandomListGenerator = <
 			</ul>
 		</>
 	);
-};
+}
 
 export default function FormEcho() {
-	// <FormFields, typeof validationSchema>
 	const formStore = useCreateFormStore({
 		initialValues: {
 			username: 'Test',
 			counter: 1,
-			dateOfBirth: null, // new Date(),
+			dateOfBirth: null,
 			testArr: [],
 		} as FormFields,
 		validationSchema,
@@ -225,10 +217,12 @@ export default function FormEcho() {
 			dateOfBirth: (value: any) =>
 				value ? inputDateHelpers.formatDate(value, 'date') : '',
 		},
-		// validationEvents: { change: true },
 	});
 
 	if (typeof window !== 'undefined') {
+		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+		// @ts-ignore
+		window.z = z;
 		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 		// @ts-ignore
 		window.formStore = formStore;
@@ -240,7 +234,6 @@ export default function FormEcho() {
 		window.formStoresArr.push(formStore);
 	}
 
-	const username = useStore(formStore, (store) => store.fields.username.value);
 	const submit = useStore(formStore, (store) => store.submit);
 
 	useEffect(() => {
@@ -256,12 +249,6 @@ export default function FormEcho() {
 			clearInterval(intervalId);
 		};
 	}, [formStore]);
-
-	type TT = GetValidationValuesFromSchema<
-		GetFormStoreApiStore<typeof formStore, 'validationSchemas'>
-	>;
-	const tt = {} as TT;
-	tt.testArrTitles;
 
 	return (
 		<Form
@@ -315,7 +302,7 @@ export default function FormEcho() {
 				</button>
 			</div>
 
-			{submit.errorMessage && <p>{submit.errorMessage}</p>}
+			{submit.error && <FieldErrorsBase error={submit.error} />}
 		</Form>
 	);
 }

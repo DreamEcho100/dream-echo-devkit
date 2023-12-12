@@ -9,10 +9,10 @@
 		"resolvePackageJsonImports": true,
 		"module": "NodeNext",
 		"moduleResolution": "NodeNext",
+		"target": "ESNext",
 		"declaration": true,
 		// "composite": true,
 		// "declarationMap": true,
-		"target": "ESNext",
 		"outDir": "./dist",
 		"baseUrl": ".",
 		"paths": { "~/*": ["./src/*"] }

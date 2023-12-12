@@ -1,5 +1,6 @@
 import type FormStoreField from '../form-store-field';
 import type { ZodSchema, z } from 'zod';
+import type { ErrorFormatter, FormErrorShape } from './_internal';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TFunction = (...args: any[]) => any;
@@ -27,13 +28,14 @@ export type GetValidationValuesFromSchema<Schema> = {
 /****************        ****************/
 /************** Validation **************/
 /****************        ****************/
+
 export type ValidationEvents = 'submit' | 'change' | 'blur'; // | 'mount' | 'blur';
 type ValidationError =
 	| { currentEvent: ValidationEvents | null; isDirty: false; error: null }
 	| {
 			currentEvent: ValidationEvents;
 			isDirty: true;
-			error: { message: string };
+			error: FormError;
 	  };
 
 type FormStoreShapeBaseGetMethods<FieldsValues, ValidationSchema> = {
@@ -43,7 +45,7 @@ type FormStoreShapeBaseGetMethods<FieldsValues, ValidationSchema> = {
 	>[Key];
 };
 
-export type HandleValidation2Props<
+export type HandleValidationProps<
 	FieldsValues,
 	ValidationSchema,
 	Key extends keyof ValidationSchema,
@@ -64,20 +66,20 @@ export type HandleValidation2Props<
 // 			value: never;
 // 			name: never;
 // 	  });
-export interface HandleValidation2<
+export interface HandleValidation<
 	FieldsValues,
 	ValidationSchema,
 	Key extends keyof ValidationSchema,
 > {
 	(
-		params: HandleValidation2Props<FieldsValues, ValidationSchema, Key>,
+		params: HandleValidationProps<FieldsValues, ValidationSchema, Key>,
 	): ValidationSchema[Key];
 }
 
 export type ValidValidationSchemaItem<FieldsValues, Key> =
 	| (Key extends keyof FieldsValues
-			? HandleValidation2<FieldsValues, Record<string, unknown>, Key & string>
-			: HandleValidation2<FieldsValues, Record<string, unknown>, string>)
+			? HandleValidation<FieldsValues, Record<string, unknown>, Key & string>
+			: HandleValidation<FieldsValues, Record<string, unknown>, string>)
 	| ZodSchema;
 export type ValidValidationSchema<FieldsValues> = {
 	// eslint-disable-next-line @typescript-eslint/ban-types
@@ -100,7 +102,7 @@ export type FormStoreValidation<
 	Key extends keyof ValidationSchema,
 > = {
 	// Should always return the validated value
-	handler: HandleValidation2<
+	handler: HandleValidation<
 		FieldsValues,
 		ValidationSchema,
 		Key
@@ -154,9 +156,15 @@ interface SubmitState {
 	counter: number;
 	passedAttempts: number;
 	failedAttempts: number;
-	errorMessage: string | null;
+	error: FormError | null;
 	isActive: boolean;
 }
+
+export type FormError =
+	| {
+			message: string;
+	  }
+	| { message: string; path: (string | number)[] }[];
 
 interface FocusActive<FieldsValues> {
 	isActive: true;
@@ -211,12 +219,8 @@ export interface FormStoreShapeBaseMethods<FieldsValues, ValidationSchema> {
 		cb: HandleSubmitCB<FieldsValues, ValidationSchema, Event>,
 	) => (event: Event) => Promise<unknown> | unknown;
 
-	errorFormatter: (error: unknown, validationEvent: ValidationEvents) => string;
-	setFieldError: (params: {
-		name: keyof ValidationSchema;
-		message: string | null;
-		validationEvent: ValidationEvents;
-	}) => void;
+	errorFormatter: ErrorFormatter;
+	setFieldError: (params: FormErrorShape<keyof ValidationSchema>) => void;
 	getFieldEventsListeners: (
 		name: keyof FieldsValues,
 		validationName?: keyof ValidationSchema,
@@ -262,7 +266,7 @@ export interface HandleSubmitCB<FieldsValues, ValidationSchema, Event> {
 				name: Key;
 				message: string | null;
 				validationEvent: ValidationEvents;
-			};
+			}; // FormErrorShape<Key>;
 		};
 	}): unknown | Promise<unknown>;
 }
@@ -308,8 +312,5 @@ export interface CreateFormStoreProps<
 			storeValue: FieldsValues[Key],
 		) => string | ReadonlyArray<string> | number | undefined;
 	};
-	errorFormatter?: (
-		error: unknown,
-		validationEvent: ValidationEvents,
-	) => string;
+	errorFormatter?: ErrorFormatter;
 }

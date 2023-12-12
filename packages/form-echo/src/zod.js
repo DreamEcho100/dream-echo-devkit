@@ -25,15 +25,30 @@ export function isZodError(error) {
 // 		return v.toString(16);
 // 	});
 
-/** @param {unknown} error  */
-export function errorFormatter(error) {
-	if (isZodError(error)) {
-		const errors = error.errors.map((err) => err.message);
+/**
+ * @param {unknown} err
+ * @returns {import("./types").FormError}
+ * */
+export function errorFormatter(err) {
+	if (isZodError(err)) {
+		// /** @type {({ message: string; path: (string | number)[] })[]} */
+		// const errors = [];
 
-		return errors.join('\n');
+		// for (const item of err.issues) {
+		// 	errors.push({
+		// 		message: item.message,
+		// 		path: item.path,
+		// 	});
+		// }
+
+		if (err.formErrors.formErrors.length > 0) {
+			return { message: err.formErrors.formErrors[0] };
+		}
+
+		return err.errors;
 	}
 
-	if (error instanceof Error) return error.message;
+	if (err instanceof Error) return err;
 
-	return 'Something went wrong!';
+	return { message: 'Something went wrong!' };
 }

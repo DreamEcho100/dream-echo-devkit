@@ -7,7 +7,15 @@
 		"store",
 		"manage",
 		"react",
-		"zustand"
+		"zustand",
+		"zod",
+		"front-end",
+		"hooks",
+		"forms",
+		"form-validation",
+		"validation",
+		"typescript",
+		"react-hooks"
 	],
 	"license": "MIT",
 	"author": {
@@ -43,7 +51,8 @@
 	},
 	"scripts": {
 		"lint": "eslint *.ts*",
-		"build": "cross-env NODE_ENV=production tsup --config=./tsup.config.ts",
+		"build": "npm run build:base & npm run build:react:zustand",
+		"build:base": "cross-env NODE_ENV=production tsup --config=./tsup.config.ts",
 		"build:react:zustand": "cross-env NODE_ENV=production tsup --config=./src/react/zustand/tsup.config.ts",
 		"dev": "pnpm run build -- --watch",
 		"typechecking": "tsc --noEmit"
