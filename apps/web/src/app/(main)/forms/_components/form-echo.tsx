@@ -209,12 +209,12 @@ export default function FormEcho() {
 		validationSchema,
 		valuesFromFieldsToStore: {
 			counter: Number,
-			dateOfBirth: (value: any) =>
+			dateOfBirth: (value) =>
 				!value ? null : inputDateHelpers.parseDate(value, 'date'),
 		},
 		valuesFromStoreToFields: {
 			username: onFalsy.toEmptyString,
-			dateOfBirth: (value: any) =>
+			dateOfBirth: (value) =>
 				value ? inputDateHelpers.formatDate(value, 'date') : '',
 		},
 	});
