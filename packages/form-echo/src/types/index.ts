@@ -29,7 +29,7 @@ export type GetValidationValuesFromSchema<Schema> = {
 /************** Validation **************/
 /****************        ****************/
 
-export type ValidationEvents = 'submit' | 'change' | 'blur'; // | 'mount' | 'blur';
+export type ValidationEvents = 'submit' | 'change' | 'focus'; // | 'mount' | 'custom'
 type ValidationError =
 	| { currentEvent: ValidationEvents | null; isDirty: false; error: null }
 	| {
@@ -191,7 +191,8 @@ export interface FormStoreShapeBaseMethods<FieldsValues, ValidationSchema> {
 		validationName:
 			| keyof ValidationSchema
 			| (keyof FieldsValues & keyof ValidationSchema),
-		isActive: boolean,
+		// isActive: boolean,
+		type: 'in' | 'out',
 	) => void;
 	resetFormStore: (itemsToReset?: {
 		fields?: boolean;

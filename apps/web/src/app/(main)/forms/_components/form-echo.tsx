@@ -71,7 +71,9 @@ function Form<FieldsValues, ValidationSchema>({
 }
 
 type FieldErrorsProps<FieldsValues, ValidationSchema> =
-	FormStoreValidationProps<FieldsValues, ValidationSchema>;
+	FormStoreValidationProps<FieldsValues, ValidationSchema> & {
+		ignoreFocus?: boolean;
+	};
 
 function FieldErrorsBase(props: { error: FormError }) {
 	if (Array.isArray(props.error)) {
@@ -100,12 +102,14 @@ function FieldErrors<FieldsValues, ValidationSchema>(
 
 		return store.validations[props.validationName ?? props.name].error;
 	});
-	const isFocused = useStore(
-		props.store,
-		(store) => store.focus.field?.name === props.name,
-	);
 
-	if (isFocused || !error) return null;
+	const isHidden = useStore(props.store, (store) => {
+		if (props.ignoreFocus) return false;
+
+		return !error || store.focus.field?.name === props.name;
+	});
+
+	if (isHidden || !error) return null;
 
 	return <FieldErrorsBase error={error} />;
 }
@@ -147,19 +151,32 @@ function InputField<FieldsValues, ValidationSchema>({
 			value={value}
 			// {...getFieldEventsListeners(props.name, props.validationName)}
 			{...fieldEventsListeners}
+			onFocus={fieldEventsListeners.onFocus}
 		/>
 	);
 }
 
 function RandomListGenerator<
 	FieldsValues extends { testArr: FormFields['testArr'] },
-	ValidationSchema,
+	ValidationSchema extends ValidValidationSchema<FieldsValues>,
 >(props: { store: FormStoreApi<FieldsValues, ValidationSchema> }) {
 	const setFieldValue = useStore(props.store, (store) => store.setFieldValue);
 	const testArr = useStore(props.store, (store) => store.fields.testArr.value);
 
+	const getFieldEventsListeners = useStore(
+		props.store,
+		(store) => store.getFieldEventsListeners,
+	);
+	const fieldEventsListeners = getFieldEventsListeners(
+		'testArr',
+		'testArrTitles',
+	);
+
 	return (
-		<>
+		<div
+			onFocus={fieldEventsListeners.onFocus}
+			onBlur={fieldEventsListeners.onBlur}
+		>
 			<button
 				type='button'
 				onClick={() => {
@@ -168,9 +185,9 @@ function RandomListGenerator<
 						...prev,
 						{
 							key:
-								randomNum > 0.8 ? randomNum : randomNum.toString(36).slice(2),
+								randomNum > 0.5 ? randomNum : randomNum.toString(36).slice(2),
 							title:
-								randomNum > 0.8 ? randomNum : randomNum.toString(36).slice(2),
+								randomNum > 0.5 ? randomNum : randomNum.toString(36).slice(2),
 						},
 					]);
 				}}
@@ -194,7 +211,7 @@ function RandomListGenerator<
 					</li>
 				))}
 			</ul>
-		</>
+		</div>
 	);
 }
 
@@ -266,7 +283,7 @@ export default function FormEcho() {
 				});
 				console.log('After submission');
 			}}
-			className='flex w-fit flex-col gap-2 bg-neutral-500 p-4 text-white'
+			className='flex w-full max-w-sm flex-col gap-2 bg-neutral-500 p-4 text-white'
 		>
 			<InputField store={formStore} name='username' />
 			<FieldErrors
@@ -287,6 +304,7 @@ export default function FormEcho() {
 				store={formStore}
 				validationName='testArrTitles'
 				name='testArr'
+				ignoreFocus
 			/>
 
 			<div className='flex gap-4'>

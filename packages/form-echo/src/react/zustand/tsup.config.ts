@@ -12,8 +12,9 @@ export default defineConfig([
 		entry: ['src/react/zustand/index.js'],
 		// Credit to: <https://stackoverflow.com/a/74604287/13961420>
 		esbuildOptions(options) {
-			options.external = ['use-sync-external-store', 'zustand', 'react'];
+			options.external = ['use-sync-external-store', 'react'];
 		},
+		treeshake: true,
 		format: ['esm', 'cjs'],
 		sourcemap: true,
 		tsconfig: path.resolve(process.cwd(), './tsconfig.build.json'),

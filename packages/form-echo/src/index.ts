@@ -101,7 +101,7 @@ function createFormStoreValidations<
 
 	let fieldValidationEvents: NonNullable<typeof params.validationEvents> = {
 		submit: true,
-		blur: true,
+		focus: true,
 	};
 	let isFieldHavingPassedValidations = false;
 	let fieldValidationEventKey: ValidationEvents;
@@ -129,15 +129,15 @@ function createFormStoreValidations<
 			failedAttempts: 0,
 			passedAttempts: 0,
 			events: {
-				blur: {
-					failedAttempts: 0,
-					passedAttempts: 0,
-					isActive: params.validationEvents?.blur ?? true,
-				},
 				change: {
 					failedAttempts: 0,
 					passedAttempts: 0,
 					isActive: params.validationEvents?.change ?? false,
+				},
+				focus: {
+					failedAttempts: 0,
+					passedAttempts: 0,
+					isActive: params.validationEvents?.focus ?? true,
 				},
 				submit: {
 					failedAttempts: 0,
@@ -342,22 +342,19 @@ function getFormStoreBaseMethods<
 	const setFocusState: FormStoreBaseMethods['setFocusState'] = (
 		fieldName,
 		validationName,
-		isActive,
+		type,
 	) => {
 		set(function (currentState) {
 			let _currentState = currentState;
 
-			if (
-				!isActive &&
-				_currentState.validations[validationName].events.blur.isActive
-			) {
+			if (_currentState.validations[validationName].events.focus.isActive) {
 				try {
 					_currentState.validations[validationName].handler({
-						value: (validationName && fieldName !== validationName
-							? _currentState.getValues()
-							: _currentState.fields[fieldName].value) as never,
+						value: (!validationName || fieldName === validationName
+							? _currentState.fields[fieldName].value
+							: undefined) as never,
 						name: fieldName as never,
-						validationEvent: 'blur',
+						validationEvent: 'focus',
 						get,
 						getValue: _currentState._baseMethods.getValue,
 						getValues: _currentState._baseMethods.getValues,
@@ -365,36 +362,35 @@ function getFormStoreBaseMethods<
 					_currentState = _setFieldError<FieldsValues, ValidationSchema>({
 						name: validationName,
 						error: null,
-						validationEvent: 'blur',
+						validationEvent: 'focus',
 					})(_currentState);
 				} catch (error) {
-					const formattedError = _currentState.errorFormatter(error, 'blur');
+					const formattedError = _currentState.errorFormatter(error, 'focus');
 					_currentState = _setFieldError<FieldsValues, ValidationSchema>({
 						name: validationName,
 						error: formattedError,
-						validationEvent: 'blur',
+						validationEvent: 'focus',
 					})(_currentState);
 				}
 
 				if (
 					_currentState.focus.isActive &&
-					_currentState.focus.field.name !== fieldName
+					_currentState.focus.field.name === fieldName
 				)
 					return _currentState;
 			}
 
 			return {
-				getValue: _currentState._baseMethods.getValue,
-				getValues: _currentState._baseMethods.getValues,
-				focus: isActive
-					? {
-							isActive: true,
-							field: {
-								name: fieldName,
-								id: _currentState.fields[fieldName].id,
-							},
-					  }
-					: { isActive: false, field: null },
+				focus:
+					type === 'in'
+						? {
+								isActive: true,
+								field: {
+									name: fieldName,
+									id: _currentState.fields[fieldName].id,
+								},
+						  }
+						: { isActive: false, field: null },
 			};
 		});
 	};
@@ -551,23 +547,16 @@ function getFormStoreBaseMethods<
 		(name, validationName) => {
 			const currentState = get();
 			const _validationName = validationName ?? name;
+
 			return {
 				onChange: (event: { target: { value: string } }) => {
 					currentState.handleInputChange(name, event.target.value);
 				},
 				onFocus: () => {
-					currentState.setFocusState(
-						name,
-						_validationName, // as keyof ValidationSchema,
-						true,
-					);
+					currentState.setFocusState(name, _validationName, 'in');
 				},
 				onBlur: () => {
-					currentState.setFocusState(
-						name,
-						_validationName, //as keyof ValidationSchema,
-						false,
-					);
+					currentState.setFocusState(name, _validationName, 'out');
 				},
 			};
 		};
