@@ -15,14 +15,14 @@ import type {
 	FormStoreShapeBaseMethods,
 	ValidValidationSchema,
 } from './types';
-import type { FormErrorShape } from './types/_internal';
+import type {
+	FormErrorShape,
+	AnyValueExceptFunctions,
+	SetStateInternal,
+} from './types/_internal';
 
 import FormStoreField from './form-store-field';
 import { errorFormatter as defaultErrorFormatter, isZodValidator } from './zod';
-
-type SetStateInternal<T> = (
-	partial: T | Partial<T> | ((state: T) => T | Partial<T>),
-) => void;
 
 function createFormStoreMetadata<
 	FieldsValues,
@@ -47,7 +47,7 @@ function createFormStoreMetadata<
 		// //
 		manualValidatedFields: [],
 		manualValidatedFieldsMap: [],
-		// //
+		// // //
 		referencedValidatedFields: [],
 		referencedValidatedFieldsMap: [],
 	} as unknown as FormStore['metadata'];
@@ -257,10 +257,6 @@ function _setFieldError<FieldsValues, ValidationSchema>(
 	};
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type TFunction = (...args: any[]) => any;
-type AnyValueExceptFunctions = // eslint-disable-next-line @typescript-eslint/ban-types
-	Exclude<{} | null | undefined, TFunction>;
 function _setFieldValue<
 	FieldsValues,
 	ValidationSchema,
@@ -333,7 +329,6 @@ function getFormStoreBaseMethods<
 	) => {
 		set(function (currentState) {
 			return {
-				// ...currentState,
 				submit: {
 					...currentState.submit,
 					...(typeof valueOrUpdater === 'function'
@@ -434,8 +429,6 @@ function getFormStoreBaseMethods<
 						validations[key].events[eventKey].isActive = false;
 						validations[key].events[eventKey].failedAttempts = 0;
 						validations[key].events[eventKey].passedAttempts = 0;
-						// validations[key].events[eventKey].isDirty = false;
-						// validations[key].events[eventKey].error = null;
 					}
 				}
 				isDirty = false;
@@ -458,7 +451,6 @@ function getFormStoreBaseMethods<
 			}
 
 			return {
-				// ...currentState,
 				fields,
 				validations,
 				isDirty,
@@ -520,28 +512,19 @@ function getFormStoreBaseMethods<
 			try {
 				currentState = setFieldValue(
 					name,
-					currentState.validations[_validationName].handler(
-						{
-							value: (validationName &&
-							// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-							// @ts-ignore
-							validationName !== name
-								? currentState.getValues()
-								: value) as never,
-							name: name as never,
-							get,
-							validationEvent: 'change',
-							getValue: currentState._baseMethods.getValue,
-							getValues: currentState._baseMethods.getValues,
-						},
-						// validationName &&
-						// 	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-						// 	// @ts-ignore
-						// 	validationName !== name
-						// 	? currentState.getValues()
-						// 	: value,
-						// 'change',
-					),
+					currentState.validations[_validationName].handler({
+						value: (validationName &&
+						// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+						// @ts-ignore
+						validationName !== name
+							? currentState.getValues()
+							: value) as never,
+						name: name as never,
+						get,
+						validationEvent: 'change',
+						getValue: currentState._baseMethods.getValue,
+						getValues: currentState._baseMethods.getValues,
+					}),
 				)(currentState);
 
 				currentState = setFieldError({
@@ -661,17 +644,13 @@ function getFormStoreBaseMethods<
 						continue;
 					}
 
-					validatedValues[manualFieldName as string] = validationSchema(
-						{
-							value: undefined as never,
-							name: undefined as never,
-							get,
-							validationEvent: 'submit',
-							...currentState._baseMethods,
-						},
-						// values as FieldsValues,
-						// 'submit',
-					);
+					validatedValues[manualFieldName as string] = validationSchema({
+						value: undefined as never,
+						name: undefined as never,
+						get,
+						validationEvent: 'submit',
+						...currentState._baseMethods,
+					});
 
 					errors[manualFieldName as string] = {
 						name: manualFieldName,
@@ -691,9 +670,6 @@ function getFormStoreBaseMethods<
 				values: FieldsValues;
 				validatedValues: GetValidationValuesFromSchema<ValidationSchema>;
 				error: { [Key in keyof ValidationSchema]: FormErrorShape<Key> };
-				// Parameters<
-				// 	typeof _setFieldError<FieldsValues, ValidationSchema> // ['utils']['setFieldError']
-				// >[0];
 				errors: {
 					[Key in keyof ValidationSchema]: {
 						name: Key;
