@@ -1,4 +1,7 @@
-import { type UseInfiniteQueryResult } from '@tanstack/react-query';
+import type {
+	InfiniteData,
+	UseInfiniteQueryResult,
+} from '@tanstack/react-query';
 import {
 	type Table,
 	type RowSelectionState,
@@ -7,8 +10,8 @@ import {
 	type VisibilityState,
 	type ColumnDef,
 } from '@tanstack/react-table';
-import { type UseTRPCInfiniteQueryResult } from '@trpc/react-query/shared';
-import { type StoreApi } from 'zustand';
+import type { UseTRPCInfiniteQueryResult } from '@trpc/react-query/shared';
+import type { StoreApi } from 'zustand';
 
 export type QueryInput = {
 	offset?: number | null | undefined;
@@ -16,30 +19,31 @@ export type QueryInput = {
 } & Record<string, unknown>;
 
 export type InferItemFromInfiniteQuery<TInfiniteQuery, TError> =
-	TInfiniteQuery extends UseTRPCInfiniteQueryResult<infer IData, TError>
+	TInfiniteQuery extends UseTRPCInfiniteQueryResult<
+		InfiniteData<infer IData>,
+		TError
+	>
 		? IData extends { items: (infer TIem)[] }
 			? TIem
 			: never
-		: TInfiniteQuery extends UseInfiniteQueryResult<infer IData, TError>
+		: TInfiniteQuery extends UseInfiniteQueryResult<
+				InfiniteData<infer IData>,
+				TError
+		  >
 		? IData extends { items: (infer TIem)[] }
 			? TIem
 			: never
 		: never;
 
-export type InfiniteQuery<TData = unknown, TError = unknown> =
-	| UseInfiniteQueryResult<
-			{
-				items: TData[];
-			} & Record<string, unknown>,
-			TError
-	  >
-	| UseTRPCInfiniteQueryResult<
-			{
-				items: TData[];
-				nextCursor: unknown;
-			},
-			TError
-	  >;
+export type InfiniteQuery<
+	TData = unknown,
+	TError = unknown,
+> = UseInfiniteQueryResult<
+	InfiniteData<{ items: TData[] } & Record<string, unknown>>,
+	TError
+>;
+// | UseInfiniteQueryResult<{ items: TData[] } & Record<string, unknown>, TError>
+// | UseTRPCInfiniteQueryResult<{ items: TData[]; nextCursor: unknown }, TError>;
 
 export type StoreUpdaterOrValue<
 	TData,

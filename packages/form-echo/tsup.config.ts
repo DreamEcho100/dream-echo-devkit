@@ -9,8 +9,8 @@ export default defineConfig([
 		dts: true,
 		minify: true,
 		splitting: true,
-		entry: ['./src/index.ts', './src/helpers/index.js'],
 		treeshake: true,
+		entry: ['./src/index.js', './src/helpers/index.js'],
 		// Credit to: <https://stackoverflow.com/a/74604287/13961420>
 		// esbuildOptions(options) {
 		// 	options.external = ['zod'];

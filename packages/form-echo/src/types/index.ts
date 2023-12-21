@@ -1,6 +1,6 @@
 import type FormStoreField from '../form-store-field';
 import type { ZodSchema, z } from 'zod';
-import type { ErrorFormatter, FormErrorShape } from './_internal';
+import type { ErrorFormatter, FormErrorShape } from './internal';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TFunction = (...args: any[]) => any;
@@ -152,7 +152,8 @@ export interface FormStoreMetadata<FieldsValues, ValidationSchema> {
 		true
 	>;
 }
-interface SubmitState {
+
+export interface SubmitState {
 	counter: number;
 	passedAttempts: number;
 	failedAttempts: number;
@@ -267,7 +268,7 @@ export interface HandleSubmitCB<FieldsValues, ValidationSchema, Event> {
 				name: Key;
 				message: string | null;
 				validationEvent: ValidationEvents;
-			}; // FormErrorShape<Key>;
+			};
 		};
 	}): unknown | Promise<unknown>;
 }

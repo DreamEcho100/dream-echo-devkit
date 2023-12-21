@@ -36,13 +36,13 @@ export const handleCreateTableStore = <TData, TQueryInput extends QueryInput>({
 				const pagination =
 					typeof updaterOrValue === 'function'
 						? updaterOrValue({
-								pageIndex: prevData.queryInput.offset || 0,
-								pageSize: prevData.queryInput.limit || 0,
+								pageIndex: prevData.queryInput.offset ?? 0,
+								pageSize: prevData.queryInput.limit ?? 0,
 						  })
 						: {
 								pageIndex:
-									updaterOrValue.pageIndex || prevData.queryInput.offset,
-								pageSize: updaterOrValue.pageSize || prevData.queryInput.limit,
+									updaterOrValue.pageIndex ?? prevData.queryInput.offset,
+								pageSize: updaterOrValue.pageSize ?? prevData.queryInput.limit,
 						  };
 
 				return {
@@ -101,13 +101,13 @@ export const useCreateTableStore = <TData, TQueryInput extends QueryInput>(
 	const storeRef = useRef(
 		handleCreateTableStore<TData, TQueryInput>({
 			...props,
-			baseId: props.baseId || baseId,
+			baseId: props.baseId ?? baseId,
 		}),
 	);
 
 	useMemo(() => {
 		if (
-			storeRef.current.getState().queryInput.limit !== props.queryInput.limit ||
+			storeRef.current.getState().queryInput.limit !== props.queryInput.limit ??
 			storeRef.current.getState().baseId !== props.baseId
 		)
 			storeRef.current.setState(() => ({

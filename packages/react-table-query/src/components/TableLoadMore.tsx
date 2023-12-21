@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { type StoreApi, useStore } from 'zustand';
+import { useStore } from 'zustand';
+import type { StoreApi } from 'zustand';
 import type { InfiniteQuery, QueryInput, TableStore } from '../utils/types';
 import { cx } from '../utils/internal';
 
@@ -22,7 +23,7 @@ const TableLoadMore = <
 		loadMoreButton: string;
 	};
 }) => {
-	const offset = useStore(store, (state) => state.queryInput.offset || 0);
+	const offset = useStore(store, (state) => state.queryInput.offset ?? 0);
 
 	const storeUtils = useStore(store, (state) => state);
 
@@ -38,7 +39,7 @@ const TableLoadMore = <
 			infiniteQuery.data.pages.length !== 0 &&
 			offset + 1 === infiniteQuery.data.pages.length - 1;
 
-		let pagesLength = infiniteQuery?.data?.pages?.length || 0;
+		let pagesLength = infiniteQuery?.data?.pages?.length ?? 0;
 		if (isLastPageEmpty && pagesLength !== 0) pagesLength--;
 		return {
 			isLastPageEmpty,
@@ -52,8 +53,8 @@ const TableLoadMore = <
 	const isLoadMoreButtonDisabled = useMemo(
 		() =>
 			(!infiniteQuery.hasNextPage &&
-				offset + 1 === infiniteQuery.data?.pages.length) ||
-			infiniteQuery.isFetching ||
+				offset + 1 === infiniteQuery.data?.pages.length) ??
+			infiniteQuery.isFetching ??
 			(isInBeforeLastPage && isLastPageEmpty),
 		[
 			offset,
@@ -82,7 +83,7 @@ const TableLoadMore = <
 						if (res.data && Array.isArray(res.data?.pages)) {
 							const lastPage = res.data.pages[res.data.pages.length - 1];
 							if (
-								!lastPage ||
+								!lastPage ??
 								(isInBeforeLastPage && lastPage.items.length === 0)
 							)
 								return;
@@ -90,7 +91,7 @@ const TableLoadMore = <
 
 						storeUtils.setQueryInput((prev) => ({
 							...prev,
-							offset: (prev.offset || 0) + 1,
+							offset: (prev.offset ?? 0) + 1,
 						}));
 					});
 				}}

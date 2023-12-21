@@ -5,7 +5,7 @@ import {
 	type UseGetTableCurrentPageAndPaginationProps,
 } from './types';
 
-export const cx = (...classesArr: (string | undefined)[]) => {
+export function cx(...classesArr: (string | undefined)[]) {
 	let classesStr = '';
 	let className: string | undefined;
 	for (className of classesArr) {
@@ -13,7 +13,7 @@ export const cx = (...classesArr: (string | undefined)[]) => {
 	}
 
 	return classesStr.trimEnd();
-};
+}
 
 export const useGetTableCurrentPageAndPagination = <
 	TData,
@@ -22,21 +22,21 @@ export const useGetTableCurrentPageAndPagination = <
 	props: UseGetTableCurrentPageAndPaginationProps<TData, TQueryInput>,
 ) => {
 	const pageViewMode = useStore(props.store, (state) => state.pageViewMode);
-	const offset = useStore(props.store, (state) => state.queryInput.offset || 0);
+	const offset = useStore(props.store, (state) => state.queryInput.offset ?? 0);
 	const defaultPage = useMemo(() => [], []);
 	const currentPage = useMemo(() => {
 		if (pageViewMode === 'INFINITE_SCROLL')
-			return (props.infiniteQuery?.data?.pages || defaultPage)
+			return (props.infiniteQuery.data?.pages ?? defaultPage)
 				.map((page) => page.items)
 				.flat(1);
 
-		return props.infiniteQuery?.data?.pages?.[offset]?.items || defaultPage;
-	}, [offset, props.infiniteQuery.data?.pages, pageViewMode, defaultPage]);
+		return props.infiniteQuery?.data?.pages?.[offset]?.items ?? defaultPage;
+	}, [pageViewMode, props.infiniteQuery, defaultPage, offset]);
 
 	const pagination = useMemo(
 		() => ({
 			offset,
-			limit: props.infiniteQuery?.data?.pages.length || 0,
+			limit: props.infiniteQuery?.data?.pages.length ?? 0,
 		}),
 		[offset, props.infiniteQuery?.data?.pages.length],
 	);

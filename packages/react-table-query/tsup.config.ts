@@ -11,12 +11,10 @@ export default defineConfig([
 	{
 		clean: true,
 		dts: true,
-		// minify: NODE_ENV === 'production',
+		minify: true,
+		splitting: true,
+		treeshake: true,
 		entry: ['./src/index.ts'],
-		// // Credit to: <https://stackoverflow.com/a/74604287/13961420>
-		// esbuildOptions(options) {
-		// 	options.external = [];
-		// },
 		format: ['esm', 'cjs'],
 		sourcemap: true,
 		tsconfig: path.resolve(__dirname, './tsconfig.build.json'),
