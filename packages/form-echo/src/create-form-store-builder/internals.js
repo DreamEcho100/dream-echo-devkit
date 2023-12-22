@@ -27,8 +27,10 @@ import { errorFormatter as defaultErrorFormatter } from '../zod';
 /**
  * @template FieldsValues
  * @template {ValidValidationSchema<FieldsValues>} ValidationSchema
- * @param {CreateFormStoreProps<FieldsValues, ValidationSchema>} params
- * @param {string} baseId
+ * @param {CreateFormStoreProps<FieldsValues, ValidationSchema>} params - Parameters for creating form store metadata.
+ * @param {string} baseId - Base identifier for the form store metadata.
+ *
+ * @description Creates metadata for the form store based on the provided parameters.
  */
 export function createFormStoreMetadata(params, baseId) {
 	/**
@@ -42,7 +44,7 @@ export function createFormStoreMetadata(params, baseId) {
 	 */
 
 	if (!params.initialValues || typeof params.initialValues !== 'object')
-		throw new Error('');
+		throw new Error('No initial values provided');
 
 	const metadata = /** @type {Metadata} */ (
 		/** @type {unknown} */
@@ -99,8 +101,10 @@ export function createFormStoreMetadata(params, baseId) {
 /**
  * @template FieldsValues
  * @template {ValidValidationSchema<FieldsValues>} ValidationSchema
- * @param {CreateFormStoreProps<FieldsValues, ValidationSchema>} params
- * @param {FormStoreMetadata<FieldsValues, ValidationSchema>} metadata
+ * @param {CreateFormStoreProps<FieldsValues, ValidationSchema>} params - Parameters for creating form store validations.
+ * @param {FormStoreMetadata<FieldsValues, ValidationSchema>} metadata - Metadata object for the form store.
+ *
+ * @description Creates validations for the form store based on the provided parameters and metadata.
  */
 export function createFormStoreValidations(params, metadata) {
 	/**
@@ -189,9 +193,11 @@ export function createFormStoreValidations(params, metadata) {
 /**
  * @template FieldsValues
  * @template {ValidValidationSchema<FieldsValues>} ValidationSchema
- * @param {CreateFormStoreProps<FieldsValues, ValidationSchema>} params
- * @param {string} baseId
- * @param {FormStoreMetadata<FieldsValues, ValidationSchema>} metadata
+ * @param {CreateFormStoreProps<FieldsValues, ValidationSchema>} params - Parameters for creating form store fields.
+ * @param {string} baseId - Base identifier for the form store fields.
+ * @param {FormStoreMetadata<FieldsValues, ValidationSchema>} metadata - Metadata object for the form store.
+ *
+ * @description Creates fields for the form store based on the provided parameters and metadata.
  */
 export function createFormStoreFields(params, baseId, metadata) {
 	/**
@@ -238,7 +244,7 @@ const itemsToResetDefaults = {
  * @param {import('../types/internal').FormErrorShape<keyof ValidationSchema>} params
  * @returns {(currentStat: import('../types').FormStoreShape<FieldsValues, ValidationSchema>) => import('../types').FormStoreShape<FieldsValues, ValidationSchema>}
  */
-function _setFieldError(params) {
+function _setError(params) {
 	return function (currentState) {
 		if (
 			!currentState.validations[params.name].events[params.validationEvent]
@@ -339,7 +345,7 @@ export function getFormStoreBaseMethods(set, get, params) {
 	 * @typedef {FormStoreBaseMethods['setFocusState']} SetFocusState
 	 * @typedef {FormStoreBaseMethods['resetFormStore']} ResetFormStore
 	 * @typedef {FormStoreBaseMethods['setFieldValue']} SetFieldValue
-	 * @typedef {FormStoreBaseMethods['setFieldError']} SetFieldError
+	 * @typedef {FormStoreBaseMethods['setError']} SetFieldError
 	 * @typedef {FormStoreBaseMethods['errorFormatter']} ErrorFormatter
 	 * @typedef {FormStoreBaseMethods['getFieldEventsListeners']} GetFieldEventsListeners
 	 * @typedef {FormStoreBaseMethods['handleInputChange']} HandleInputChange
@@ -397,11 +403,16 @@ export function getFormStoreBaseMethods(set, get, params) {
 						name: /** @type {never} */ (fieldName),
 						validationEvent: 'focus',
 						get,
-						getValue: _currentState._baseMethods.getValue,
-						getValues: _currentState._baseMethods.getValues,
+						getValue: _currentState.getValue,
+						getValues: _currentState.getValues,
+						setError: _currentState.setError,
+						setSubmitState: _currentState.setSubmitState,
+						setFocusState: _currentState.setFocusState,
+						resetFormStore: _currentState.resetFormStore,
+						setFieldValue: _currentState.setFieldValue,
 					});
 					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-					_currentState = _setFieldError({
+					_currentState = _setError({
 						name: validationName,
 						error: null,
 						validationEvent: 'focus',
@@ -409,7 +420,7 @@ export function getFormStoreBaseMethods(set, get, params) {
 				} catch (error) {
 					const formattedError = _currentState.errorFormatter(error, 'focus');
 					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-					_currentState = _setFieldError({
+					_currentState = _setError({
 						name: validationName,
 						error: formattedError,
 						validationEvent: 'focus',
@@ -505,8 +516,8 @@ export function getFormStoreBaseMethods(set, get, params) {
 		return set(_setFieldValue(name, value));
 	};
 	/** @type {SetFieldError} */
-	const setFieldError = (params) => {
-		set(_setFieldError(params));
+	const setError = (params) => {
+		set(_setError(params));
 	};
 	/** @type {ErrorFormatter} */
 	const errorFormatter = params.errorFormatter ?? defaultErrorFormatter;
@@ -551,20 +562,25 @@ export function getFormStoreBaseMethods(set, get, params) {
 						name: /** @type {never} */ (name),
 						get,
 						validationEvent: 'change',
-						getValue: currentState._baseMethods.getValue,
-						getValues: currentState._baseMethods.getValues,
+						getValue: currentState.getValue,
+						getValues: currentState.getValues,
+						setError: currentState.setError,
+						setSubmitState: currentState.setSubmitState,
+						setFocusState: currentState.setFocusState,
+						resetFormStore: currentState.resetFormStore,
+						setFieldValue: currentState.setFieldValue,
 					}),
 				)(currentState);
 
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-				currentState = _setFieldError({
+				currentState = _setError({
 					name: /** @type {keyof ValidationSchema} */ (_validationName),
 					error: null,
 					validationEvent: 'change',
 				})(currentState);
 			} catch (error) {
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-				currentState = _setFieldError({
+				currentState = _setError({
 					name: /** @type {keyof ValidationSchema} */ (_validationName),
 					error: currentState.errorFormatter(error, 'change'),
 					validationEvent: 'change',
@@ -644,7 +660,7 @@ export function getFormStoreBaseMethods(set, get, params) {
 						name: fieldName,
 						get,
 						validationEvent: 'submit',
-						...currentState._baseMethods,
+						...currentState,
 					});
 
 					errors[fieldName] = {
@@ -677,7 +693,7 @@ export function getFormStoreBaseMethods(set, get, params) {
 							name: /** @type {never} */ (undefined),
 							get,
 							validationEvent: 'submit',
-							...currentState._baseMethods,
+							...currentState,
 						});
 
 					errors[/** @type {string} */ (manualFieldName)] = {
@@ -709,7 +725,7 @@ export function getFormStoreBaseMethods(set, get, params) {
 				const errorObj = errors[errorKey];
 
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-				_currentState = _setFieldError(errors[errorKey])(_currentState);
+				_currentState = _setError(errors[errorKey])(_currentState);
 
 				if (!errorObj.error) continue;
 
@@ -765,7 +781,7 @@ export function getFormStoreBaseMethods(set, get, params) {
 		setFocusState,
 		resetFormStore,
 		setFieldValue,
-		setFieldError,
+		setError,
 		handleInputChange,
 		getFieldEventsListeners,
 		handleSubmit,

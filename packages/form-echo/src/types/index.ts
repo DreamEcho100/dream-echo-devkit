@@ -38,8 +38,17 @@ type ValidationError =
 			error: FormError;
 	  };
 
-type FormStoreShapeBaseGetMethods<FieldsValues, ValidationSchema> = {
-	[Key in 'getValue' | 'getValues']: FormStoreShapeBaseMethods<
+type HandleValidationPropsPassedMethodsKeys =
+	| 'getValue'
+	| 'getValues'
+	| 'setError'
+	| 'setSubmitState'
+	| 'setFocusState'
+	| 'resetFormStore'
+	| 'setFieldValue';
+
+type HandleValidationPropsPassedMethods<FieldsValues, ValidationSchema> = {
+	[Key in HandleValidationPropsPassedMethodsKeys]: FormStoreShapeBaseMethods<
 		FieldsValues,
 		ValidationSchema
 	>[Key];
@@ -49,7 +58,7 @@ export type HandleValidationProps<
 	FieldsValues,
 	ValidationSchema,
 	Key extends keyof ValidationSchema,
-> = FormStoreShapeBaseGetMethods<FieldsValues, ValidationSchema> & {
+> = HandleValidationPropsPassedMethods<FieldsValues, ValidationSchema> & {
 	validationEvent: ValidationEvents;
 	get: () => FormStoreShape<FieldsValues, ValidationSchema>;
 
@@ -222,7 +231,7 @@ export interface FormStoreShapeBaseMethods<FieldsValues, ValidationSchema> {
 	) => (event: Event) => Promise<unknown> | unknown;
 
 	errorFormatter: ErrorFormatter;
-	setFieldError: (params: FormErrorShape<keyof ValidationSchema>) => void;
+	setError: (params: FormErrorShape<keyof ValidationSchema>) => void;
 	getFieldEventsListeners: (
 		name: keyof FieldsValues,
 		validationName?: keyof ValidationSchema,

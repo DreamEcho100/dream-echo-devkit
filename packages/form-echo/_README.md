@@ -72,30 +72,30 @@ I'm building a library to manage forms in React.js, it's supposed to have the fo
       - field `metadata` like `id`, `name`, and `initialValue`.
 
 - Can track validation history.
-- Have some useful utilities like `reInitFieldsValues`, `setFieldValue`, and `setFieldErrors`.
+- Have some useful utilities like `reInitFieldsValues`, `setFieldValue`, and `setErrors`.
 
 ## Bugs To Fox
 
 ```ts
 const handleAllFieldsShapePartial = <TAllFields extends TAllFieldsShape>(
-	fields: TAllFieldsShapePartial<TAllFields>,
+ fields: TAllFieldsShapePartial<TAllFields>,
 ): TAllFields => {
-	const allFields = {} as TAllFields;
+ const allFields = {} as TAllFields;
 
-	for (const fieldName in fields) {
-		/*
+ for (const fieldName in fields) {
+  /*
    const fieldName: Extract<keyof TAllFields, string>
    Type 'TAllFieldsShapePartial<TAllFields>[Extract<keyof TAllFields, string>] & { errors: []; isDirty: false; isTouched: false; }' is not assignable to type 'TAllFields[Extract<keyof TAllFields, string>]'.
    'TAllFieldsShapePartial<TAllFields>[Extract<keyof TAllFields, string>] & { errors: []; isDirty: false; isTouched: false; }' is assignable to the constraint of type 'TAllFields[Extract<keyof TAllFields, string>]', but 'TAllFields[Extract<keyof TAllFields, string>]' could be instantiated with a different subtype of constraint 'TFieldShape'.ts(2322)
   */
-		allFields[fieldName] = {
-			...fields[fieldName],
-			errors: [],
-			isDirty: false,
-			isTouched: false,
-		} as (typeof allFields)[typeof fieldName];
-	}
+  allFields[fieldName] = {
+   ...fields[fieldName],
+   errors: [],
+   isDirty: false,
+   isTouched: false,
+  } as (typeof allFields)[typeof fieldName];
+ }
 
-	return allFields;
+ return allFields;
 };
 ```
