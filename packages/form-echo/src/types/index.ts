@@ -1,6 +1,8 @@
-import type FormStoreField from '../form-store-field';
+import type FormStoreField from '../_/field';
 import type { ZodSchema, z } from 'zod';
 import type { ErrorFormatter, FormErrorShape } from './internal';
+import type { FormStoreMetadata } from '../_/metadata';
+import type { FormStoreValidations } from '../_/validations';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TFunction = (...args: any[]) => any;
@@ -142,25 +144,25 @@ export interface FieldMetadata<Name, Value> {
 /****************        ****************/
 /**********   FormStoreShape   **********/
 /****************        ****************/
-export interface FormStoreMetadata<FieldsValues, ValidationSchema> {
-	fieldsNames: (keyof FieldsValues)[];
-	fieldsNamesMap: Record<keyof FieldsValues, true>;
-	//
-	validatedFieldsNamesMap: Record<keyof ValidationSchema, true>;
-	validatedFieldsNames: (keyof ValidationSchema)[];
-	//
-	manualValidatedFields: Exclude<keyof ValidationSchema, keyof FieldsValues>[];
-	manualValidatedFieldsMap: Record<
-		Exclude<keyof ValidationSchema, keyof FieldsValues>,
-		true
-	>;
-	//
-	referencedValidatedFields: (keyof ValidationSchema & keyof FieldsValues)[];
-	referencedValidatedFieldsMap: Record<
-		keyof ValidationSchema & keyof FieldsValues,
-		true
-	>;
-}
+// export interface FormStoreMetadata<FieldsValues, ValidationSchema> {
+// 	fieldsNames: (keyof FieldsValues)[];
+// 	fieldsNamesMap: Record<keyof FieldsValues, true>;
+// 	//
+// 	validatedFieldsNamesMap: Record<keyof ValidationSchema, true>;
+// 	validatedFieldsNames: (keyof ValidationSchema)[];
+// 	//
+// 	manualValidatedFields: Exclude<keyof ValidationSchema, keyof FieldsValues>[];
+// 	manualValidatedFieldsMap: Record<
+// 		Exclude<keyof ValidationSchema, keyof FieldsValues>,
+// 		true
+// 	>;
+// 	//
+// 	referencedValidatedFields: (keyof ValidationSchema & keyof FieldsValues)[];
+// 	referencedValidatedFieldsMap: Record<
+// 		keyof ValidationSchema & keyof FieldsValues,
+// 		true
+// 	>;
+// }
 
 export interface SubmitState {
 	counter: number;
@@ -252,14 +254,7 @@ export interface FormStoreShape<FieldsValues, ValidationSchema>
 	focus: FocusState<FieldsValues>;
 
 	metadata: FormStoreMetadata<FieldsValues, ValidationSchema>;
-	validations: {
-		[Key in keyof GetValidationValuesFromSchema<ValidationSchema>]: FormStoreValidation<
-			FieldsValues,
-			ValidationSchema,
-			// GetValidationValuesFromSchema<ValidationSchema>,
-			Key
-		>;
-	};
+	validations: FormStoreValidations<FieldsValues, ValidationSchema>;
 	fields: {
 		[Key in NonNullable<keyof FieldsValues>]: FormStoreField<FieldsValues, Key>;
 	};
@@ -304,7 +299,7 @@ export type GetFromFormStoreShape<
 /****************        ****************/
 export interface CreateFormStoreProps<
 	FieldsValues,
-	ValidationSchema extends ValidValidationSchema<FieldsValues>,
+	ValidationSchema, // extends ValidValidationSchema<FieldsValues>,
 > {
 	initialValues: FieldsValues;
 	isUpdatingFieldsValueOnError?: boolean;

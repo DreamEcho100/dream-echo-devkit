@@ -172,7 +172,7 @@ result;
 // >;
 
 // ee.fields.username.value;
-// ee.fields.username.validation.handler;
+// ee.fields.username.validations.handler;
 
 // const eee = createFormStore({
 // 	initialValues: {
@@ -186,7 +186,7 @@ result;
 // });
 
 // eee.getState().fields.username.value;
-// eee.getState().fields.username.validation.handler;
+// eee.getState().fields.username.validations.handler;
 
 // const Comp = () => {
 // 	const username = useFormStore(eee, (store) => store.fields.username);
@@ -243,8 +243,8 @@ result;
 // > = {
 //   [Key in keyof ReturnType<Store["getState"]>["fields"]]: ReturnType<
 //     Store["getState"]
-//   >["fields"][Key]["validation"] extends FieldValidation<any>
-//     ? ReturnType<Store["getState"]>["fields"][Key]["validation"]["handler"]
+//   >["fields"][Key]["validations"] extends FieldValidation<any>
+//     ? ReturnType<Store["getState"]>["fields"][Key]["validations"]["handler"]
 //     : never;
 // };
 
@@ -302,10 +302,10 @@ result;
 // });
 
 // t.getState().fields.username.value;
-// t.getState().fields.username.validation.handler;
+// t.getState().fields.username.validations.handler;
 
 // t.getState().fields.age.value;
-// t.getState().fields.age.validation.handler;
+// t.getState().fields.age.validations.handler;
 
 // type IV = { username: null | string; age: string };
 
@@ -317,13 +317,13 @@ result;
 // // tt._?.username;
 
 // tt.fields.username.value;
-// tt.fields.username.validation.handler;
-// type _ttUsername = typeof tt.fields.username.validation.handler;
-// const rUsername = tt.fields.username.validation.handler('', 'change');
+// tt.fields.username.validations.handler;
+// type _ttUsername = typeof tt.fields.username.validations.handler;
+// const rUsername = tt.fields.username.validations.handler('', 'change');
 // rUsername;
 
 // tt.fields.age.value;
-// tt.fields.age.validation.handler;
-// type _ttAge = ReturnType<typeof tt.fields.age.validation.handler>;
-// const rAge = tt.fields.age.validation.handler('', 'change');
+// tt.fields.age.validations.handler;
+// type _ttAge = ReturnType<typeof tt.fields.age.validations.handler>;
+// const rAge = tt.fields.age.validations.handler('', 'change');
 // rAge;

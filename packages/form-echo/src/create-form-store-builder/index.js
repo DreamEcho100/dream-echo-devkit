@@ -1,9 +1,7 @@
-import {
-	createFormStoreMetadata,
-	createFormStoreValidations,
-	createFormStoreFields,
-	getFormStoreBaseMethods,
-} from './internals';
+import { FormStoreMetadata } from '~/_/metadata';
+import { createFormStoreFields, getFormStoreBaseMethods } from './utils';
+import { FormStoreValidations } from '../_/validations';
+// import { createFormStoreValidations } from './validations';
 
 /**
  * @template FieldsValues
@@ -20,9 +18,17 @@ export default function createFormStoreBuilder(params) {
 		const formStoreBaseMethods = getFormStoreBaseMethods(set, get, params);
 
 		const baseId = params.baseId ? `${params.baseId}-` : '';
-		const metadata = createFormStoreMetadata(params, baseId);
+		const metadata = new FormStoreMetadata({
+			baseId,
+			initialValues: params.initialValues,
+			validationSchema: params.validationSchema,
+		});
 		const fields = createFormStoreFields(params, baseId, metadata);
-		const validations = createFormStoreValidations(params, metadata);
+		const validations = new FormStoreValidations({
+			metadata,
+			validationEvents: params.validationEvents,
+			validationSchema: params.validationSchema,
+		});
 
 		return {
 			baseId,

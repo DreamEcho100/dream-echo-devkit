@@ -100,7 +100,7 @@ function FieldErrors<FieldsValues, ValidationSchema>(
 	const error = useStore(props.store, (store) => {
 		if (!props.validationName && !props.name) return;
 
-		return store.validations[props.validationName ?? props.name].error;
+		return store.validations.fields[props.validationName ?? props.name].error;
 	});
 
 	const isHidden = useStore(props.store, (store) => {

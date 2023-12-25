@@ -1,5 +1,4 @@
-import { isZodValidator } from '../zod';
-import FormStoreField from '../form-store-field';
+import FormStoreField from '../_/field';
 import { errorFormatter as defaultErrorFormatter } from '../zod';
 
 /**
@@ -17,185 +16,15 @@ import { errorFormatter as defaultErrorFormatter } from '../zod';
  * @typedef {import("../types").FormStoreShape<FieldsValues, ValidationSchema>} FormStoreShape
  */
 /**
- * @template FieldsValues, ValidationSchema
- * @typedef {import("../types").FormStoreMetadata<FieldsValues, ValidationSchema>} FormStoreMetadata
- */
-/**
  * @typedef {import("../types").ValidationEvents} ValidationEvents
  */
 
 /**
  * @template FieldsValues
  * @template {ValidValidationSchema<FieldsValues>} ValidationSchema
- * @param {CreateFormStoreProps<FieldsValues, ValidationSchema>} params - Parameters for creating form store metadata.
- * @param {string} baseId - Base identifier for the form store metadata.
- *
- * @description Creates metadata for the form store based on the provided parameters.
- */
-export function createFormStoreMetadata(params, baseId) {
-	/**
-	 * @typedef {FormStoreShape<FieldsValues, ValidationSchema>} FormStore
-	 * @typedef {FormStore['metadata']} Metadata
-	 * @typedef {Metadata['fieldsNames']} FieldNames
-	 * @typedef {Metadata['referencedValidatedFields']} ReferencedValidatedFields
-	 * @typedef {ReferencedValidatedFields[number]} ReferencedValidatedFieldsItem
-	 * @typedef {Metadata['manualValidatedFields']} ManualValidatedFields
-	 * @typedef {ManualValidatedFields[number]} ManualValidatedFieldsItem
-	 */
-
-	if (!params.initialValues || typeof params.initialValues !== 'object')
-		throw new Error('No initial values provided');
-
-	const metadata = /** @type {Metadata} */ (
-		/** @type {unknown} */
-		({
-			baseId,
-			formId: `${baseId}-form`,
-			fieldsNames: {},
-			fieldsNamesMap: {},
-			//
-			validatedFieldsNames: [],
-			validatedFieldsNamesMap: {},
-			// //
-			manualValidatedFields: [],
-			manualValidatedFieldsMap: [],
-			// // //
-			referencedValidatedFields: [],
-			referencedValidatedFieldsMap: [],
-		})
-	);
-
-	metadata.fieldsNames = /** @type {FieldNames} */ (
-		Object.keys(params.initialValues)
-	);
-	for (const fieldName of metadata.fieldsNames) {
-		metadata.fieldsNamesMap[fieldName] = true;
-	}
-
-	if (params.validationSchema) {
-		for (const key in params.validationSchema) {
-			metadata.validatedFieldsNames.push(key);
-
-			metadata.validatedFieldsNamesMap[key] = true;
-
-			if (key in metadata.fieldsNamesMap) {
-				/** @type {string[]} */
-				(metadata.referencedValidatedFields).push(key);
-
-				/** @type {Record<string, true>} */
-				(metadata.referencedValidatedFieldsMap)[key] = true;
-				continue;
-			}
-
-			/** @type {string[]} */
-			(metadata.manualValidatedFields).push(key);
-
-			/** @type {Record<string, true>} */
-			(metadata.manualValidatedFieldsMap)[key] = true;
-		}
-	}
-
-	return metadata;
-}
-
-/**
- * @template FieldsValues
- * @template {ValidValidationSchema<FieldsValues>} ValidationSchema
- * @param {CreateFormStoreProps<FieldsValues, ValidationSchema>} params - Parameters for creating form store validations.
- * @param {FormStoreMetadata<FieldsValues, ValidationSchema>} metadata - Metadata object for the form store.
- *
- * @description Creates validations for the form store based on the provided parameters and metadata.
- */
-export function createFormStoreValidations(params, metadata) {
-	/**
-	 * @typedef {FormStoreShape<FieldsValues, ValidationSchema>} FormStore
-	 * @typedef {FormStore['validations']} Validations
-	 * @typedef {NonNullable<typeof params.validationEvents>} ValidationEvent2State
-	 **/
-
-	/** @type {ValidationEvent2State} */
-	let fieldValidationEvents = {
-		submit: true,
-		focus: true,
-	};
-	let isFieldHavingPassedValidations = false;
-	/** @type {ValidationEvents} */
-	let fieldValidationEventKey;
-
-	const validations = /** @type {Validations} */ ({});
-
-	if (!params.validationSchema) return validations;
-
-	for (const fieldName of metadata.validatedFieldsNames) {
-		const fieldValidationsSchema =
-			params.validationSchema[
-				/** @type {keyof typeof params['validationSchema']} */
-				(fieldName)
-			];
-
-		validations[fieldName] =
-			/** @type {NonNullable<FormStore['validations'][keyof FormStore['validations']]>} */
-			({
-				handler: !fieldValidationsSchema
-					? undefined
-					: isZodValidator(fieldValidationsSchema)
-					? /** @param {unknown} params  */
-					  (params) =>
-							// eslint-disable-next-line @typescript-eslint/no-unsafe-return
-							fieldValidationsSchema.parse(
-								/** @type {{ value: unknown }} */ (params).value,
-							)
-					: fieldValidationsSchema,
-				currentDirtyEventsCounter: 0,
-				failedAttempts: 0,
-				passedAttempts: 0,
-				events: {
-					change: {
-						failedAttempts: 0,
-						passedAttempts: 0,
-						isActive: params.validationEvents?.change ?? false,
-					},
-					focus: {
-						failedAttempts: 0,
-						passedAttempts: 0,
-						isActive: params.validationEvents?.focus ?? true,
-					},
-					submit: {
-						failedAttempts: 0,
-						passedAttempts: 0,
-						isActive: params.validationEvents?.submit ?? true,
-					},
-				},
-				currentEvent: null,
-				isDirty: false,
-				metadata: { name: fieldName },
-			});
-
-		if (params.validationEvents) {
-			isFieldHavingPassedValidations = true;
-			fieldValidationEvents = {
-				...fieldValidationEvents,
-				...params.validationEvents,
-			};
-		}
-
-		if (isFieldHavingPassedValidations) {
-			for (fieldValidationEventKey in fieldValidationEvents) {
-				validations[fieldName].events[fieldValidationEventKey].isActive =
-					!!typeof fieldValidationEvents[fieldValidationEventKey];
-			}
-		}
-	}
-
-	return validations;
-}
-
-/**
- * @template FieldsValues
- * @template {ValidValidationSchema<FieldsValues>} ValidationSchema
  * @param {CreateFormStoreProps<FieldsValues, ValidationSchema>} params - Parameters for creating form store fields.
  * @param {string} baseId - Base identifier for the form store fields.
- * @param {FormStoreMetadata<FieldsValues, ValidationSchema>} metadata - Metadata object for the form store.
+ * @param {import('../_/metadata').FormStoreMetadata<FieldsValues, ValidationSchema>} metadata - Metadata object for the form store.
  *
  * @description Creates fields for the form store based on the provided parameters and metadata.
  */
@@ -247,50 +76,51 @@ const itemsToResetDefaults = {
 function _setError(params) {
 	return function (currentState) {
 		if (
-			!currentState.validations[params.name].events[params.validationEvent]
-				.isActive
+			!currentState.validations.fields[params.name].events[
+				params.validationEvent
+			].isActive
 		)
 			return currentState;
 
 		let currentDirtyFieldsCounter = currentState.currentDirtyFieldsCounter;
-		const validation = {
-			...currentState.validations[params.name],
+		const validations = {
+			...currentState.validations.fields[params.name],
 		};
-		validation.currentEvent = params.validationEvent;
+		validations.currentEvent = params.validationEvent;
 
 		if (params.error) {
-			validation.failedAttempts++;
-			validation.events[params.validationEvent].failedAttempts++;
+			validations.failedAttempts++;
+			validations.events[params.validationEvent].failedAttempts++;
 
-			if (!validation.isDirty) {
-				validation.currentDirtyEventsCounter++;
-				if (validation.currentDirtyEventsCounter > 0) {
+			if (!validations.isDirty) {
+				validations.currentDirtyEventsCounter++;
+				if (validations.currentDirtyEventsCounter > 0) {
 					currentDirtyFieldsCounter++;
 				}
 			}
 
-			validation.isDirty = true;
-			validation.error = params.error;
+			validations.isDirty = true;
+			validations.error = params.error;
 		} else {
-			validation.passedAttempts++;
-			validation.events[params.validationEvent].passedAttempts++;
+			validations.passedAttempts++;
+			validations.events[params.validationEvent].passedAttempts++;
 
-			if (validation.isDirty) {
-				validation.currentDirtyEventsCounter--;
-				if (validation.currentDirtyEventsCounter === 0) {
+			if (validations.isDirty) {
+				validations.currentDirtyEventsCounter--;
+				if (validations.currentDirtyEventsCounter === 0) {
 					currentDirtyFieldsCounter--;
 				}
 			}
 
-			validation.isDirty = false;
-			validation.error = null;
+			validations.isDirty = false;
+			validations.error = null;
 		}
 
 		currentState.currentDirtyFieldsCounter = currentDirtyFieldsCounter;
 		currentState.isDirty = currentDirtyFieldsCounter > 0;
-		currentState.validations = {
-			...currentState.validations,
-			[params.name]: validation,
+		currentState.validations.fields = {
+			...currentState.validations.fields,
+			[params.name]: validations,
 		};
 
 		return currentState;
@@ -392,9 +222,11 @@ export function getFormStoreBaseMethods(set, get, params) {
 		set(function (currentState) {
 			let _currentState = currentState;
 
-			if (_currentState.validations[validationName].events.focus.isActive) {
+			if (
+				_currentState.validations.fields[validationName].events.focus.isActive
+			) {
 				try {
-					_currentState.validations[validationName].handler({
+					_currentState.validations.fields[validationName].handler({
 						value: /** @type {never} */ (
 							!validationName || fieldName === validationName
 								? _currentState.fields[fieldName].value
@@ -467,19 +299,19 @@ export function getFormStoreBaseMethods(set, get, params) {
 			}
 
 			if (itemsToReset.validations) {
-				for (const key in validations) {
-					validations[key].failedAttempts = 0;
-					validations[key].passedAttempts = 0;
-					validations[key].currentEvent = null;
-					validations[key].isDirty = false;
-					validations[key].error = null;
+				for (const key in validations.fields) {
+					validations.fields[key].failedAttempts = 0;
+					validations.fields[key].passedAttempts = 0;
+					validations.fields[key].currentEvent = null;
+					validations.fields[key].isDirty = false;
+					validations.fields[key].error = null;
 
 					/** @type {import('../types').ValidationEvents} */
 					let eventKey;
-					for (eventKey in validations[key].events) {
-						validations[key].events[eventKey].isActive = false;
-						validations[key].events[eventKey].failedAttempts = 0;
-						validations[key].events[eventKey].passedAttempts = 0;
+					for (eventKey in validations.fields[key].events) {
+						validations.fields[key].events[eventKey].isActive = false;
+						validations.fields[key].events[eventKey].failedAttempts = 0;
+						validations.fields[key].events[eventKey].passedAttempts = 0;
 					}
 				}
 				isDirty = false;
@@ -503,7 +335,7 @@ export function getFormStoreBaseMethods(set, get, params) {
 
 			return {
 				fields,
-				validations,
+				validations: validations,
 				isDirty,
 				submit,
 				focus,
@@ -544,13 +376,13 @@ export function getFormStoreBaseMethods(set, get, params) {
 
 		if (
 			_validationName &&
-			currentState.validations[_validationName].events['change'].isActive
+			currentState.validations.fields[_validationName].events['change'].isActive
 		) {
 			try {
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 				currentState = _setFieldValue(
 					name,
-					currentState.validations[_validationName].handler({
+					currentState.validations.fields[_validationName].handler({
 						value: /** @type {never} */ (
 							validationName &&
 							// eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -627,7 +459,7 @@ export function getFormStoreBaseMethods(set, get, params) {
 
 			const metadata = currentState.metadata;
 			const fields = currentState.fields;
-			const validations = currentState.validations;
+			const validations = currentState.validations.fields;
 			/** @type {Record<string, unknown> } */
 			const values = {};
 			/** @type {Record<string, unknown> } */
@@ -682,7 +514,7 @@ export function getFormStoreBaseMethods(set, get, params) {
 			for (manualFieldName of metadata.manualValidatedFields) {
 				try {
 					const validationSchema =
-						currentState.validations[manualFieldName].handler;
+						currentState.validations.fields[manualFieldName].handler;
 					if (typeof validationSchema !== 'function') {
 						continue;
 					}
