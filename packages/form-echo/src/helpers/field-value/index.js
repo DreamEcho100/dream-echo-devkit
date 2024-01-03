@@ -1,6 +1,6 @@
-import onFalsy from './on-falsy';
-import onNullable from './on-nullable';
-import onTruthy from './on-truthy';
+export { default as onFalsy } from './on-falsy';
+export { default as onNullable } from './on-nullable';
+export { default as onTruthy } from './on-truthy';
 
 // import { inputDateHelpers } from '.';
 
@@ -38,11 +38,10 @@ import onTruthy from './on-truthy';
 // 	},
 // };
 
-const formFieldValueHelpers = {
-	// onDateInput: dateInput,
-	onNullable,
-	onFalsy,
-	onTruthy,
-};
-
-export default formFieldValueHelpers;
+// export {
+// 	onNullable,
+// 	onFalsy,
+// 	onTruthy,
+// };
+// formFieldValueHelpers.onFalsy
+// export default formFieldValueHelpers;

@@ -1,5 +1,5 @@
 import FormStoreField from '../_/field';
-import { errorFormatter as defaultErrorFormatter } from '../zod';
+import { errorFormatter as defaultErrorFormatter } from '../helpers/zod';
 
 /**
  * @template FieldsValues
@@ -82,45 +82,50 @@ function _setError(params) {
 		)
 			return currentState;
 
-		let currentDirtyFieldsCounter = currentState.currentDirtyFieldsCounter;
-		const validations = {
+		let currentDirtyFieldsCounter =
+			currentState.validations.currentDirtyFieldsCounter;
+		const validationField = {
 			...currentState.validations.fields[params.name],
 		};
-		validations.currentEvent = params.validationEvent;
+		validationField.currentEvent = params.validationEvent;
 
 		if (params.error) {
-			validations.failedAttempts++;
-			validations.events[params.validationEvent].failedAttempts++;
+			validationField.failedAttempts++;
+			validationField.events[params.validationEvent].failedAttempts++;
 
-			if (!validations.isDirty) {
-				validations.currentDirtyEventsCounter++;
-				if (validations.currentDirtyEventsCounter > 0) {
+			if (!currentState.validations.dirtyFields[params.name]) {
+				validationField.currentDirtyEventsCounter++;
+				if (validationField.currentDirtyEventsCounter > 0) {
 					currentDirtyFieldsCounter++;
 				}
 			}
 
-			validations.isDirty = true;
-			validations.error = params.error;
+			currentState.validations.dirtyFields[params.name] = true;
+			validationField.error = params.error;
 		} else {
-			validations.passedAttempts++;
-			validations.events[params.validationEvent].passedAttempts++;
+			validationField.passedAttempts++;
+			validationField.events[params.validationEvent].passedAttempts++;
 
-			if (validations.isDirty) {
-				validations.currentDirtyEventsCounter--;
-				if (validations.currentDirtyEventsCounter === 0) {
+			if (currentState.validations.dirtyFields[params.name]) {
+				validationField.currentDirtyEventsCounter--;
+				if (validationField.currentDirtyEventsCounter === 0) {
 					currentDirtyFieldsCounter--;
 				}
 			}
 
-			validations.isDirty = false;
-			validations.error = null;
+			currentState.validations.dirtyFields[params.name] = false;
+			validationField.error = null;
 		}
 
-		currentState.currentDirtyFieldsCounter = currentDirtyFieldsCounter;
-		currentState.isDirty = currentDirtyFieldsCounter > 0;
+		currentState.validations.lastActive.field = params.name;
+		currentState.validations.lastActive.event = params.validationEvent;
+		currentState.validations.currentDirtyFieldsCounter =
+			currentDirtyFieldsCounter;
+		currentState.validations.isDirty = currentDirtyFieldsCounter > 0;
+
 		currentState.validations.fields = {
 			...currentState.validations.fields,
-			[params.name]: validations,
+			[params.name]: validationField,
 		};
 
 		return currentState;
@@ -139,8 +144,6 @@ function _setFieldValue(name, valueOrUpdater) {
 	return function (currentState) {
 		const field = currentState.fields[name];
 
-		// FieldsValues[typeof name]
-
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 		field.value =
 			typeof valueOrUpdater === 'function'
@@ -157,7 +160,6 @@ function _setFieldValue(name, valueOrUpdater) {
 	};
 }
 
-// * @returns {import('./types').FormStoreShapeBaseMethods<FieldsValues, ValidationSchema>}
 /**
  * @template FieldsValues
  * @template {import('../types').ValidValidationSchema<FieldsValues>} ValidationSchema
@@ -178,12 +180,12 @@ export function getFormStoreBaseMethods(set, get, params) {
 	 * @typedef {FormStoreBaseMethods['setError']} SetFieldError
 	 * @typedef {FormStoreBaseMethods['errorFormatter']} ErrorFormatter
 	 * @typedef {FormStoreBaseMethods['getFieldEventsListeners']} GetFieldEventsListeners
-	 * @typedef {FormStoreBaseMethods['handleInputChange']} HandleInputChange
+	 * @typedef {FormStoreBaseMethods['handleChange']} HandleInputChange
 	 * @typedef {FormStoreBaseMethods['handleSubmit']} HandleSubmit
 	 */
 
 	/** @type {GetValues} */
-	const getValues = () => {
+	function getValues() {
 		const currentState = get();
 		const fieldsValues = /** @type {FieldsValues} */ ({});
 
@@ -195,7 +197,7 @@ export function getFormStoreBaseMethods(set, get, params) {
 		}
 
 		return fieldsValues;
-	};
+	}
 
 	/** @type {GetValue} */
 	function getValue(name) {
@@ -204,175 +206,167 @@ export function getFormStoreBaseMethods(set, get, params) {
 	}
 
 	/** @type {SetSubmitState} */
-	const setSubmitState = (valueOrUpdater) => {
-		set(function (currentState) {
-			return {
-				submit: {
-					...currentState.submit,
-					...(typeof valueOrUpdater === 'function'
-						? valueOrUpdater(currentState.submit)
-						: valueOrUpdater),
-				},
-			};
-		});
-	};
+	function setSubmitState(valueOrUpdater) {
+		const currentState = get();
+
+		const submit = {
+			...currentState.submit,
+			...(typeof valueOrUpdater === 'function'
+				? valueOrUpdater(currentState.submit)
+				: valueOrUpdater),
+		};
+		set({ submit });
+	}
 
 	/** @type {SetFocusState} */
-	const setFocusState = (fieldName, validationName, type) => {
-		set(function (currentState) {
-			let _currentState = currentState;
+	function setFocusState(fieldName, validationName, type) {
+		let currentState = get();
+
+		if (currentState.validations.fields[validationName].events.focus.isActive) {
+			try {
+				currentState.validations.fields[validationName].handler({
+					value: /** @type {never} */ (
+						!validationName || fieldName === validationName
+							? currentState.fields[fieldName].value
+							: undefined
+					),
+					name: /** @type {never} */ (fieldName),
+					validationEvent: 'focus',
+					get,
+					getValue: currentState.getValue,
+					getValues: currentState.getValues,
+					setError: currentState.setError,
+					setSubmitState: currentState.setSubmitState,
+					setFocusState: currentState.setFocusState,
+					resetFormStore: currentState.resetFormStore,
+					setFieldValue: currentState.setFieldValue,
+				});
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+				currentState = _setError({
+					name: validationName,
+					error: null,
+					validationEvent: 'focus',
+				})(currentState);
+			} catch (error) {
+				const formattedError = currentState.errorFormatter(error, 'focus');
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+				currentState = _setError({
+					name: validationName,
+					error: formattedError,
+					validationEvent: 'focus',
+				})(currentState);
+			}
 
 			if (
-				_currentState.validations.fields[validationName].events.focus.isActive
-			) {
-				try {
-					_currentState.validations.fields[validationName].handler({
-						value: /** @type {never} */ (
-							!validationName || fieldName === validationName
-								? _currentState.fields[fieldName].value
-								: undefined
-						),
-						name: /** @type {never} */ (fieldName),
-						validationEvent: 'focus',
-						get,
-						getValue: _currentState.getValue,
-						getValues: _currentState.getValues,
-						setError: _currentState.setError,
-						setSubmitState: _currentState.setSubmitState,
-						setFocusState: _currentState.setFocusState,
-						resetFormStore: _currentState.resetFormStore,
-						setFieldValue: _currentState.setFieldValue,
-					});
-					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-					_currentState = _setError({
-						name: validationName,
-						error: null,
-						validationEvent: 'focus',
-					})(_currentState);
-				} catch (error) {
-					const formattedError = _currentState.errorFormatter(error, 'focus');
-					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-					_currentState = _setError({
-						name: validationName,
-						error: formattedError,
-						validationEvent: 'focus',
-					})(_currentState);
-				}
+				currentState.focus.isPending &&
+				currentState.focus.field.name === fieldName
+			)
+				return set(currentState);
+		}
 
-				if (
-					_currentState.focus.isActive &&
-					_currentState.focus.field.name === fieldName
-				)
-					return _currentState;
-			}
+		/** @type {typeof currentState['focus']} */
+		const focus =
+			type === 'in'
+				? {
+						isPending: true,
+						field: {
+							name: fieldName,
+							id: currentState.fields[fieldName].id,
+						},
+				  }
+				: { isPending: false, field: null };
 
-			return {
-				focus:
-					type === 'in'
-						? {
-								isActive: true,
-								field: {
-									name: fieldName,
-									id: _currentState.fields[fieldName].id,
-								},
-						  }
-						: { isActive: false, field: null },
-			};
-		});
-	};
+		set({ focus });
+	}
 
 	/** @type {ResetFormStore} */
-	const resetFormStore = (itemsToReset = itemsToResetDefaults) => {
-		return set(function (currentState) {
-			const fields = currentState.fields;
-			const validations = currentState.validations;
-			let isDirty = currentState.isDirty;
-			let submit = currentState.submit;
-			let focus = currentState.focus;
+	function resetFormStore(itemsToReset = itemsToResetDefaults) {
+		const currentState = get();
+		const fields = currentState.fields;
+		const validations = currentState.validations;
+		let submit = currentState.submit;
+		let focus = currentState.focus;
 
-			if (itemsToReset.fields) {
-				/** @type {keyof typeof fields} */
-				let fieldName;
-				for (fieldName in fields) {
-					fields[fieldName].value = fields[fieldName].metadata.initialValue;
+		if (itemsToReset.fields) {
+			/** @type {keyof typeof fields} */
+			let fieldName;
+			for (fieldName in fields) {
+				fields[fieldName].value = fields[fieldName].metadata.initialValue;
+			}
+		}
+
+		if (itemsToReset.validations) {
+			validations.currentDirtyFieldsCounter = 0;
+			validations.dirtyFields = {};
+			validations.isDirty = false;
+			validations.lastActive.event = null;
+			validations.lastActive.field = null;
+
+			for (const key in validations.fields) {
+				validations.fields[key].failedAttempts = 0;
+				validations.fields[key].passedAttempts = 0;
+				validations.fields[key].currentEvent = null;
+				validations.fields[key].error = null;
+
+				/** @type {import('../types').ValidationEvents} */
+				let eventKey;
+				for (eventKey in validations.fields[key].events) {
+					validations.fields[key].events[eventKey].isActive = false;
+					validations.fields[key].events[eventKey].failedAttempts = 0;
+					validations.fields[key].events[eventKey].passedAttempts = 0;
 				}
 			}
-
-			if (itemsToReset.validations) {
-				for (const key in validations.fields) {
-					validations.fields[key].failedAttempts = 0;
-					validations.fields[key].passedAttempts = 0;
-					validations.fields[key].currentEvent = null;
-					validations.fields[key].isDirty = false;
-					validations.fields[key].error = null;
-
-					/** @type {import('../types').ValidationEvents} */
-					let eventKey;
-					for (eventKey in validations.fields[key].events) {
-						validations.fields[key].events[eventKey].isActive = false;
-						validations.fields[key].events[eventKey].failedAttempts = 0;
-						validations.fields[key].events[eventKey].passedAttempts = 0;
-					}
-				}
-				isDirty = false;
-			}
-			if (itemsToReset.submit) {
-				submit = {
-					counter: 0,
-					passedAttempts: 0,
-					failedAttempts: 0,
-					error: null,
-					isActive: false,
-				};
-			}
-
-			if (itemsToReset.focus) {
-				focus = {
-					isActive: false,
-					field: null,
-				};
-			}
-
-			return {
-				fields,
-				validations: validations,
-				isDirty,
-				submit,
-				focus,
+		}
+		if (itemsToReset.submit) {
+			submit = {
+				counter: 0,
+				passedAttempts: 0,
+				failedAttempts: 0,
+				error: null,
+				isPending: false,
 			};
-		});
-	};
+		}
+
+		if (itemsToReset.focus) {
+			focus = {
+				isPending: false,
+				field: null,
+			};
+		}
+
+		return set({ fields, validations, submit, focus });
+	}
 
 	/** @type {SetFieldValue} */
-	const setFieldValue = (name, value) => {
+	function setFieldValue(name, value) {
 		return set(_setFieldValue(name, value));
-	};
+	}
+
 	/** @type {SetFieldError} */
-	const setError = (params) => {
+	function setError(params) {
 		set(_setError(params));
-	};
+	}
+
 	/** @type {ErrorFormatter} */
 	const errorFormatter = params.errorFormatter ?? defaultErrorFormatter;
+
 	/** @type {HandleInputChange} */
-	const handleInputChange = (name, valueOrUpdater, validationName) => {
+	function handleChange(name, valueOrUpdater, validationName) {
 		let currentState = get();
 		const field = currentState.fields[name];
 
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-		const _value =
+		const value = /** @type {FieldsValues[typeof name]} */ (
 			typeof valueOrUpdater === 'function'
 				? valueOrUpdater(field.value)
-				: valueOrUpdater;
-
-		const value = field.valueFromFieldToStore
-			? field.valueFromFieldToStore(_value)
-			: /** @type {FieldsValues[typeof name]} */ (_value);
+				: field.valueFromFieldToStore?.(valueOrUpdater) ?? valueOrUpdater
+		);
 
 		const _validationName = validationName
 			? validationName
 			: currentState.metadata.referencedValidatedFieldsMap[name]
 			? name
-			: undefined; // typeof validationName
+			: undefined;
 
 		if (
 			_validationName &&
@@ -427,17 +421,17 @@ export function getFormStoreBaseMethods(set, get, params) {
 		}
 
 		set(currentState);
-	};
+	}
 
 	/** @type {GetFieldEventsListeners} */
-	const getFieldEventsListeners = (name, validationName) => {
+	function getFieldEventsListeners(name, validationName) {
 		const currentState = get();
 		const _validationName = validationName ?? name;
 
 		return {
 			/** @param {{ target: { value: string } }} event */
 			onChange: (event) => {
-				currentState.handleInputChange(name, event.target.value);
+				currentState.handleChange(name, event.target.value);
 			},
 			onFocus: () => {
 				currentState.setFocusState(name, _validationName, 'in');
@@ -446,16 +440,21 @@ export function getFormStoreBaseMethods(set, get, params) {
 				currentState.setFocusState(name, _validationName, 'out');
 			},
 		};
-	};
+	}
 
 	/** @type {HandleSubmit} */
-	const handleSubmit = (cb) => {
+	function handleSubmit(cb) {
 		return async function (event) {
-			/** @type {{ preventDefault: () => void }} */ (event).preventDefault();
+			/** @type {{ preventDefault?: () => void }} */ (event).preventDefault?.();
 
+			get().setSubmitState({ isPending: true, error: null });
 			const currentState = get();
-
-			currentState.setSubmitState({ isActive: true });
+			currentState.focus = { isPending: false, field: null };
+			// currentState.submit = {
+			// 	...currentState.submit,
+			// 	isPending: true,
+			// 	error: null,
+			// };
 
 			const metadata = currentState.metadata;
 			const fields = currentState.fields;
@@ -511,7 +510,7 @@ export function getFormStoreBaseMethods(set, get, params) {
 
 			/** @type {keyof (typeof metadata)['manualValidatedFieldsMap'] } */
 			let manualFieldName;
-			for (manualFieldName of metadata.manualValidatedFields) {
+			for (manualFieldName of metadata.customValidatedFields) {
 				try {
 					const validationSchema =
 						currentState.validations.fields[manualFieldName].handler;
@@ -550,14 +549,12 @@ export function getFormStoreBaseMethods(set, get, params) {
 			 * @typedef {{ [Key in keyof ValidationSchema]: { name: Key; message: string | null; validationEvent: import('../types').ValidationEvents; }; }} Errors
 			 */
 
-			let _currentState = get();
 			/** @type {keyof typeof errors & string} */
 			let errorKey;
 			for (errorKey in errors) {
 				const errorObj = errors[errorKey];
 
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-				_currentState = _setError(errors[errorKey])(_currentState);
+				currentState.setError(errors[errorKey]); // (currentState);
 
 				if (!errorObj.error) continue;
 
@@ -574,36 +571,42 @@ export function getFormStoreBaseMethods(set, get, params) {
 						validatedValues:
 							/** @type {ValidatedValues} */
 							(validatedValues),
-						hasError,
-						errors:
-							/** @type {Errors} */
-							(/** @type {unknown} */ (errors)),
+						get,
+						getValue: currentState.getValue,
+						getValues: currentState.getValues,
+						setError: currentState.setError,
+						setSubmitState: currentState.setSubmitState,
+						setFocusState: currentState.setFocusState,
+						resetFormStore: currentState.resetFormStore,
+						setFieldValue: currentState.setFieldValue,
 					});
 					currentState.setSubmitState((prev) => ({
-						isActive: false,
+						isPending: false,
 						counter: prev.counter + 1,
 						passedAttempts: prev.counter + 1,
 						error: null,
 					}));
 				} catch (error) {
 					currentState.setSubmitState((prev) => ({
-						isActive: false,
+						isPending: false,
 						counter: prev.counter + 1,
 						failedAttempts: prev.counter + 1,
 						error: currentState.errorFormatter(error, 'submit'),
 					}));
 				}
 			} else {
-				set(_currentState);
 				currentState.setSubmitState((prev) => ({
-					isActive: false,
+					isPending: false,
 					counter: prev.counter + 1,
 					failedAttempts: prev.counter + 1,
-					error: null,
+					error: currentState.errorFormatter(
+						new Error('FORM_VALIDATION_ERROR'),
+						'submit',
+					),
 				}));
 			}
 		};
-	};
+	}
 
 	return {
 		getValues,
@@ -614,7 +617,7 @@ export function getFormStoreBaseMethods(set, get, params) {
 		resetFormStore,
 		setFieldValue,
 		setError,
-		handleInputChange,
+		handleChange,
 		getFieldEventsListeners,
 		handleSubmit,
 	};

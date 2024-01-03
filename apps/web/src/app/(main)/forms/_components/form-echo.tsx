@@ -3,12 +3,17 @@
 import type { FormError, ValidValidationSchema } from '@de100/form-echo';
 import type {
 	FormStoreApi,
-	FormStoreFieldProps,
-	FormStoreFormProps,
-	FormStoreValidationProps,
+	PropsWithFormStoreField,
+	PropsWithFormStoreForm,
+	PropsWithFormStoreValidationField,
 } from '@de100/form-echo/react/zustand';
 
-import { FormHTMLAttributes, InputHTMLAttributes, useEffect } from 'react';
+import {
+	FormHTMLAttributes,
+	InputHTMLAttributes,
+	useEffect,
+	useMemo,
+} from 'react';
 import { z } from 'zod';
 import { inputDateHelpers, onFalsy } from '@de100/form-echo/helpers';
 import { useCreateFormStore } from '@de100/form-echo/react/zustand';
@@ -32,36 +37,38 @@ const validationSchema = {
 			.array(z.string())
 			.min(1)
 			.parse(params.getValue('testArr').map((item) => item.title));
-		// const testArr = params.getValue('testArr');
+	},
+	testArrTitles2: (params) => {
+		const testArr = params.getValue('testArr');
 
-		// for (const item of testArr) {
-		// 	if (typeof item.title === 'number') {
-		// 		throw new Error("`testArr` shouldn't contain numbers");
-		// 	}
-		// }
+		for (const item of testArr) {
+			if (typeof item.title === 'number') {
+				throw new Error("`testArr` shouldn't contain numbers");
+			}
+		}
 
-		// return testArr;
+		return testArr;
 	},
 } satisfies ValidValidationSchema<FormFields>;
 
-type FormProps<FieldsValues, ValidationSchema> = Omit<
-	FormHTMLAttributes<HTMLFormElement>,
-	'onSubmit'
-> &
-	FormStoreFormProps<FieldsValues, ValidationSchema>;
-
 function Form<FieldsValues, ValidationSchema>({
 	store,
-	onSubmit,
 	...props
-}: FormProps<FieldsValues, ValidationSchema>) {
+}: PropsWithFormStoreForm<
+	FieldsValues,
+	ValidationSchema,
+	FormHTMLAttributes<HTMLFormElement>
+>) {
 	const handleSubmit = useStore(store, (state) => state.handleSubmit);
-	const isDirty = useStore(store, (state) => state.isDirty);
+	const isDirty = useStore(
+		store,
+		(state) => !!(state.submit.error || state.validations.isDirty),
+	);
 
 	return (
 		<form
-			onSubmit={handleSubmit(onSubmit)}
 			{...props}
+			onSubmit={handleSubmit(props.onSubmit)}
 			className={cx(
 				isDirty && 'ring-2 ring-inset ring-red-500',
 				props.className,
@@ -71,7 +78,7 @@ function Form<FieldsValues, ValidationSchema>({
 }
 
 type FieldErrorsProps<FieldsValues, ValidationSchema> =
-	FormStoreValidationProps<FieldsValues, ValidationSchema> & {
+	PropsWithFormStoreValidationField<FieldsValues, ValidationSchema> & {
 		ignoreFocus?: boolean;
 	};
 
@@ -114,14 +121,14 @@ function FieldErrors<FieldsValues, ValidationSchema>(
 	return <FieldErrorsBase error={error} />;
 }
 
-type InputFieldProps<FieldsValues, ValidationSchema> =
-	InputHTMLAttributes<HTMLInputElement> &
-		FormStoreFieldProps<FieldsValues, ValidationSchema>;
-
 function InputField<FieldsValues, ValidationSchema>({
 	store,
 	...props
-}: InputFieldProps<FieldsValues, ValidationSchema>) {
+}: PropsWithFormStoreField<
+	FieldsValues,
+	ValidationSchema,
+	InputHTMLAttributes<HTMLInputElement>
+>) {
 	const value = useStore(
 		store,
 		(store) => store.fields[props.name].storeToFieldValue,
@@ -131,14 +138,12 @@ function InputField<FieldsValues, ValidationSchema>({
 		(store) => store.fields[props.name].metadata,
 	);
 	const id = useStore(store, (store) => store.fields[props.name].id);
-	const getFieldEventsListeners = useStore(
-		store,
-		(store) => store.getFieldEventsListeners,
-	);
-
-	const fieldEventsListeners = getFieldEventsListeners(
-		props.name,
-		props.validationName,
+	const fieldEventsListeners = useMemo(
+		() =>
+			store
+				.getState()
+				.getFieldEventsListeners(props.name, props.validationName),
+		[props.name, props.validationName, store],
 	);
 
 	return (
@@ -149,7 +154,6 @@ function InputField<FieldsValues, ValidationSchema>({
 			name={metadata.name}
 			id={id}
 			value={value}
-			// {...getFieldEventsListeners(props.name, props.validationName)}
 			{...fieldEventsListeners}
 			onFocus={fieldEventsListeners.onFocus}
 		/>
@@ -163,20 +167,9 @@ function RandomListGenerator<
 	const setFieldValue = useStore(props.store, (store) => store.setFieldValue);
 	const testArr = useStore(props.store, (store) => store.fields.testArr.value);
 
-	const getFieldEventsListeners = useStore(
-		props.store,
-		(store) => store.getFieldEventsListeners,
-	);
-	const fieldEventsListeners = getFieldEventsListeners(
-		'testArr',
-		'testArrTitles',
-	);
-
 	return (
-		<div
-			onFocus={fieldEventsListeners.onFocus}
-			onBlur={fieldEventsListeners.onBlur}
-		>
+		<fieldset>
+			<legend className='capitalize'>random list</legend>
 			<button
 				type='button'
 				onClick={() => {
@@ -211,7 +204,7 @@ function RandomListGenerator<
 					</li>
 				))}
 			</ul>
-		</div>
+		</fieldset>
 	);
 }
 
@@ -236,29 +229,16 @@ export default function FormEcho() {
 		},
 	});
 
-	if (typeof window !== 'undefined') {
-		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-		// @ts-ignore
-		window.z = z;
-		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-		// @ts-ignore
-		window.formStore = formStore;
-		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-		// @ts-ignore
-		window.formStoresArr ??= [];
-		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-		// @ts-ignore
-		window.formStoresArr.push(formStore);
-	}
+	if (typeof window !== 'undefined') window.formStore = formStore;
 
 	const submit = useStore(formStore, (store) => store.submit);
 
 	useEffect(() => {
 		// debugger;
-		formStore.getState().handleInputChange('counter', 0);
+		formStore.getState().handleChange('counter', 0);
 		const intervalId = setInterval(() => {
 			const newCounter = formStore.getState().fields.counter.value + 1;
-			formStore.getState().handleInputChange('counter', newCounter);
+			formStore.getState().handleChange('counter', newCounter);
 			if (newCounter === 100) clearInterval(intervalId);
 		}, 100);
 
@@ -275,13 +255,16 @@ export default function FormEcho() {
 				console.log('values', params.values);
 				console.log('validatedValues', params.validatedValues);
 
+				console.log('\n\n\n');
+				console.log('Submission is pending');
+				console.log('\n\n\n');
+
 				await new Promise((res) => {
-					console.log('Submission is pending');
+					console.log('After submission');
 					console.log('values', params.values);
 					console.log('validatedValues', params.validatedValues);
 					setTimeout(res, 2000);
 				});
-				console.log('After submission');
 			}}
 			className='flex w-full max-w-sm flex-col gap-2 bg-neutral-500 p-4 text-white'
 		>
@@ -306,10 +289,16 @@ export default function FormEcho() {
 				name='testArr'
 				ignoreFocus
 			/>
+			<FieldErrors
+				store={formStore}
+				validationName='testArrTitles2'
+				name='testArr'
+				ignoreFocus
+			/>
 
 			<div className='flex gap-4'>
 				<button type='submit' className='capitalize'>
-					{submit.isActive ? 'Loading...' : 'submit'}
+					{submit.isPending ? 'Loading...' : 'submit'}
 				</button>
 				<button
 					type='reset'

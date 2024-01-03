@@ -42,6 +42,12 @@
 			"default": "./dist/helpers/index.js",
 			"types": "./dist/helpers/index.d.ts"
 		},
+		"./react": {
+			"import": "./src/react/dist/index.mjs",
+			"require": "./src/react/dist/index.js",
+			"default": "./src/react/dist/index.js",
+			"types": "./src/react/dist/index.d.ts"
+		},
 		"./react/zustand": {
 			"import": "./src/react/zustand/dist/index.mjs",
 			"require": "./src/react/zustand/dist/index.js",
@@ -54,6 +60,7 @@
 		"build": "npm run build:base & npm run build:react:zustand",
 		"build:base": "cross-env NODE_ENV=production tsup --config=./tsup.config.ts",
 		"build:react:zustand": "cross-env NODE_ENV=production tsup --config=./src/react/zustand/tsup.config.ts",
+		"build:react": "cross-env NODE_ENV=production tsup --config=./src/react/tsup.config.ts",
 		"dev": "pnpm run build -- --watch",
 		"typechecking": "tsc --noEmit"
 	},

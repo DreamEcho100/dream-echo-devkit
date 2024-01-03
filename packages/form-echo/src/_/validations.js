@@ -1,4 +1,4 @@
-import { isZodValidator } from '..';
+import { isZodValidator } from '~/helpers';
 
 /**
  * @template FieldsValues
@@ -17,10 +17,20 @@ export class FormStoreValidations {
 	 * }} ValidationsFields
 	 */
 
-	/**
-	 * @type {ValidationsFields}
-	 */
+	/** @type {ValidationsFields} */
 	fields;
+
+	/** @type {Partial<Record<keyof ValidationsFields, boolean>>} */
+	dirtyFields = {};
+
+	/** @type {{ field: keyof ValidationsFields | null; event: import('~/create-form-store-builder/utils').ValidationEvents | null }} */
+	lastActive = { field: null, event: null };
+
+	/** @type {boolean} */
+	isDirty = false;
+
+	/** @type {number} */
+	currentDirtyFieldsCounter = 0;
 
 	/**
 	 * @param {Pick<import('../types').CreateFormStoreProps<FieldsValues, ValidationSchema>, 'validationEvents' | 'validationSchema'> & { metadata: import('./metadata').FormStoreMetadata<FieldsValues, ValidationSchema> } } params
@@ -42,8 +52,6 @@ export class FormStoreValidations {
 		const validationsFields = /** @type {ValidationsFields} */ ({});
 
 		if (params.validationSchema) {
-			// return validations;
-
 			for (const fieldName of params.metadata.validatedFieldsNames) {
 				const fieldValidationsSchema =
 					params.validationSchema[
@@ -51,22 +59,27 @@ export class FormStoreValidations {
 						(fieldName)
 					];
 
+				/** @typedef {typeof validationsFields[keyof typeof validationsFields]} validationsField */
+
 				validationsFields[fieldName] =
-					/** @type {typeof validationsFields[keyof typeof validationsFields]} */
+					/** @satisfies {validationsField} */
 					({
-						handler: !fieldValidationsSchema
-							? undefined
-							: isZodValidator(fieldValidationsSchema)
-							? /** @param {unknown} params  */
-							  (params) =>
-									// eslint-disable-next-line @typescript-eslint/no-unsafe-return
-									fieldValidationsSchema.parse(
-										/** @type {{ value: unknown }} */ (params).value,
-									)
-							: fieldValidationsSchema,
+						handler: /** @type {validationsField['handler']} */ (
+							!fieldValidationsSchema
+								? undefined
+								: isZodValidator(fieldValidationsSchema)
+								? /** @param {unknown} params  */
+								  (params) =>
+										// eslint-disable-next-line @typescript-eslint/no-unsafe-return
+										fieldValidationsSchema.parse(
+											/** @type {{ value: unknown }} */ (params).value,
+										)
+								: fieldValidationsSchema
+						),
 						currentDirtyEventsCounter: 0,
 						failedAttempts: 0,
 						passedAttempts: 0,
+						error: null,
 						events: {
 							change: {
 								failedAttempts: 0,
@@ -85,8 +98,11 @@ export class FormStoreValidations {
 							},
 						},
 						currentEvent: null,
-						isDirty: false,
-						metadata: { name: fieldName },
+						metadata: {
+							name: /** @type {validationsField['metadata']['name']} */ (
+								fieldName
+							),
+						},
 					});
 
 				if (params.validationEvents) {

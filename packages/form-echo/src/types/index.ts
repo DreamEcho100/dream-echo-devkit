@@ -32,13 +32,6 @@ export type GetValidationValuesFromSchema<Schema> = {
 /****************        ****************/
 
 export type ValidationEvents = 'submit' | 'change' | 'focus'; // | 'mount' | 'custom'
-type ValidationError =
-	| { currentEvent: ValidationEvents | null; isDirty: false; error: null }
-	| {
-			currentEvent: ValidationEvents;
-			isDirty: true;
-			error: FormError;
-	  };
 
 type HandleValidationPropsPassedMethodsKeys =
 	| 'getValue'
@@ -131,7 +124,9 @@ export type FormStoreValidation<
 	passedAttempts: number;
 	failedAttempts: number;
 	metadata: ValidationMetadata<Key>;
-} & ValidationError;
+	currentEvent: ValidationEvents | null;
+	error: FormError | null;
+};
 
 /****************        ****************/
 /**************** Fields ****************/
@@ -151,13 +146,13 @@ export interface FieldMetadata<Name, Value> {
 // 	validatedFieldsNamesMap: Record<keyof ValidationSchema, true>;
 // 	validatedFieldsNames: (keyof ValidationSchema)[];
 // 	//
-// 	manualValidatedFields: Exclude<keyof ValidationSchema, keyof FieldsValues>[];
+// 	customValidatedFields: Exclude<keyof ValidationSchema, keyof FieldsValues>[];
 // 	manualValidatedFieldsMap: Record<
 // 		Exclude<keyof ValidationSchema, keyof FieldsValues>,
 // 		true
 // 	>;
 // 	//
-// 	referencedValidatedFields: (keyof ValidationSchema & keyof FieldsValues)[];
+// 	directlyValidatedFields: (keyof ValidationSchema & keyof FieldsValues)[];
 // 	referencedValidatedFieldsMap: Record<
 // 		keyof ValidationSchema & keyof FieldsValues,
 // 		true
@@ -169,7 +164,7 @@ export interface SubmitState {
 	passedAttempts: number;
 	failedAttempts: number;
 	error: FormError | null;
-	isActive: boolean;
+	isPending: boolean;
 }
 
 export type FormError =
@@ -179,11 +174,11 @@ export type FormError =
 	| { message: string; path: (string | number)[] }[];
 
 interface FocusActive<FieldsValues> {
-	isActive: true;
+	isPending: true;
 	field: { id: string; name: keyof FieldsValues };
 }
 interface FocusInActive {
-	isActive: false;
+	isPending: false;
 	field: null;
 }
 type FocusState<FieldsValues> = FocusActive<FieldsValues> | FocusInActive;
@@ -198,14 +193,27 @@ export interface FormStoreShapeBaseMethods<FieldsValues, ValidationSchema> {
 			| Partial<SubmitState>
 			| ((value: SubmitState) => Partial<SubmitState>),
 	) => void;
+
+	// setFocusState(
+	// 	type: 'in' | 'out',
+	// 	fieldName?: keyof FieldsValues,
+	// 	validationName?:
+	// 		| keyof ValidationSchema
+	// 		| (typeof fieldName & keyof ValidationSchema),
+	// ): void;
+	// setFocusState(
+	// 	type: null,
+	// 	fieldName: undefined,
+	// 	validationName: undefined,
+	// ): void;
 	setFocusState: (
 		fieldName: keyof FieldsValues,
 		validationName:
 			| keyof ValidationSchema
-			| (keyof FieldsValues & keyof ValidationSchema),
-		// isActive: boolean,
+			| (typeof fieldName & keyof ValidationSchema),
 		type: 'in' | 'out',
 	) => void;
+
 	resetFormStore: (itemsToReset?: {
 		fields?: boolean;
 		validations?: boolean;
@@ -218,7 +226,7 @@ export interface FormStoreShapeBaseMethods<FieldsValues, ValidationSchema> {
 			| ((value: FieldsValues[Name]) => FieldsValues[Name])
 			| AnyValueExceptFunctions,
 	) => void;
-	handleInputChange: <
+	handleChange: <
 		Name extends keyof FieldsValues,
 		ValidationName extends keyof ValidationSchema | undefined = undefined,
 	>(
@@ -246,8 +254,8 @@ export interface FormStoreShapeBaseMethods<FieldsValues, ValidationSchema> {
 export interface FormStoreShape<FieldsValues, ValidationSchema>
 	extends FormStoreShapeBaseMethods<FieldsValues, ValidationSchema> {
 	submit: SubmitState;
-	currentDirtyFieldsCounter: number;
-	isDirty: boolean;
+	// currentDirtyFieldsCounter: number;
+	// isDirty: boolean;
 	baseId: string;
 	id: string;
 
@@ -258,23 +266,18 @@ export interface FormStoreShape<FieldsValues, ValidationSchema>
 	fields: {
 		[Key in NonNullable<keyof FieldsValues>]: FormStoreField<FieldsValues, Key>;
 	};
-	_baseMethods: FormStoreShapeBaseMethods<FieldsValues, ValidationSchema>;
+	// _baseMethods: FormStoreShapeBaseMethods<FieldsValues, ValidationSchema>;
 }
 
 export interface HandleSubmitCB<FieldsValues, ValidationSchema, Event> {
-	(params: {
-		event: Event;
-		validatedValues: GetValidationValuesFromSchema<ValidationSchema>;
-		values: FieldsValues;
-		hasError: boolean;
-		errors: {
-			[Key in keyof ValidationSchema]: {
-				name: Key;
-				message: string | null;
-				validationEvent: ValidationEvents;
-			};
-		};
-	}): unknown | Promise<unknown>;
+	(
+		params: {
+			event: Event;
+			validatedValues: GetValidationValuesFromSchema<ValidationSchema>;
+			values: FieldsValues;
+			get: () => FormStoreShape<FieldsValues, ValidationSchema>;
+		} & HandleValidationPropsPassedMethods<FieldsValues, ValidationSchema>,
+	): unknown | Promise<unknown>;
 }
 
 export type GetFromFormStoreShape<

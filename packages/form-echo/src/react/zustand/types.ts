@@ -25,30 +25,44 @@ export type GetFormStoreApiStore<
 		: FieldsValues
 	: never;
 
-export type FormStoreProps<FieldsValues, ValidationSchema> = {
-	store: FormStoreApi<FieldsValues, ValidationSchema>;
-};
+export type PropsWithFormStore<FieldsValues, ValidationSchema, Props> =
+	Props & {
+		store: FormStoreApi<FieldsValues, ValidationSchema>;
+	};
 
-export type FormStoreFormProps<FieldsValues, ValidationSchema> = {
-	onSubmit: HandleSubmitCB<
+export type PropsWithFormStoreForm<FieldsValues, ValidationSchema, Props> =
+	PropsWithFormStore<
 		FieldsValues,
 		ValidationSchema,
-		FormEvent<HTMLFormElement>
+		Omit<Props, 'onSubmit'> & {
+			onSubmit: HandleSubmitCB<
+				FieldsValues,
+				ValidationSchema,
+				FormEvent<HTMLFormElement>
+			>;
+		}
 	>;
-} & FormStoreProps<FieldsValues, ValidationSchema>;
 
-export type FormStoreFieldProps<FieldsValues, ValidationSchema> = {
-	name: keyof FieldsValues;
-	validationName?: keyof ValidationSchema;
-} & FormStoreProps<FieldsValues, ValidationSchema>;
-export type FormStoreValidationProps<FieldsValues, ValidationSchema> = (
-	| {
-			name?: keyof FieldsValues;
-			validationName: keyof ValidationSchema;
-	  }
-	| {
-			name: keyof ValidationSchema;
+export type PropsWithFormStoreField<FieldsValues, ValidationSchema, Props> =
+	PropsWithFormStore<
+		FieldsValues,
+		ValidationSchema,
+		Props & {
+			name: keyof FieldsValues;
 			validationName?: keyof ValidationSchema;
-	  }
-) &
-	FormStoreProps<FieldsValues, ValidationSchema>;
+		}
+	>;
+
+export type PropsWithFormStoreValidationField<FieldsValues, ValidationSchema> =
+	PropsWithFormStore<
+		FieldsValues,
+		ValidationSchema,
+		| {
+				name?: keyof FieldsValues;
+				validationName: keyof ValidationSchema;
+		  }
+		| {
+				name: keyof ValidationSchema;
+				validationName?: keyof ValidationSchema;
+		  }
+	>;

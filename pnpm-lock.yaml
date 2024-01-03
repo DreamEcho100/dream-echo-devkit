@@ -260,7 +260,7 @@ importers:
         version: link:../tsconfig
       tsup:
         specifier: ^6.7.0
-        version: 6.7.0(typescript@5.3.3)
+        version: 6.7.0(postcss@8.4.32)(typescript@5.3.3)
       typescript:
         specifier: ^5.0.4
         version: 5.3.3
@@ -268,11 +268,14 @@ importers:
         specifier: ^3.21.4
         version: 3.22.4
 
-  packages/form-echo/src/utils/react/zustand:
+  packages/form-echo/src/react:
     dependencies:
       react:
         specifier: ^18.2.0
         version: 18.2.0
+
+  packages/form-echo/src/react/zustand:
+    dependencies:
       zustand:
         specifier: ^4.4.7
         version: 4.4.7(react@18.2.0)
@@ -4295,7 +4298,7 @@ packages:
       camelcase-css: 2.0.1
       postcss: 8.4.32
 
-  /postcss-load-config@3.1.4:
+  /postcss-load-config@3.1.4(postcss@8.4.32):
     resolution: {integrity: sha512-6DiM4E7v4coTE4uzA8U//WhtPwyhiim3eyjEMFCnUpzbrkK9wJHgKDT2mR+HbtSrd/NubVaYTOpSpjUl8NQeRg==}
     engines: {node: '>= 10'}
     peerDependencies:
@@ -4308,6 +4311,7 @@ packages:
         optional: true
     dependencies:
       lilconfig: 2.1.0
+      postcss: 8.4.32
       yaml: 1.10.2
     dev: true
 
@@ -5059,7 +5063,7 @@ packages:
     resolution: {integrity: sha512-AEYxH93jGFPn/a2iVAwW87VuUIkR1FVUKB77NwMF7nBTDkDrrT/Hpt/IrCJ0QXhW27jTBDcf5ZY7w6RiqTMw2Q==}
     dev: false
 
-  /tsup@6.7.0(typescript@5.3.3):
+  /tsup@6.7.0(postcss@8.4.32)(typescript@5.3.3):
     resolution: {integrity: sha512-L3o8hGkaHnu5TdJns+mCqFsDBo83bJ44rlK7e6VdanIvpea4ArPcU3swWGsLVbXak1PqQx/V+SSmFPujBK+zEQ==}
     engines: {node: '>=14.18'}
     hasBin: true
@@ -5083,7 +5087,8 @@ packages:
       execa: 5.1.1
       globby: 11.1.0
       joycon: 3.1.1
-      postcss-load-config: 3.1.4
+      postcss: 8.4.32
+      postcss-load-config: 3.1.4(postcss@8.4.32)
       resolve-from: 5.0.0
       rollup: 3.29.4
       source-map: 0.8.0-beta.0

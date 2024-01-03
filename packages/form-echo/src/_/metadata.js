@@ -8,11 +8,14 @@ export class FormStoreMetadata {
 	 * @typedef {import("../types").FormStoreShape<FieldsValues, ValidationSchema>} FormStore
 	 * @typedef {FormStore['metadata']} Metadata
 	 * @typedef {Metadata['fieldsNames']} FieldNames
-	 * @typedef {Metadata['referencedValidatedFields']} ReferencedValidatedFields
+	 * @typedef {Metadata['directlyValidatedFields']} ReferencedValidatedFields
 	 * @typedef {ReferencedValidatedFields[number]} ReferencedValidatedFieldsItem
-	 * @typedef {Metadata['manualValidatedFields']} ManualValidatedFields
+	 * @typedef {Metadata['customValidatedFields']} ManualValidatedFields
 	 * @typedef {ManualValidatedFields[number]} ManualValidatedFieldsItem
 	 */
+
+	/** @type {FieldsValues} */
+	initialValues;
 
 	/** @type {string} */
 	baseId;
@@ -30,12 +33,12 @@ export class FormStoreMetadata {
 	validatedFieldsNames = [];
 
 	/** @type {Exclude<keyof ValidationSchema, keyof FieldsValues>[]} */
-	manualValidatedFields = [];
+	customValidatedFields = [];
 	/** @type {Record<Exclude<keyof ValidationSchema, keyof FieldsValues>,true>} */
 	manualValidatedFieldsMap;
 
 	/** @type {(keyof ValidationSchema & keyof FieldsValues)[]} */
-	referencedValidatedFields = [];
+	directlyValidatedFields = [];
 	/** @type {Record< keyof ValidationSchema & keyof FieldsValues, true >} */
 	referencedValidatedFieldsMap;
 
@@ -46,6 +49,7 @@ export class FormStoreMetadata {
 		if (!params.initialValues || typeof params.initialValues !== 'object')
 			throw new Error('No initial values provided');
 
+		this.initialValues = params.initialValues;
 		this.baseId = params.baseId;
 		this.formId = `${params.baseId}-form`;
 
@@ -60,12 +64,17 @@ export class FormStoreMetadata {
 		this.fieldsNames = /** @type {FieldNames} */ (
 			Object.keys(params.initialValues)
 		);
-		for (const fieldName of this.fieldsNames) {
+
+		/** @type {keyof FieldsValues} */
+		let fieldName;
+		for (fieldName of this.fieldsNames) {
 			this.fieldsNamesMap[fieldName] = true;
 		}
 
 		if (params.validationSchema) {
-			for (const key in params.validationSchema) {
+			/** @type {string} */
+			let key;
+			for (key in params.validationSchema) {
 				/** @type {string[]} */
 				(this.validatedFieldsNames).push(key);
 
@@ -74,7 +83,7 @@ export class FormStoreMetadata {
 
 				if (key in this.fieldsNamesMap) {
 					/** @type {string[]} */
-					(this.referencedValidatedFields).push(key);
+					(this.directlyValidatedFields).push(key);
 
 					/** @type {Record<string, true>} */
 					(this.referencedValidatedFieldsMap)[key] = true;
@@ -82,7 +91,7 @@ export class FormStoreMetadata {
 				}
 
 				/** @type {string[]} */
-				(this.manualValidatedFields).push(key);
+				(this.customValidatedFields).push(key);
 
 				/** @type {Record<string, true>} */
 				(this.manualValidatedFieldsMap)[key] = true;
