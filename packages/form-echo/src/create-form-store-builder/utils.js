@@ -1,131 +1,131 @@
-import FormStoreField from '../_/field';
+import FormStoreControl from './control';
 import { errorFormatter as defaultErrorFormatter } from '../helpers/zod';
 
 /**
- * @template FieldsValues
- * @typedef {import("../types").ValidValidationSchema<FieldsValues>} ValidValidationSchema
+ * @template ControlsValues
+ * @typedef {import("../types").ValidValidationSchema<ControlsValues>} ValidValidationSchema
  */
 
 /**
- * @template FieldsValues
- * @template {ValidValidationSchema<FieldsValues>} ValidationSchema
- * @typedef {import("../types").CreateFormStoreProps<FieldsValues, ValidationSchema>} CreateFormStoreProps
+ * @template ControlsValues
+ * @template {ValidValidationSchema<ControlsValues>} ValidationSchema
+ * @typedef {import("../types").CreateFormStoreProps<ControlsValues, ValidationSchema>} CreateFormStoreProps
  */
 /**
- * @template FieldsValues, ValidationSchema
- * @typedef {import("../types").FormStoreShape<FieldsValues, ValidationSchema>} FormStoreShape
+ * @template ControlsValues, ValidationSchema
+ * @typedef {import("../types").FormStoreShape<ControlsValues, ValidationSchema>} FormStoreShape
  */
 /**
  * @typedef {import("../types").ValidationEvents} ValidationEvents
  */
 
 /**
- * @template FieldsValues
- * @template {ValidValidationSchema<FieldsValues>} ValidationSchema
- * @param {CreateFormStoreProps<FieldsValues, ValidationSchema>} params - Parameters for creating form store fields.
- * @param {string} baseId - Base identifier for the form store fields.
- * @param {import('../_/metadata').FormStoreMetadata<FieldsValues, ValidationSchema>} metadata - Metadata object for the form store.
+ * @template ControlsValues
+ * @template {ValidValidationSchema<ControlsValues>} ValidationSchema
+ * @param {CreateFormStoreProps<ControlsValues, ValidationSchema>} params - Parameters for creating form store controls.
+ * @param {string} baseId - Base identifier for the form store controls.
+ * @param {import('./metadata').FormStoreMetadata<ControlsValues, ValidationSchema>} metadata - Metadata object for the form store.
  *
- * @description Creates fields for the form store based on the provided parameters and metadata.
+ * @description Creates controls for the form store based on the provided parameters and metadata.
  */
-export function createFormStoreFields(params, baseId, metadata) {
+export function createFormStoreControls(params, baseId, metadata) {
 	/**
-	 * @typedef {FormStoreShape<FieldsValues, ValidationSchema>} FormStore
-	 * @typedef {FormStore['fields']} Fields
-	 * @typedef {FormStore['fields'][keyof Fields]} Field
+	 * @typedef {FormStoreShape<ControlsValues, ValidationSchema>} FormStore
+	 * @typedef {FormStore['controls']} Controls
+	 * @typedef {FormStore['controls'][keyof Controls]} Control
 	 **/
 
-	const fields = /** @type {Fields} */ ({});
+	const control = /** @type {Controls} */ ({});
 
-	for (const fieldName of metadata.fieldsNames) {
-		fields[fieldName] = new FormStoreField(
-			/** @type {Field} */
+	for (const controlName of metadata.controlsNames) {
+		control[controlName] = new FormStoreControl(
+			/** @type {Control} */
 			({
-				value: params.initialValues[fieldName],
-				valueFromFieldToStore: params.valuesFromFieldsToStore?.[fieldName]
-					? params.valuesFromFieldsToStore[fieldName]
+				value: params.initialValues[controlName],
+				valueFromControlToStore: params.valuesFromControlsToStore?.[controlName]
+					? params.valuesFromControlsToStore[controlName]
 					: undefined,
-				valueFromStoreToField: params.valuesFromStoreToFields?.[fieldName]
-					? params.valuesFromStoreToFields[fieldName]
+				valueFromStoreToControl: params.valuesFromStoreToControls?.[controlName]
+					? params.valuesFromStoreToControls[controlName]
 					: undefined,
-				id: `${baseId}field-${String(fieldName)}`,
+				id: `${baseId}control-${String(controlName)}`,
 				metadata: {
-					name: fieldName,
-					initialValue: params.initialValues[fieldName],
+					name: controlName,
+					initialValue: params.initialValues[controlName],
 				},
 			}),
 		);
 	}
 
-	return fields;
+	return control;
 }
 
 const itemsToResetDefaults = {
-	fields: true,
+	controls: true,
 	validations: true,
 	submit: false,
 	focus: true,
 };
 
 /**
- * @template FieldsValues
+ * @template ControlsValues
  * @template ValidationSchema
  * @param {import('../types/internal').FormErrorShape<keyof ValidationSchema>} params
- * @returns {(currentStat: import('../types').FormStoreShape<FieldsValues, ValidationSchema>) => import('../types').FormStoreShape<FieldsValues, ValidationSchema>}
+ * @returns {(currentStat: import('../types').FormStoreShape<ControlsValues, ValidationSchema>) => import('../types').FormStoreShape<ControlsValues, ValidationSchema>}
  */
-function _setError(params) {
+function _setValidationError(params) {
 	return function (currentState) {
 		if (
-			!currentState.validations.fields[params.name].events[
+			!currentState.validations.items[params.name].events[
 				params.validationEvent
 			].isActive
 		)
 			return currentState;
 
-		let currentDirtyFieldsCounter =
-			currentState.validations.currentDirtyFieldsCounter;
-		const validationField = {
-			...currentState.validations.fields[params.name],
+		let currentDirtyControlsCounter =
+			currentState.validations.currentDirtyControlsCounter;
+		const validationItem = {
+			...currentState.validations.items[params.name],
 		};
-		validationField.currentEvent = params.validationEvent;
+		validationItem.currentEvent = params.validationEvent;
 
 		if (params.error) {
-			validationField.failedAttempts++;
-			validationField.events[params.validationEvent].failedAttempts++;
+			validationItem.failedAttempts++;
+			validationItem.events[params.validationEvent].failedAttempts++;
 
-			if (!currentState.validations.dirtyFields[params.name]) {
-				validationField.currentDirtyEventsCounter++;
-				if (validationField.currentDirtyEventsCounter > 0) {
-					currentDirtyFieldsCounter++;
+			if (!currentState.validations.dirtyControls[params.name]) {
+				validationItem.currentDirtyEventsCounter++;
+				if (validationItem.currentDirtyEventsCounter > 0) {
+					currentDirtyControlsCounter++;
 				}
 			}
 
-			currentState.validations.dirtyFields[params.name] = true;
-			validationField.error = params.error;
+			currentState.validations.dirtyControls[params.name] = true;
+			validationItem.error = params.error;
 		} else {
-			validationField.passedAttempts++;
-			validationField.events[params.validationEvent].passedAttempts++;
+			validationItem.passedAttempts++;
+			validationItem.events[params.validationEvent].passedAttempts++;
 
-			if (currentState.validations.dirtyFields[params.name]) {
-				validationField.currentDirtyEventsCounter--;
-				if (validationField.currentDirtyEventsCounter === 0) {
-					currentDirtyFieldsCounter--;
+			if (currentState.validations.dirtyControls[params.name]) {
+				validationItem.currentDirtyEventsCounter--;
+				if (validationItem.currentDirtyEventsCounter === 0) {
+					currentDirtyControlsCounter--;
 				}
 			}
 
-			currentState.validations.dirtyFields[params.name] = false;
-			validationField.error = null;
+			currentState.validations.dirtyControls[params.name] = false;
+			validationItem.error = null;
 		}
 
-		currentState.validations.lastActive.field = params.name;
+		currentState.validations.lastActive.item = params.name;
 		currentState.validations.lastActive.event = params.validationEvent;
-		currentState.validations.currentDirtyFieldsCounter =
-			currentDirtyFieldsCounter;
-		currentState.validations.isDirty = currentDirtyFieldsCounter > 0;
+		currentState.validations.currentDirtyControlsCounter =
+			currentDirtyControlsCounter;
+		currentState.validations.isDirty = currentDirtyControlsCounter > 0;
 
-		currentState.validations.fields = {
-			...currentState.validations.fields,
-			[params.name]: validationField,
+		currentState.validations.items = {
+			...currentState.validations.items,
+			[params.name]: validationItem,
 		};
 
 		return currentState;
@@ -133,80 +133,82 @@ function _setError(params) {
 }
 
 /**
- * @template FieldsValues
+ * @template ControlsValues
  * @template ValidationSchema
- * @template {keyof FieldsValues} Name
+ * @template {keyof ControlsValues} Name
  * @param {Name} name
- * @param {import('../types/internal').AnyValueExceptFunctions | ((value: FieldsValues[Name]) => FieldsValues[Name])} valueOrUpdater
- * @returns {(currentStat: import('../types').FormStoreShape<FieldsValues, ValidationSchema>) => import('../types').FormStoreShape<FieldsValues, ValidationSchema>}
+ * @param {import('../types/internal').AnyValueExceptFunctions | ((value: ControlsValues[Name]) => ControlsValues[Name])} valueOrUpdater
+ * @returns {(currentStat: import('../types').FormStoreShape<ControlsValues, ValidationSchema>) => import('../types').FormStoreShape<ControlsValues, ValidationSchema>}
  */
-function _setFieldValue(name, valueOrUpdater) {
+function _setControlValue(name, valueOrUpdater) {
 	return function (currentState) {
-		const field = currentState.fields[name];
+		const control = currentState.controls[name];
 
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-		field.value =
+		control.value =
 			typeof valueOrUpdater === 'function'
-				? valueOrUpdater(field.value)
+				? valueOrUpdater(control.value)
 				: valueOrUpdater;
 
 		return {
 			...currentState,
-			fields: {
-				...currentState.fields,
-				[name]: field,
+			controls: {
+				...currentState.controls,
+				[name]: control,
 			},
 		};
 	};
 }
 
 /**
- * @template FieldsValues
- * @template {import('../types').ValidValidationSchema<FieldsValues>} ValidationSchema
- * @param {import('../types/internal').SetStateInternal<import('../types').FormStoreShape<FieldsValues, ValidationSchema>>} set
- * @param {() => import('../types').FormStoreShape<FieldsValues, ValidationSchema>} get
- * @param {import('../types').CreateFormStoreProps<FieldsValues, ValidationSchema>} params
+ * @template ControlsValues
+ * @template {import('../types').ValidValidationSchema<ControlsValues>} ValidationSchema
+ * @param {import('../types/internal').SetStateInternal<import('../types').FormStoreShape<ControlsValues, ValidationSchema>>} set
+ * @param {() => import('../types').FormStoreShape<ControlsValues, ValidationSchema>} get
+ * @param {import('../types').CreateFormStoreProps<ControlsValues, ValidationSchema>} params
  */
 export function getFormStoreBaseMethods(set, get, params) {
 	/**
-	 * @typedef {import('../types').FormStoreShapeBaseMethods<FieldsValues, ValidationSchema>} FormStoreBaseMethods
-	 * @typedef {FormStoreBaseMethods['getValues']} GetValues
-	 * @typedef {FormStoreBaseMethods['getValue']} GetValue
-	 * @typedef {keyof FieldsValues} FieldsValuesKeys
-	 * @typedef {FormStoreBaseMethods['setSubmitState']} SetSubmitState
-	 * @typedef {FormStoreBaseMethods['setFocusState']} SetFocusState
+	 * @typedef {import('../types').FormStoreShapeBaseMethods<ControlsValues, ValidationSchema>} FormStoreBaseMethods
+	 * @typedef {FormStoreBaseMethods['getControlsValues']} GetValues
+	 * @typedef {FormStoreBaseMethods['getControlValue']} GetValue
+	 * @typedef {keyof ControlsValues} ControlsValuesKeys
+	 * @typedef {FormStoreBaseMethods['setSubmit']} SetSubmitState
+	 * @typedef {FormStoreBaseMethods['setControlFocus']} SetFocusState
 	 * @typedef {FormStoreBaseMethods['resetFormStore']} ResetFormStore
-	 * @typedef {FormStoreBaseMethods['setFieldValue']} SetFieldValue
-	 * @typedef {FormStoreBaseMethods['setError']} SetFieldError
+	 * @typedef {FormStoreBaseMethods['setControlValue']} SetControlValue
+	 * @typedef {FormStoreBaseMethods['setValidationError']} SetControlError
 	 * @typedef {FormStoreBaseMethods['errorFormatter']} ErrorFormatter
-	 * @typedef {FormStoreBaseMethods['getFieldEventsListeners']} GetFieldEventsListeners
-	 * @typedef {FormStoreBaseMethods['handleChange']} HandleInputChange
+	 * @typedef {FormStoreBaseMethods['getControlEventsListeners']} GetControlEventsListeners
+	 * @typedef {FormStoreBaseMethods['handleControlChange']} HandleInputChange
 	 * @typedef {FormStoreBaseMethods['handleSubmit']} HandleSubmit
 	 */
 
 	/** @type {GetValues} */
-	function getValues() {
+	function getControlsValues() {
 		const currentState = get();
-		const fieldsValues = /** @type {FieldsValues} */ ({});
+		const controlsValues = /** @type {ControlsValues} */ ({});
 
 		/** @type {string} */
-		let fieldName;
-		for (fieldName in currentState.fields) {
-			fieldsValues[/** @type {FieldsValuesKeys} */ (fieldName)] =
-				currentState.fields[/** @type {FieldsValuesKeys} */ (fieldName)].value;
+		let controlName;
+		for (controlName in currentState.controls) {
+			controlsValues[/** @type {ControlsValuesKeys} */ (controlName)] =
+				currentState.controls[
+					/** @type {ControlsValuesKeys} */ (controlName)
+				].value;
 		}
 
-		return fieldsValues;
+		return controlsValues;
 	}
 
 	/** @type {GetValue} */
-	function getValue(name) {
+	function getControlValue(name) {
 		const currentState = get();
-		return currentState.fields[name].value;
+		return currentState.controls[name].value;
 	}
 
 	/** @type {SetSubmitState} */
-	function setSubmitState(valueOrUpdater) {
+	function setSubmit(valueOrUpdater) {
 		const currentState = get();
 
 		const submit = {
@@ -219,30 +221,31 @@ export function getFormStoreBaseMethods(set, get, params) {
 	}
 
 	/** @type {SetFocusState} */
-	function setFocusState(fieldName, validationName, type) {
+	function setControlFocus(controlName, validationName, type) {
 		let currentState = get();
 
-		if (currentState.validations.fields[validationName].events.focus.isActive) {
+		if (currentState.validations.items[validationName].events.focus.isActive) {
 			try {
-				currentState.validations.fields[validationName].handler({
+				currentState.validations.items[validationName].handler({
 					value: /** @type {never} */ (
-						!validationName || fieldName === validationName
-							? currentState.fields[fieldName].value
+						!validationName || controlName === validationName
+							? currentState.controls[controlName].value
 							: undefined
 					),
-					name: /** @type {never} */ (fieldName),
+					name: /** @type {never} */ (controlName),
 					validationEvent: 'focus',
 					get,
-					getValue: currentState.getValue,
-					getValues: currentState.getValues,
-					setError: currentState.setError,
-					setSubmitState: currentState.setSubmitState,
-					setFocusState: currentState.setFocusState,
+					getControlValue: currentState.getControlValue,
+					getControlsValues: currentState.getControlsValues,
+					setValidationError: currentState.setValidationError,
+					setSubmit: currentState.setSubmit,
+					setControlFocus: currentState.setControlFocus,
 					resetFormStore: currentState.resetFormStore,
-					setFieldValue: currentState.setFieldValue,
+					setControlValue: currentState.setControlValue,
+					errorFormatter: currentState.errorFormatter,
 				});
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-				currentState = _setError({
+				currentState = _setValidationError({
 					name: validationName,
 					error: null,
 					validationEvent: 'focus',
@@ -250,7 +253,7 @@ export function getFormStoreBaseMethods(set, get, params) {
 			} catch (error) {
 				const formattedError = currentState.errorFormatter(error, 'focus');
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-				currentState = _setError({
+				currentState = _setValidationError({
 					name: validationName,
 					error: formattedError,
 					validationEvent: 'focus',
@@ -259,7 +262,7 @@ export function getFormStoreBaseMethods(set, get, params) {
 
 			if (
 				currentState.focus.isPending &&
-				currentState.focus.field.name === fieldName
+				currentState.focus.control.name === controlName
 			)
 				return set(currentState);
 		}
@@ -269,12 +272,12 @@ export function getFormStoreBaseMethods(set, get, params) {
 			type === 'in'
 				? {
 						isPending: true,
-						field: {
-							name: fieldName,
-							id: currentState.fields[fieldName].id,
+						control: {
+							name: controlName,
+							id: currentState.controls[controlName].id,
 						},
 				  }
-				: { isPending: false, field: null };
+				: { isPending: false, control: null };
 
 		set({ focus });
 	}
@@ -282,38 +285,39 @@ export function getFormStoreBaseMethods(set, get, params) {
 	/** @type {ResetFormStore} */
 	function resetFormStore(itemsToReset = itemsToResetDefaults) {
 		const currentState = get();
-		const fields = currentState.fields;
+		const controls = currentState.controls;
 		const validations = currentState.validations;
 		let submit = currentState.submit;
 		let focus = currentState.focus;
 
-		if (itemsToReset.fields) {
-			/** @type {keyof typeof fields} */
-			let fieldName;
-			for (fieldName in fields) {
-				fields[fieldName].value = fields[fieldName].metadata.initialValue;
+		if (itemsToReset.controls) {
+			/** @type {keyof typeof controls} */
+			let controlName;
+			for (controlName in controls) {
+				controls[controlName].value =
+					controls[controlName].metadata.initialValue;
 			}
 		}
 
 		if (itemsToReset.validations) {
-			validations.currentDirtyFieldsCounter = 0;
-			validations.dirtyFields = {};
+			validations.currentDirtyControlsCounter = 0;
+			validations.dirtyControls = {};
 			validations.isDirty = false;
 			validations.lastActive.event = null;
-			validations.lastActive.field = null;
+			validations.lastActive.item = null;
 
-			for (const key in validations.fields) {
-				validations.fields[key].failedAttempts = 0;
-				validations.fields[key].passedAttempts = 0;
-				validations.fields[key].currentEvent = null;
-				validations.fields[key].error = null;
+			for (const key in validations.items) {
+				validations.items[key].failedAttempts = 0;
+				validations.items[key].passedAttempts = 0;
+				validations.items[key].currentEvent = null;
+				validations.items[key].error = null;
 
 				/** @type {import('../types').ValidationEvents} */
 				let eventKey;
-				for (eventKey in validations.fields[key].events) {
-					validations.fields[key].events[eventKey].isActive = false;
-					validations.fields[key].events[eventKey].failedAttempts = 0;
-					validations.fields[key].events[eventKey].passedAttempts = 0;
+				for (eventKey in validations.items[key].events) {
+					validations.items[key].events[eventKey].isActive = false;
+					validations.items[key].events[eventKey].failedAttempts = 0;
+					validations.items[key].events[eventKey].passedAttempts = 0;
 				}
 			}
 		}
@@ -330,114 +334,115 @@ export function getFormStoreBaseMethods(set, get, params) {
 		if (itemsToReset.focus) {
 			focus = {
 				isPending: false,
-				field: null,
+				control: null,
 			};
 		}
 
-		return set({ fields, validations, submit, focus });
+		return set({ controls, validations, submit, focus });
 	}
 
-	/** @type {SetFieldValue} */
-	function setFieldValue(name, value) {
-		return set(_setFieldValue(name, value));
+	/** @type {SetControlValue} */
+	function setControlValue(name, value) {
+		return set(_setControlValue(name, value));
 	}
 
-	/** @type {SetFieldError} */
-	function setError(params) {
-		set(_setError(params));
+	/** @type {SetControlError} */
+	function setValidationError(params) {
+		set(_setValidationError(params));
 	}
 
 	/** @type {ErrorFormatter} */
 	const errorFormatter = params.errorFormatter ?? defaultErrorFormatter;
 
 	/** @type {HandleInputChange} */
-	function handleChange(name, valueOrUpdater, validationName) {
+	function handleControlChange(name, valueOrUpdater, validationName) {
 		let currentState = get();
-		const field = currentState.fields[name];
+		const control = currentState.controls[name];
 
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-		const value = /** @type {FieldsValues[typeof name]} */ (
+		const value = /** @type {ControlsValues[typeof name]} */ (
 			typeof valueOrUpdater === 'function'
-				? valueOrUpdater(field.value)
-				: field.valueFromFieldToStore?.(valueOrUpdater) ?? valueOrUpdater
+				? valueOrUpdater(control.value)
+				: control.valueFromControlToStore?.(valueOrUpdater) ?? valueOrUpdater
 		);
 
 		const _validationName = validationName
 			? validationName
-			: currentState.metadata.referencedValidatedFieldsMap[name]
+			: currentState.metadata.referencedValidatedControlsMap[name]
 			? name
 			: undefined;
 
 		if (
 			_validationName &&
-			currentState.validations.fields[_validationName].events['change'].isActive
+			currentState.validations.items[_validationName].events['change'].isActive
 		) {
 			try {
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-				currentState = _setFieldValue(
+				currentState = _setControlValue(
 					name,
-					currentState.validations.fields[_validationName].handler({
+					currentState.validations.items[_validationName].handler({
 						value: /** @type {never} */ (
 							validationName &&
 							// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 							// @ts-ignore
 							validationName !== name
-								? currentState.getValues()
+								? currentState.getControlsValues()
 								: value
 						),
 						name: /** @type {never} */ (name),
 						get,
 						validationEvent: 'change',
-						getValue: currentState.getValue,
-						getValues: currentState.getValues,
-						setError: currentState.setError,
-						setSubmitState: currentState.setSubmitState,
-						setFocusState: currentState.setFocusState,
+						getControlValue: currentState.getControlValue,
+						getControlsValues: currentState.getControlsValues,
+						setValidationError: currentState.setValidationError,
+						setSubmit: currentState.setSubmit,
+						setControlFocus: currentState.setControlFocus,
 						resetFormStore: currentState.resetFormStore,
-						setFieldValue: currentState.setFieldValue,
+						setControlValue: currentState.setControlValue,
+						errorFormatter: currentState.errorFormatter,
 					}),
 				)(currentState);
 
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-				currentState = _setError({
+				currentState = _setValidationError({
 					name: /** @type {keyof ValidationSchema} */ (_validationName),
 					error: null,
 					validationEvent: 'change',
 				})(currentState);
 			} catch (error) {
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-				currentState = _setError({
+				currentState = _setValidationError({
 					name: /** @type {keyof ValidationSchema} */ (_validationName),
 					error: currentState.errorFormatter(error, 'change'),
 					validationEvent: 'change',
 				})(currentState);
 
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-				currentState = _setFieldValue(name, value)(currentState);
+				currentState = _setControlValue(name, value)(currentState);
 			}
 		} else {
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-			currentState = _setFieldValue(name, value)(currentState);
+			currentState = _setControlValue(name, value)(currentState);
 		}
 
 		set(currentState);
 	}
 
-	/** @type {GetFieldEventsListeners} */
-	function getFieldEventsListeners(name, validationName) {
+	/** @type {GetControlEventsListeners} */
+	function getControlEventsListeners(name, validationName) {
 		const currentState = get();
 		const _validationName = validationName ?? name;
 
 		return {
 			/** @param {{ target: { value: string } }} event */
 			onChange: (event) => {
-				currentState.handleChange(name, event.target.value);
+				currentState.handleControlChange(name, event.target.value);
 			},
 			onFocus: () => {
-				currentState.setFocusState(name, _validationName, 'in');
+				currentState.setControlFocus(name, _validationName, 'in');
 			},
 			onBlur: () => {
-				currentState.setFocusState(name, _validationName, 'out');
+				currentState.setControlFocus(name, _validationName, 'out');
 			},
 		};
 	}
@@ -447,9 +452,9 @@ export function getFormStoreBaseMethods(set, get, params) {
 		return async function (event) {
 			/** @type {{ preventDefault?: () => void }} */ (event).preventDefault?.();
 
-			get().setSubmitState({ isPending: true, error: null });
+			get().setSubmit({ isPending: true, error: null });
 			const currentState = get();
-			currentState.focus = { isPending: false, field: null };
+			currentState.focus = { isPending: false, control: null };
 			// currentState.submit = {
 			// 	...currentState.submit,
 			// 	isPending: true,
@@ -457,8 +462,8 @@ export function getFormStoreBaseMethods(set, get, params) {
 			// };
 
 			const metadata = currentState.metadata;
-			const fields = currentState.fields;
-			const validations = currentState.validations.fields;
+			const controls = currentState.controls;
+			const validations = currentState.validations.items;
 			/** @type {Record<string, unknown> } */
 			const values = {};
 			/** @type {Record<string, unknown> } */
@@ -469,56 +474,56 @@ export function getFormStoreBaseMethods(set, get, params) {
 
 			let hasError = false;
 
-			/** @type {keyof typeof fields & string} */
-			let fieldName;
-			for (fieldName in fields) {
-				values[fieldName] = fields[fieldName].value;
+			/** @type {keyof typeof controls & string} */
+			let controlName;
+			for (controlName in controls) {
+				values[controlName] = controls[controlName].value;
 
 				try {
 					const validationSchema =
-						fieldName in metadata.referencedValidatedFieldsMap &&
-						validations[fieldName].handler;
+						controlName in metadata.referencedValidatedControlsMap &&
+						validations[controlName].handler;
 
 					if (
 						typeof validationSchema !== 'function' ||
-						!validations[fieldName].events.submit.isActive
+						!validations[controlName].events.submit.isActive
 					) {
 						continue;
 					}
 
-					validatedValues[fieldName] = validationSchema({
-						value: /** @type {never} */ (fields[fieldName].value),
-						name: fieldName,
+					validatedValues[controlName] = validationSchema({
+						value: /** @type {never} */ (controls[controlName].value),
+						name: controlName,
 						get,
 						validationEvent: 'submit',
 						...currentState,
 					});
 
-					errors[fieldName] = {
-						name: fieldName,
+					errors[controlName] = {
+						name: controlName,
 						error: null,
 						validationEvent: 'submit',
 					};
 				} catch (error) {
-					errors[fieldName] = {
-						name: fieldName,
+					errors[controlName] = {
+						name: controlName,
 						error: currentState.errorFormatter(error, 'submit'),
 						validationEvent: 'submit',
 					};
 				}
 			}
 
-			/** @type {keyof (typeof metadata)['manualValidatedFieldsMap'] } */
-			let manualFieldName;
-			for (manualFieldName of metadata.customValidatedFields) {
+			/** @type {keyof (typeof metadata)['manualValidatedControlsMap'] } */
+			let manualControlName;
+			for (manualControlName of metadata.customValidatedControls) {
 				try {
 					const validationSchema =
-						currentState.validations.fields[manualFieldName].handler;
+						currentState.validations.items[manualControlName].handler;
 					if (typeof validationSchema !== 'function') {
 						continue;
 					}
 
-					validatedValues[/** @type {string} */ (manualFieldName)] =
+					validatedValues[/** @type {string} */ (manualControlName)] =
 						validationSchema({
 							value: /** @type {never} */ (undefined),
 							name: /** @type {never} */ (undefined),
@@ -527,14 +532,14 @@ export function getFormStoreBaseMethods(set, get, params) {
 							...currentState,
 						});
 
-					errors[/** @type {string} */ (manualFieldName)] = {
-						name: manualFieldName,
+					errors[/** @type {string} */ (manualControlName)] = {
+						name: manualControlName,
 						error: null,
 						validationEvent: 'submit',
 					};
 				} catch (error) {
-					errors[/** @type {string} */ (manualFieldName)] = {
-						name: manualFieldName,
+					errors[/** @type {string} */ (manualControlName)] = {
+						name: manualControlName,
 						error: currentState.errorFormatter(error, 'submit'),
 						validationEvent: 'submit',
 					};
@@ -543,7 +548,7 @@ export function getFormStoreBaseMethods(set, get, params) {
 
 			/**
 			 * @description Necessary Evil
-			 * @typedef {FieldsValues} Values
+			 * @typedef {ControlsValues} Values
 			 * @typedef {import('../types').GetValidationValuesFromSchema<ValidationSchema>} ValidatedValues
 			 * @typedef {{ [Key in keyof ValidationSchema]: import('../types/internal').FormErrorShape<Key> }} Error
 			 * @typedef {{ [Key in keyof ValidationSchema]: { name: Key; message: string | null; validationEvent: import('../types').ValidationEvents; }; }} Errors
@@ -554,7 +559,7 @@ export function getFormStoreBaseMethods(set, get, params) {
 			for (errorKey in errors) {
 				const errorObj = errors[errorKey];
 
-				currentState.setError(errors[errorKey]); // (currentState);
+				currentState.setValidationError(errors[errorKey]); // (currentState);
 
 				if (!errorObj.error) continue;
 
@@ -572,22 +577,23 @@ export function getFormStoreBaseMethods(set, get, params) {
 							/** @type {ValidatedValues} */
 							(validatedValues),
 						get,
-						getValue: currentState.getValue,
-						getValues: currentState.getValues,
-						setError: currentState.setError,
-						setSubmitState: currentState.setSubmitState,
-						setFocusState: currentState.setFocusState,
+						getControlValue: currentState.getControlValue,
+						getControlsValues: currentState.getControlsValues,
+						setValidationError: currentState.setValidationError,
+						setSubmit: currentState.setSubmit,
+						setControlFocus: currentState.setControlFocus,
 						resetFormStore: currentState.resetFormStore,
-						setFieldValue: currentState.setFieldValue,
+						setControlValue: currentState.setControlValue,
+						errorFormatter: currentState.errorFormatter,
 					});
-					currentState.setSubmitState((prev) => ({
+					currentState.setSubmit((prev) => ({
 						isPending: false,
 						counter: prev.counter + 1,
 						passedAttempts: prev.counter + 1,
 						error: null,
 					}));
 				} catch (error) {
-					currentState.setSubmitState((prev) => ({
+					currentState.setSubmit((prev) => ({
 						isPending: false,
 						counter: prev.counter + 1,
 						failedAttempts: prev.counter + 1,
@@ -595,7 +601,7 @@ export function getFormStoreBaseMethods(set, get, params) {
 					}));
 				}
 			} else {
-				currentState.setSubmitState((prev) => ({
+				currentState.setSubmit((prev) => ({
 					isPending: false,
 					counter: prev.counter + 1,
 					failedAttempts: prev.counter + 1,
@@ -609,16 +615,16 @@ export function getFormStoreBaseMethods(set, get, params) {
 	}
 
 	return {
-		getValues,
+		getControlsValues,
+		getControlValue,
 		errorFormatter,
-		getValue,
-		setSubmitState,
-		setFocusState,
+		setSubmit,
+		setControlFocus,
 		resetFormStore,
-		setFieldValue,
-		setError,
-		handleChange,
-		getFieldEventsListeners,
+		setControlValue,
+		setValidationError,
+		handleControlChange,
+		getControlEventsListeners,
 		handleSubmit,
 	};
 }

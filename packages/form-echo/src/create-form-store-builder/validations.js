@@ -1,7 +1,7 @@
 import { isZodValidator } from '~/helpers';
 
 /**
- * @template FieldsValues
+ * @template ControlsValues
  * @template ValidationSchema
  *
  * @description Creates validations for the form store based on the provided parameters and metadata.
@@ -10,30 +10,30 @@ export class FormStoreValidations {
 	/**
 	 * @typedef {{
 	 * 	[Key in keyof import('..').GetValidationValuesFromSchema<ValidationSchema>]: import('..').FormStoreValidation<
-	 * 		FieldsValues,
+	 * 		ControlsValues,
 	 * 		ValidationSchema,
 	 * 		Key
 	 * 	>;
-	 * }} ValidationsFields
+	 * }} ValidationsControls
 	 */
 
-	/** @type {ValidationsFields} */
-	fields;
+	/** @type {ValidationsControls} */
+	items;
 
-	/** @type {Partial<Record<keyof ValidationsFields, boolean>>} */
-	dirtyFields = {};
+	/** @type {Partial<Record<keyof ValidationsControls, boolean>>} */
+	dirtyControls = {};
 
-	/** @type {{ field: keyof ValidationsFields | null; event: import('~/create-form-store-builder/utils').ValidationEvents | null }} */
-	lastActive = { field: null, event: null };
+	/** @type {{ item: keyof ValidationsControls | null; event: import('~/create-form-store-builder/utils').ValidationEvents | null }} */
+	lastActive = { item: null, event: null };
 
 	/** @type {boolean} */
 	isDirty = false;
 
 	/** @type {number} */
-	currentDirtyFieldsCounter = 0;
+	currentDirtyControlsCounter = 0;
 
 	/**
-	 * @param {Pick<import('../types').CreateFormStoreProps<FieldsValues, ValidationSchema>, 'validationEvents' | 'validationSchema'> & { metadata: import('./metadata').FormStoreMetadata<FieldsValues, ValidationSchema> } } params
+	 * @param {Pick<import('../types').CreateFormStoreProps<ControlsValues, ValidationSchema>, 'validationEvents' | 'validationSchema'> & { metadata: import('./metadata').FormStoreMetadata<ControlsValues, ValidationSchema> } } params
 	 */
 	constructor(params) {
 		/**
@@ -41,40 +41,40 @@ export class FormStoreValidations {
 		 **/
 
 		/** @type {ValidationEvent2State} */
-		let fieldValidationEvents = {
+		let itemValidationEvents = {
 			submit: true,
 			focus: true,
 		};
-		let isFieldHavingPassedValidations = false;
+		let isControlHavingPassedValidations = false;
 		/** @type {import('../types').ValidationEvents} */
-		let fieldValidationEventKey;
+		let itemValidationEventKey;
 
-		const validationsFields = /** @type {ValidationsFields} */ ({});
+		const validationsControls = /** @type {ValidationsControls} */ ({});
 
 		if (params.validationSchema) {
-			for (const fieldName of params.metadata.validatedFieldsNames) {
-				const fieldValidationsSchema =
+			for (const itemName of params.metadata.validatedControlsNames) {
+				const itemValidationsSchema =
 					params.validationSchema[
 						/** @type {keyof typeof params['validationSchema']} */
-						(fieldName)
+						(itemName)
 					];
 
-				/** @typedef {typeof validationsFields[keyof typeof validationsFields]} validationsField */
+				/** @typedef {typeof validationsControls[keyof typeof validationsControls]} validationsControl */
 
-				validationsFields[fieldName] =
-					/** @satisfies {validationsField} */
+				validationsControls[itemName] =
+					/** @satisfies {validationsControl} */
 					({
-						handler: /** @type {validationsField['handler']} */ (
-							!fieldValidationsSchema
+						handler: /** @type {validationsControl['handler']} */ (
+							!itemValidationsSchema
 								? undefined
-								: isZodValidator(fieldValidationsSchema)
+								: isZodValidator(itemValidationsSchema)
 								? /** @param {unknown} params  */
 								  (params) =>
 										// eslint-disable-next-line @typescript-eslint/no-unsafe-return
-										fieldValidationsSchema.parse(
+										itemValidationsSchema.parse(
 											/** @type {{ value: unknown }} */ (params).value,
 										)
-								: fieldValidationsSchema
+								: itemValidationsSchema
 						),
 						currentDirtyEventsCounter: 0,
 						failedAttempts: 0,
@@ -99,31 +99,30 @@ export class FormStoreValidations {
 						},
 						currentEvent: null,
 						metadata: {
-							name: /** @type {validationsField['metadata']['name']} */ (
-								fieldName
+							name: /** @type {validationsControl['metadata']['name']} */ (
+								itemName
 							),
 						},
 					});
 
 				if (params.validationEvents) {
-					isFieldHavingPassedValidations = true;
-					fieldValidationEvents = {
-						...fieldValidationEvents,
+					isControlHavingPassedValidations = true;
+					itemValidationEvents = {
+						...itemValidationEvents,
 						...params.validationEvents,
 					};
 				}
 
-				if (isFieldHavingPassedValidations) {
-					for (fieldValidationEventKey in fieldValidationEvents) {
-						validationsFields[fieldName].events[
-							fieldValidationEventKey
-						].isActive =
-							!!typeof fieldValidationEvents[fieldValidationEventKey];
+				if (isControlHavingPassedValidations) {
+					for (itemValidationEventKey in itemValidationEvents) {
+						validationsControls[itemName].events[
+							itemValidationEventKey
+						].isActive = !!typeof itemValidationEvents[itemValidationEventKey];
 					}
 				}
 			}
 		}
 
-		this.fields = validationsFields;
+		this.items = validationsControls;
 	}
 }

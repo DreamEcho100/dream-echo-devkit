@@ -171,8 +171,8 @@ result;
 // 	}
 // >;
 
-// ee.fields.username.value;
-// ee.fields.username.validations.handler;
+// ee.controls.username.value;
+// ee.controls.username.validations.handler;
 
 // const eee = createFormStore({
 // 	initialValues: {
@@ -185,11 +185,11 @@ result;
 // 	},
 // });
 
-// eee.getState().fields.username.value;
-// eee.getState().fields.username.validations.handler;
+// eee.getState().controls.username.value;
+// eee.getState().controls.username.validations.handler;
 
 // const Comp = () => {
-// 	const username = useFormStore(eee, (store) => store.fields.username);
+// 	const username = useFormStore(eee, (store) => store.controls.username);
 
 // 	if (typeof username !== 'string') username;
 // 	if (typeof username === 'string') username;
@@ -218,33 +218,33 @@ result;
 // 	);
 // };
 
-// const Form = <Fields extends Record<string, unknown>, ValidatedFields>({
+// const Form = <Controls extends Record<string, unknown>, ValidatedControls>({
 // 	store,
 // }: {
-// 	store: FormStoreApi<Fields, ValidatedFields>;
-// 	handlePreSubmitCB: HandlePreSubmitCB<Fields, ValidatedFields>;
+// 	store: FormStoreApi<Controls, ValidatedControls>;
+// 	handlePreSubmitCB: HandlePreSubmitCB<Controls, ValidatedControls>;
 // }) => {
-// 	store.getState().fields.sa.errors;
+// 	store.getState().controls.sa.errors;
 // 	return <></>;
 // };
 
 // Comp;
 
 // /*
-// type GetStoreFieldsValues<
+// type GetStoreControlsValues<
 //   Store extends FormStoreApi<any, any>
 // > = {
-//   [Key in keyof ReturnType<Store["getState"]>["fields"]]: ReturnType<
+//   [Key in keyof ReturnType<Store["getState"]>["controls"]]: ReturnType<
 //     Store["getState"]
-//   >["fields"][Key]["value"];
+//   >["controls"][Key]["value"];
 // };
-// type GetStoreValidatedFieldsValues<
+// type GetStoreValidatedControlsValues<
 //   Store extends FormStoreApi<any, any>
 // > = {
-//   [Key in keyof ReturnType<Store["getState"]>["fields"]]: ReturnType<
+//   [Key in keyof ReturnType<Store["getState"]>["controls"]]: ReturnType<
 //     Store["getState"]
-//   >["fields"][Key]["validations"] extends FieldValidation<any>
-//     ? ReturnType<Store["getState"]>["fields"][Key]["validations"]["handler"]
+//   >["controls"][Key]["validations"] extends ControlValidation<any>
+//     ? ReturnType<Store["getState"]>["controls"][Key]["validations"]["handler"]
 //     : never;
 // };
 
@@ -253,25 +253,25 @@ result;
 // > = FormHTMLAttributes<HTMLFormElement> & {
 //   store: Store;
 //   handleOnSubmit?: HandlePreSubmitCB<
-//     GetStoreFieldsValues<Store>,
-//     GetStoreValidatedFieldsValues<Store>
+//     GetStoreControlsValues<Store>,
+//     GetStoreValidatedControlsValues<Store>
 //   >;
 // };
 // */
 
 // export type FormProps<
-// 	Fields extends Record<string, unknown>,
-// 	ValidatedFields,
+// 	Controls extends Record<string, unknown>,
+// 	ValidatedControls,
 // > = FormHTMLAttributes<HTMLFormElement> & {
-// 	store: FormStoreApi<Fields, ValidatedFields>;
-// 	handleOnSubmit?: HandlePreSubmitCB<Fields, ValidatedFields>;
+// 	store: FormStoreApi<Controls, ValidatedControls>;
+// 	handleOnSubmit?: HandlePreSubmitCB<Controls, ValidatedControls>;
 // };
 
-// const Form2 = <Fields extends Record<string, unknown>, ValidatedFields>({
+// const Form2 = <Controls extends Record<string, unknown>, ValidatedControls>({
 // 	store,
 // 	handleOnSubmit,
 // 	...props
-// }: FormProps<Fields, ValidatedFields>) => {
+// }: FormProps<Controls, ValidatedControls>) => {
 // 	const handlePreSubmit = useFormStore(
 // 		store,
 // 		(state) => state.handlePreSubmit,
@@ -301,11 +301,11 @@ result;
 // 	values;
 // });
 
-// t.getState().fields.username.value;
-// t.getState().fields.username.validations.handler;
+// t.getState().controls.username.value;
+// t.getState().controls.username.validations.handler;
 
-// t.getState().fields.age.value;
-// t.getState().fields.age.validations.handler;
+// t.getState().controls.age.value;
+// t.getState().controls.age.validations.handler;
 
 // type IV = { username: null | string; age: string };
 
@@ -316,14 +316,14 @@ result;
 // // tt.___?.username;
 // // tt._?.username;
 
-// tt.fields.username.value;
-// tt.fields.username.validations.handler;
-// type _ttUsername = typeof tt.fields.username.validations.handler;
-// const rUsername = tt.fields.username.validations.handler('', 'change');
+// tt.controls.username.value;
+// tt.controls.username.validations.handler;
+// type _ttUsername = typeof tt.controls.username.validations.handler;
+// const rUsername = tt.controls.username.validations.handler('', 'change');
 // rUsername;
 
-// tt.fields.age.value;
-// tt.fields.age.validations.handler;
-// type _ttAge = ReturnType<typeof tt.fields.age.validations.handler>;
-// const rAge = tt.fields.age.validations.handler('', 'change');
+// tt.controls.age.value;
+// tt.controls.age.validations.handler;
+// type _ttAge = ReturnType<typeof tt.controls.age.validations.handler>;
+// const rAge = tt.controls.age.validations.handler('', 'change');
 // rAge;

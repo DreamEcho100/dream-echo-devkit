@@ -26,7 +26,8 @@
 	"scripts": {
 		"lint": "eslint *.ts*",
 		"build": "cross-env NODE_ENV=production tsup",
-		"dev": "pnpm run build -- --watch"
+		"dev": "pnpm run build -- --watch",
+		"typechecking": "tsc --noEmit"
 	},
 	"dependencies": {
 		"@tanstack/react-query": "^5.12.2",

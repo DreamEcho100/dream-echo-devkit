@@ -1,8 +1,8 @@
-import type FormStoreField from '../_/field';
+import type FormStoreControl from '~/create-form-store-builder/control';
 import type { ZodSchema, z } from 'zod';
 import type { ErrorFormatter, FormErrorShape } from './internal';
-import type { FormStoreMetadata } from '../_/metadata';
-import type { FormStoreValidations } from '../_/validations';
+import type { FormStoreMetadata } from '~/create-form-store-builder/metadata';
+import type { FormStoreValidations } from '~/create-form-store-builder/validations';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TFunction = (...args: any[]) => any;
@@ -16,9 +16,6 @@ export type InputDateTypes =
 	| 'week'
 	| 'month';
 
-// Schema extends ZodSchema<unknown>
-// 	? z.infer<Schema>
-// :
 export type GetValidationValuesFromSchema<Schema> = {
 	[Key in keyof Schema]: Schema[Key] extends ZodSchema<unknown>
 		? z.infer<Schema[Key]>
@@ -34,84 +31,67 @@ export type GetValidationValuesFromSchema<Schema> = {
 export type ValidationEvents = 'submit' | 'change' | 'focus'; // | 'mount' | 'custom'
 
 type HandleValidationPropsPassedMethodsKeys =
-	| 'getValue'
-	| 'getValues'
-	| 'setError'
-	| 'setSubmitState'
-	| 'setFocusState'
+	| 'getControlValue'
+	| 'getControlsValues'
+	| 'setValidationError'
+	| 'setSubmit'
+	| 'setControlFocus'
 	| 'resetFormStore'
-	| 'setFieldValue';
+	| 'setControlValue'
+	| 'errorFormatter';
 
-type HandleValidationPropsPassedMethods<FieldsValues, ValidationSchema> = {
+type HandleValidationPropsPassedMethods<ControlsValues, ValidationSchema> = {
 	[Key in HandleValidationPropsPassedMethodsKeys]: FormStoreShapeBaseMethods<
-		FieldsValues,
+		ControlsValues,
 		ValidationSchema
 	>[Key];
 };
 
 export type HandleValidationProps<
-	FieldsValues,
+	ControlsValues,
 	ValidationSchema,
 	Key extends keyof ValidationSchema,
-> = HandleValidationPropsPassedMethods<FieldsValues, ValidationSchema> & {
+> = HandleValidationPropsPassedMethods<ControlsValues, ValidationSchema> & {
 	validationEvent: ValidationEvents;
-	get: () => FormStoreShape<FieldsValues, ValidationSchema>;
+	get: () => FormStoreShape<ControlsValues, ValidationSchema>;
 
-	value: Key extends keyof FieldsValues ? FieldsValues[Key] : never;
-	name: Key extends keyof FieldsValues ? Key & string : never;
+	value: Key extends keyof ControlsValues ? ControlsValues[Key] : never;
+	name: Key extends keyof ControlsValues ? Key & string : never;
 };
 
-// & (Key extends keyof FieldsValues
-// 	? {
-// 			value: FieldsValues[Key];
-// 			name?: Key & string;
-// 	  }
-// 	: {
-// 			value: never;
-// 			name: never;
-// 	  });
 export interface HandleValidation<
-	FieldsValues,
+	ControlsValues,
 	ValidationSchema,
 	Key extends keyof ValidationSchema,
 > {
 	(
-		params: HandleValidationProps<FieldsValues, ValidationSchema, Key>,
+		params: HandleValidationProps<ControlsValues, ValidationSchema, Key>,
 	): ValidationSchema[Key];
 }
 
-export type ValidValidationSchemaItem<FieldsValues, Key> =
-	| (Key extends keyof FieldsValues
-			? HandleValidation<FieldsValues, Record<string, unknown>, Key & string>
-			: HandleValidation<FieldsValues, Record<string, unknown>, string>)
+export type ValidValidationSchemaItem<ControlsValues, Key> =
+	| (Key extends keyof ControlsValues
+			? HandleValidation<ControlsValues, Record<string, unknown>, Key & string>
+			: HandleValidation<ControlsValues, Record<string, unknown>, string>)
 	| ZodSchema;
-export type ValidValidationSchema<FieldsValues> = {
+export type ValidValidationSchema<ControlsValues> = {
 	// eslint-disable-next-line @typescript-eslint/ban-types
-	[Key in keyof FieldsValues | (string & {})]?: ValidValidationSchemaItem<
-		FieldsValues,
+	[Key in keyof ControlsValues | (string & {})]?: ValidValidationSchemaItem<
+		ControlsValues,
 		Key
 	>;
 };
-
-// export interface HandleValidation<Value> {
-// 	(value: unknown, validationEvent: ValidationEvents): Value;
-// }
 
 export interface ValidationMetadata<Name> {
 	name: Name & string;
 }
 export type FormStoreValidation<
-	FieldsValues,
+	ControlsValues,
 	ValidationSchema,
 	Key extends keyof ValidationSchema,
 > = {
 	// Should always return the validated value
-	handler: HandleValidation<
-		FieldsValues,
-		ValidationSchema,
-		Key
-		// ValidationsValues[Key]
-	>;
+	handler: HandleValidation<ControlsValues, ValidationSchema, Key>;
 	// A cleanup function on the utils?
 	events: {
 		[key in ValidationEvents]: {
@@ -129,35 +109,12 @@ export type FormStoreValidation<
 };
 
 /****************        ****************/
-/**************** Fields ****************/
+/**************** Controls ****************/
 /****************        ****************/
-export interface FieldMetadata<Name, Value> {
+export interface ControlMetadata<Name, Value> {
 	name: Name & string;
 	initialValue: Value;
 }
-
-/****************        ****************/
-/**********   FormStoreShape   **********/
-/****************        ****************/
-// export interface FormStoreMetadata<FieldsValues, ValidationSchema> {
-// 	fieldsNames: (keyof FieldsValues)[];
-// 	fieldsNamesMap: Record<keyof FieldsValues, true>;
-// 	//
-// 	validatedFieldsNamesMap: Record<keyof ValidationSchema, true>;
-// 	validatedFieldsNames: (keyof ValidationSchema)[];
-// 	//
-// 	customValidatedFields: Exclude<keyof ValidationSchema, keyof FieldsValues>[];
-// 	manualValidatedFieldsMap: Record<
-// 		Exclude<keyof ValidationSchema, keyof FieldsValues>,
-// 		true
-// 	>;
-// 	//
-// 	directlyValidatedFields: (keyof ValidationSchema & keyof FieldsValues)[];
-// 	referencedValidatedFieldsMap: Record<
-// 		keyof ValidationSchema & keyof FieldsValues,
-// 		true
-// 	>;
-// }
 
 export interface SubmitState {
 	counter: number;
@@ -173,77 +130,65 @@ export type FormError =
 	  }
 	| { message: string; path: (string | number)[] }[];
 
-interface FocusActive<FieldsValues> {
+interface FocusActive<ControlsValues> {
 	isPending: true;
-	field: { id: string; name: keyof FieldsValues };
+	control: { id: string; name: keyof ControlsValues };
 }
 interface FocusInActive {
 	isPending: false;
-	field: null;
+	control: null;
 }
-type FocusState<FieldsValues> = FocusActive<FieldsValues> | FocusInActive;
+type FocusState<ControlsValues> = FocusActive<ControlsValues> | FocusInActive;
 
-export interface FormStoreShapeBaseMethods<FieldsValues, ValidationSchema> {
-	getValues: () => FieldsValues;
-	getValue: <Key extends keyof FieldsValues>(
+export interface FormStoreShapeBaseMethods<ControlsValues, ValidationSchema> {
+	getControlsValues: () => ControlsValues;
+	getControlValue: <Key extends keyof ControlsValues>(
 		name: Key,
-	) => FieldsValues[typeof name];
-	setSubmitState: (
+	) => ControlsValues[typeof name];
+	setSubmit: (
 		valueOrUpdater:
 			| Partial<SubmitState>
 			| ((value: SubmitState) => Partial<SubmitState>),
 	) => void;
 
-	// setFocusState(
-	// 	type: 'in' | 'out',
-	// 	fieldName?: keyof FieldsValues,
-	// 	validationName?:
-	// 		| keyof ValidationSchema
-	// 		| (typeof fieldName & keyof ValidationSchema),
-	// ): void;
-	// setFocusState(
-	// 	type: null,
-	// 	fieldName: undefined,
-	// 	validationName: undefined,
-	// ): void;
-	setFocusState: (
-		fieldName: keyof FieldsValues,
+	setControlFocus: (
+		controlName: keyof ControlsValues,
 		validationName:
 			| keyof ValidationSchema
-			| (typeof fieldName & keyof ValidationSchema),
+			| (typeof controlName & keyof ValidationSchema),
 		type: 'in' | 'out',
 	) => void;
 
 	resetFormStore: (itemsToReset?: {
-		fields?: boolean;
+		controls?: boolean;
 		validations?: boolean;
 		submit?: boolean;
 		focus?: boolean;
 	}) => void;
-	setFieldValue: <Name extends keyof FieldsValues>(
+	setControlValue: <Name extends keyof ControlsValues>(
 		name: Name,
 		valueOrUpdater:
-			| ((value: FieldsValues[Name]) => FieldsValues[Name])
+			| ((value: ControlsValues[Name]) => ControlsValues[Name])
 			| AnyValueExceptFunctions,
 	) => void;
-	handleChange: <
-		Name extends keyof FieldsValues,
+	handleControlChange: <
+		Name extends keyof ControlsValues,
 		ValidationName extends keyof ValidationSchema | undefined = undefined,
 	>(
 		name: Name,
 		valueOrUpdater:
-			| ((value: FieldsValues[Name]) => FieldsValues[Name])
+			| ((value: ControlsValues[Name]) => ControlsValues[Name])
 			| AnyValueExceptFunctions,
 		validationName?: ValidationName,
 	) => void;
 	handleSubmit: <Event>(
-		cb: HandleSubmitCB<FieldsValues, ValidationSchema, Event>,
+		cb: HandleSubmitCB<ControlsValues, ValidationSchema, Event>,
 	) => (event: Event) => Promise<unknown> | unknown;
 
 	errorFormatter: ErrorFormatter;
-	setError: (params: FormErrorShape<keyof ValidationSchema>) => void;
-	getFieldEventsListeners: (
-		name: keyof FieldsValues,
+	setValidationError: (params: FormErrorShape<keyof ValidationSchema>) => void;
+	getControlEventsListeners: (
+		name: keyof ControlsValues,
 		validationName?: keyof ValidationSchema,
 	) => {
 		onChange: (event: { target: { value: string } }) => void;
@@ -251,32 +196,29 @@ export interface FormStoreShapeBaseMethods<FieldsValues, ValidationSchema> {
 		onBlur: () => void;
 	};
 }
-export interface FormStoreShape<FieldsValues, ValidationSchema>
-	extends FormStoreShapeBaseMethods<FieldsValues, ValidationSchema> {
+export interface FormStoreShape<ControlsValues, ValidationSchema>
+	extends FormStoreShapeBaseMethods<ControlsValues, ValidationSchema> {
 	submit: SubmitState;
-	// currentDirtyFieldsCounter: number;
-	// isDirty: boolean;
-	baseId: string;
-	id: string;
-
-	focus: FocusState<FieldsValues>;
-
-	metadata: FormStoreMetadata<FieldsValues, ValidationSchema>;
-	validations: FormStoreValidations<FieldsValues, ValidationSchema>;
-	fields: {
-		[Key in NonNullable<keyof FieldsValues>]: FormStoreField<FieldsValues, Key>;
+	focus: FocusState<ControlsValues>;
+	metadata: FormStoreMetadata<ControlsValues, ValidationSchema>;
+	validations: FormStoreValidations<ControlsValues, ValidationSchema>;
+	controls: {
+		[Key in NonNullable<keyof ControlsValues>]: FormStoreControl<
+			ControlsValues,
+			Key
+		>;
 	};
-	// _baseMethods: FormStoreShapeBaseMethods<FieldsValues, ValidationSchema>;
+	// _baseMethods: FormStoreShapeBaseMethods<ControlsValues, ValidationSchema>;
 }
 
-export interface HandleSubmitCB<FieldsValues, ValidationSchema, Event> {
+export interface HandleSubmitCB<ControlsValues, ValidationSchema, Event> {
 	(
 		params: {
 			event: Event;
 			validatedValues: GetValidationValuesFromSchema<ValidationSchema>;
-			values: FieldsValues;
-			get: () => FormStoreShape<FieldsValues, ValidationSchema>;
-		} & HandleValidationPropsPassedMethods<FieldsValues, ValidationSchema>,
+			values: ControlsValues;
+			get: () => FormStoreShape<ControlsValues, ValidationSchema>;
+		} & HandleValidationPropsPassedMethods<ControlsValues, ValidationSchema>,
 	): unknown | Promise<unknown>;
 }
 
@@ -287,38 +229,40 @@ export type GetFromFormStoreShape<
 		| 'validationSchemas'
 		| 'validatedValues' = 'values',
 > = TFormStore extends FormStoreShape<
-	infer FieldsValues,
+	infer ControlsValues,
 	infer ValidationSchema
 >
 	? TValueType extends 'validationSchemas'
 		? ValidationSchema
 		: TValueType extends 'validatedValues'
 		? GetValidationValuesFromSchema<ValidationSchema>
-		: FieldsValues
+		: ControlsValues
 	: never;
 
 /****************        ****************/
 /************ CreateFormStore ************/
 /****************        ****************/
 export interface CreateFormStoreProps<
-	FieldsValues,
-	ValidationSchema, // extends ValidValidationSchema<FieldsValues>,
+	ControlsValues,
+	ValidationSchema, // extends ValidValidationSchema<ControlsValues>,
 > {
-	initialValues: FieldsValues;
-	isUpdatingFieldsValueOnError?: boolean;
+	initialValues: ControlsValues;
+	isUpdatingControlsValueOnError?: boolean;
 	baseId?: string | boolean;
 	validationEvents?: {
 		[key in ValidationEvents]?: boolean;
 	};
-	validationSchema?: ValidationSchema extends ValidValidationSchema<FieldsValues>
+	validationSchema?: ValidationSchema extends ValidValidationSchema<ControlsValues>
 		? ValidationSchema
 		: undefined;
-	valuesFromFieldsToStore?: {
-		[Key in keyof FieldsValues]?: (fieldValue: string) => FieldsValues[Key];
+	valuesFromControlsToStore?: {
+		[Key in keyof ControlsValues]?: (
+			controlValue: string,
+		) => ControlsValues[Key];
 	};
-	valuesFromStoreToFields?: {
-		[Key in keyof FieldsValues]?: (
-			storeValue: FieldsValues[Key],
+	valuesFromStoreToControls?: {
+		[Key in keyof ControlsValues]?: (
+			storeValue: ControlsValues[Key],
 		) => string | ReadonlyArray<string> | number | undefined;
 	};
 	errorFormatter?: ErrorFormatter;

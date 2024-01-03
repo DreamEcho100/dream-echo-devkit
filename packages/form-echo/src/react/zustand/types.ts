@@ -7,9 +7,9 @@ import type {
 import type { StoreApi } from 'zustand';
 
 export type FormStoreApi<
-	FieldsValues,
-	ValidationSchema = Record<keyof FieldsValues, unknown>,
-> = StoreApi<FormStoreShape<FieldsValues, ValidationSchema>>;
+	ControlsValues,
+	ValidationSchema = Record<keyof ControlsValues, unknown>,
+> = StoreApi<FormStoreShape<ControlsValues, ValidationSchema>>;
 
 export type GetFormStoreApiStore<
 	TFormStore,
@@ -17,52 +17,70 @@ export type GetFormStoreApiStore<
 		| 'values'
 		| 'validationSchemas'
 		| 'validatedValues' = 'values',
-> = TFormStore extends FormStoreApi<infer FieldsValues, infer ValidationSchema>
+> = TFormStore extends FormStoreApi<
+	infer ControlsValues,
+	infer ValidationSchema
+>
 	? TValueType extends 'validationSchemas'
 		? ValidationSchema
 		: TValueType extends 'validatedValues'
 		? GetValidationValuesFromSchema<ValidationSchema>
-		: FieldsValues
+		: ControlsValues
 	: never;
 
-export type PropsWithFormStore<FieldsValues, ValidationSchema, Props> =
+export type PropsWithFormStore<
+	ControlsValues,
+	ValidationSchema,
+	Props = unknown,
+> = Props & {
+	store: FormStoreApi<ControlsValues, ValidationSchema>;
+};
+
+export type PropsWithFormStoreForm<
+	ControlsValues,
+	ValidationSchema,
+	Props = unknown,
+> = PropsWithFormStore<
+	ControlsValues,
+	ValidationSchema,
+	Omit<Props, 'onSubmit'> & {
+		onSubmit: HandleSubmitCB<
+			ControlsValues,
+			ValidationSchema,
+			FormEvent<HTMLFormElement>
+		>;
+	}
+>;
+
+export type PropsWithFormStoreControl<
+	ControlsValues,
+	ValidationSchema,
+	Props = unknown,
+> = PropsWithFormStore<
+	ControlsValues,
+	ValidationSchema,
 	Props & {
-		store: FormStoreApi<FieldsValues, ValidationSchema>;
-	};
+		name: keyof ControlsValues;
+		validationName?: keyof ValidationSchema;
+	}
+>;
 
-export type PropsWithFormStoreForm<FieldsValues, ValidationSchema, Props> =
-	PropsWithFormStore<
-		FieldsValues,
-		ValidationSchema,
-		Omit<Props, 'onSubmit'> & {
-			onSubmit: HandleSubmitCB<
-				FieldsValues,
-				ValidationSchema,
-				FormEvent<HTMLFormElement>
-			>;
-		}
-	>;
-
-export type PropsWithFormStoreField<FieldsValues, ValidationSchema, Props> =
-	PropsWithFormStore<
-		FieldsValues,
-		ValidationSchema,
-		Props & {
-			name: keyof FieldsValues;
-			validationName?: keyof ValidationSchema;
-		}
-	>;
-
-export type PropsWithFormStoreValidationField<FieldsValues, ValidationSchema> =
-	PropsWithFormStore<
-		FieldsValues,
-		ValidationSchema,
+export type PropsWithFormStoreValidationItem<
+	ControlsValues,
+	ValidationSchema,
+	Props,
+> = PropsWithFormStore<
+	ControlsValues,
+	ValidationSchema,
+	(
 		| {
-				name?: keyof FieldsValues;
-				validationName: keyof ValidationSchema;
+				controlName: Exclude<keyof ControlsValues, keyof ValidationSchema>;
+				validationName: Exclude<keyof ValidationSchema, keyof ControlsValues>;
 		  }
 		| {
-				name: keyof ValidationSchema;
-				validationName?: keyof ValidationSchema;
+				controlName?: never;
+				validationName: keyof ValidationSchema & keyof ControlsValues;
 		  }
-	>;
+	) &
+		Props
+>;

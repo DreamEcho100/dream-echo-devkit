@@ -1,17 +1,17 @@
-import { FormStoreMetadata } from '~/_/metadata';
-import { createFormStoreFields, getFormStoreBaseMethods } from './utils';
-import { FormStoreValidations } from '../_/validations';
+import { FormStoreMetadata } from '~/create-form-store-builder/metadata';
+import { createFormStoreControls, getFormStoreBaseMethods } from './utils';
+import { FormStoreValidations } from '~/create-form-store-builder/validations';
 // import { createFormStoreValidations } from './validations';
 
 /**
- * @template FieldsValues
- * @template {import('../types').ValidValidationSchema<FieldsValues>} ValidationSchema
- * @param {import('../types').CreateFormStoreProps<FieldsValues, ValidationSchema>} params
+ * @template ControlsValues
+ * @template {import('../types').ValidValidationSchema<ControlsValues>} ValidationSchema
+ * @param {import('../types').CreateFormStoreProps<ControlsValues, ValidationSchema>} params
  * @returns {(set: import('../types/internal').SetStateInternal<FormStore>, get: () => FormStore) => FormStore}
  */
 export default function createFormStoreBuilder(params) {
 	/**
-	 * @typedef {import('../types').FormStoreShape<FieldsValues, ValidationSchema>} FormStore
+	 * @typedef {import('../types').FormStoreShape<ControlsValues, ValidationSchema>} FormStore
 	 */
 
 	return (set, get) => {
@@ -23,7 +23,7 @@ export default function createFormStoreBuilder(params) {
 			initialValues: params.initialValues,
 			validationSchema: params.validationSchema,
 		});
-		const fields = createFormStoreFields(params, baseId, metadata);
+		const controls = createFormStoreControls(params, baseId, metadata);
 		const validations = new FormStoreValidations({
 			metadata,
 			validationEvents: params.validationEvents,
@@ -34,8 +34,8 @@ export default function createFormStoreBuilder(params) {
 			baseId,
 			metadata,
 			validations,
-			fields,
-			id: `${baseId}form`,
+			controls,
+			formId: `${baseId}form`,
 			isDirty: false,
 			submit: {
 				counter: 0,
@@ -44,8 +44,8 @@ export default function createFormStoreBuilder(params) {
 				error: null,
 				isPending: false,
 			},
-			focus: { isPending: false, field: null },
-			currentDirtyFieldsCounter: 0,
+			focus: { isPending: false, control: null },
+			currentDirtyControlsCounter: 0,
 			_baseMethods: formStoreBaseMethods,
 			...formStoreBaseMethods,
 		};
