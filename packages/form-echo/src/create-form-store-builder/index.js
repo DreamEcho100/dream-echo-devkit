@@ -17,7 +17,7 @@ export default function createFormStoreBuilder(params) {
 	return (set, get) => {
 		const formStoreBaseMethods = getFormStoreBaseMethods(set, get, params);
 
-		const baseId = params.baseId ? `${params.baseId}-` : '';
+		const baseId = params.baseId ?? Math.random().toString(36).slice(2);
 		const metadata = new FormStoreMetadata({
 			baseId,
 			initialValues: params.initialValues,
@@ -35,7 +35,7 @@ export default function createFormStoreBuilder(params) {
 			metadata,
 			validations,
 			controls,
-			formId: `${baseId}form`,
+			formId: `form-${baseId}`,
 			isDirty: false,
 			submit: {
 				counter: 0,
@@ -45,8 +45,7 @@ export default function createFormStoreBuilder(params) {
 				isPending: false,
 			},
 			focus: { isPending: false, control: null },
-			currentDirtyControlsCounter: 0,
-			_baseMethods: formStoreBaseMethods,
+			dirtyControlsCounter: 0,
 			...formStoreBaseMethods,
 		};
 	};

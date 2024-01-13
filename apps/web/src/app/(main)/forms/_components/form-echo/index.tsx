@@ -118,7 +118,7 @@ export default function FormEcho() {
 		},
 	});
 
-	// if (typeof window !== 'undefined') window.formStore = formStore;
+	if (typeof window !== 'undefined') window.formStore = formStore;
 
 	const isSubmitting = useStore(formStore, (store) => store.submit.isPending);
 	const submitError = useStore(formStore, (store) => store.submit.error);

@@ -48,7 +48,7 @@ export function createFormStoreControls(params, baseId, metadata) {
 				valueFromStoreToControl: params.valuesFromStoreToControls?.[controlName]
 					? params.valuesFromStoreToControls[controlName]
 					: undefined,
-				id: `${baseId}control-${String(controlName)}`,
+				id: `control-${String(controlName)}-${baseId}`,
 				metadata: {
 					name: controlName,
 					initialValue: params.initialValues[controlName],
@@ -494,9 +494,16 @@ export function getFormStoreBaseMethods(set, get, params) {
 					validatedValues[controlName] = validationSchema({
 						value: /** @type {never} */ (controls[controlName].value),
 						name: controlName,
-						get,
 						validationEvent: 'submit',
-						...currentState,
+						get,
+						errorFormatter: currentState.errorFormatter,
+						getControlsValues: currentState.getControlsValues,
+						getControlValue: currentState.getControlValue,
+						resetFormStore: currentState.resetFormStore,
+						setControlFocus: currentState.setControlFocus,
+						setControlValue: currentState.setControlValue,
+						setSubmit: currentState.setSubmit,
+						setValidationError: currentState.setValidationError,
 					});
 
 					errors[controlName] = {
@@ -527,9 +534,16 @@ export function getFormStoreBaseMethods(set, get, params) {
 						validationSchema({
 							value: /** @type {never} */ (undefined),
 							name: /** @type {never} */ (undefined),
-							get,
 							validationEvent: 'submit',
-							...currentState,
+							get,
+							errorFormatter: currentState.errorFormatter,
+							getControlsValues: currentState.getControlsValues,
+							getControlValue: currentState.getControlValue,
+							resetFormStore: currentState.resetFormStore,
+							setControlFocus: currentState.setControlFocus,
+							setControlValue: currentState.setControlValue,
+							setSubmit: currentState.setSubmit,
+							setValidationError: currentState.setValidationError,
 						});
 
 					errors[/** @type {string} */ (manualControlName)] = {
@@ -566,42 +580,8 @@ export function getFormStoreBaseMethods(set, get, params) {
 				hasError = true;
 			}
 
-			if (!hasError) {
-				try {
-					await cb({
-						event,
-						values:
-							/** @type {Values} */
-							(values),
-						validatedValues:
-							/** @type {ValidatedValues} */
-							(validatedValues),
-						get,
-						getControlValue: currentState.getControlValue,
-						getControlsValues: currentState.getControlsValues,
-						setValidationError: currentState.setValidationError,
-						setSubmit: currentState.setSubmit,
-						setControlFocus: currentState.setControlFocus,
-						resetFormStore: currentState.resetFormStore,
-						setControlValue: currentState.setControlValue,
-						errorFormatter: currentState.errorFormatter,
-					});
-					currentState.setSubmit((prev) => ({
-						isPending: false,
-						counter: prev.counter + 1,
-						passedAttempts: prev.counter + 1,
-						error: null,
-					}));
-				} catch (error) {
-					currentState.setSubmit((prev) => ({
-						isPending: false,
-						counter: prev.counter + 1,
-						failedAttempts: prev.counter + 1,
-						error: currentState.errorFormatter(error, 'submit'),
-					}));
-				}
-			} else {
-				currentState.setSubmit((prev) => ({
+			if (hasError) {
+				return currentState.setSubmit((prev) => ({
 					isPending: false,
 					counter: prev.counter + 1,
 					failedAttempts: prev.counter + 1,
@@ -609,6 +589,40 @@ export function getFormStoreBaseMethods(set, get, params) {
 						new Error('FORM_VALIDATION_ERROR'),
 						'submit',
 					),
+				}));
+			}
+
+			try {
+				await cb({
+					event,
+					values:
+						/** @type {Values} */
+						(values),
+					validatedValues:
+						/** @type {ValidatedValues} */
+						(validatedValues),
+					get,
+					getControlValue: currentState.getControlValue,
+					getControlsValues: currentState.getControlsValues,
+					setValidationError: currentState.setValidationError,
+					setSubmit: currentState.setSubmit,
+					setControlFocus: currentState.setControlFocus,
+					resetFormStore: currentState.resetFormStore,
+					setControlValue: currentState.setControlValue,
+					errorFormatter: currentState.errorFormatter,
+				});
+				currentState.setSubmit((prev) => ({
+					isPending: false,
+					counter: prev.counter + 1,
+					passedAttempts: prev.counter + 1,
+					error: null,
+				}));
+			} catch (error) {
+				currentState.setSubmit((prev) => ({
+					isPending: false,
+					counter: prev.counter + 1,
+					failedAttempts: prev.counter + 1,
+					error: currentState.errorFormatter(error, 'submit'),
 				}));
 			}
 		};

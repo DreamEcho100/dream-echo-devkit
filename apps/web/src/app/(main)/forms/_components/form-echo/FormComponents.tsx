@@ -77,7 +77,11 @@ export function Errors<FieldsValues, ValidationSchema>(
 ) {
 	const controlErrorProps = useGetControlErrorProps(props);
 
-	const isHidden = !controlErrorProps.isFocused || !controlErrorProps.error;
+	const isHidden = controlErrorProps.isFocused || !controlErrorProps.error;
+	console.group(props.controlName, props.validationName);
+	console.log('controlErrorProps.isFocused', controlErrorProps.isFocused);
+	console.log('controlErrorProps.error', controlErrorProps.error);
+	console.groupEnd();
 
 	if (isHidden) return null;
 

@@ -17,4 +17,5 @@ export type AnyValueExceptFunctions = // eslint-disable-next-line @typescript-es
 
 export type SetStateInternal<Type> = (
 	partial: Type | Partial<Type> | ((state: Type) => Type | Partial<Type>),
+	...params: any[]
 ) => void;

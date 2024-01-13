@@ -208,7 +208,6 @@ export interface FormStoreShape<ControlsValues, ValidationSchema>
 			Key
 		>;
 	};
-	// _baseMethods: FormStoreShapeBaseMethods<ControlsValues, ValidationSchema>;
 }
 
 export interface HandleSubmitCB<ControlsValues, ValidationSchema, Event> {
@@ -248,7 +247,7 @@ export interface CreateFormStoreProps<
 > {
 	initialValues: ControlsValues;
 	isUpdatingControlsValueOnError?: boolean;
-	baseId?: string | boolean;
+	baseId?: string;
 	validationEvents?: {
 		[key in ValidationEvents]?: boolean;
 	};

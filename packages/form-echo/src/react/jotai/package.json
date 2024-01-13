@@ -1,6 +1,6 @@
 {
-	"name": "@de100/form-echo/react/zustand",
-	"amdName": "de100FormEchoReactZustand",
+	"name": "@de100/form-echo/react/jotai",
+	"amdName": "de100FormEchoReactJotai",
 	"version": "1.0.0",
 	"private": true,
 	"main": "./dist/index.js",
@@ -9,6 +9,6 @@
 	"types": "./dist/index.d.ts",
 	"license": "MIT",
 	"dependencies": {
-		"zustand": "^4.4.7"
+		"jotai": "^2.6.1"
 	}
 }

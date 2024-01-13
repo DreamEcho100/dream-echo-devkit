@@ -57,7 +57,7 @@
 	},
 	"scripts": {
 		"lint": "eslint *.ts*",
-		"build": "npm run build:base & npm run build:react:zustand",
+		"build": "npm run build:base && npm run build:react:zustand",
 		"build:base": "cross-env NODE_ENV=production tsup --config=./tsup.config.ts",
 		"build:react:zustand": "cross-env NODE_ENV=production tsup --config=./src/react/zustand/tsup.config.ts",
 		"build:react": "cross-env NODE_ENV=production tsup --config=./src/react/tsup.config.ts",
