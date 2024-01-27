@@ -1,0 +1,93 @@
+{
+  "name": "@de100/form-echo",
+  "version": "0.0.14",
+  "description": "A form state management for fields validations and errors",
+  "keywords": [
+    "form",
+    "store",
+    "manage",
+    "react",
+    "zustand",
+    "zod",
+    "front-end",
+    "hooks",
+    "forms",
+    "form-validation",
+    "validation",
+    "typescript",
+    "react-hooks"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "Mazen Mohamed",
+    "email": "maze6572198@gmail.com",
+    "url": "https://github.com/DreamEcho100/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DreamEcho100/dream-echo-devkit",
+    "directory": "packages/form-echo"
+  },
+  "readme": "./README.md",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./helpers": {
+      "import": "./dist/helpers/index.mjs",
+      "require": "./dist/helpers/index.js",
+      "default": "./dist/helpers/index.js",
+      "types": "./dist/helpers/index.d.ts"
+    },
+    "./react": {
+      "import": "./src/react/dist/index.mjs",
+      "require": "./src/react/dist/index.js",
+      "default": "./src/react/dist/index.js",
+      "types": "./src/react/dist/index.d.ts"
+    },
+    "./react/zustand": {
+      "import": "./src/react/zustand/dist/index.mjs",
+      "require": "./src/react/zustand/dist/index.js",
+      "default": "./src/react/zustand/dist/index.js",
+      "types": "./src/react/zustand/dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "npm run build:base && npm run build:stores:zustand:react",
+    "build:base": "cross-env NODE_ENV=production tsup --config=./tsup.config.ts",
+    "build:stores:zustand:react": "cross-env NODE_ENV=production tsup --config=./src/stores/zustand/react/tsup.config.ts",
+    "dev": "pnpm run build -- --watch",
+    "clean": "rm -rf .turbo node_modules",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@acme/eslint-config": "workspace:^0.2.0",
+    "@acme/prettier-config": "workspace:^0.1.0",
+    "@acme/tailwind-config": "workspace:^0.1.0",
+    "@acme/tsconfig": "workspace:^0.1.0",
+    "eslint": "^8.56.0",
+    "prettier": "^3.1.1",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.3",
+    "zod": "^3.22.4",
+    "@types/node": "^20.10.6",
+    "@types/react": "^18.2.46",
+    "cross-env": "^7.0.3",
+    "esbuild-plugin-external-global": "^1.0.1",
+    "tsup": "^6.7.0"
+  },
+  "eslintConfig": {
+    "root": true,
+    "extends": [
+      "@acme/eslint-config/base",
+      "@acme/eslint-config/nextjs",
+      "@acme/eslint-config/react"
+    ]
+  },
+  "prettier": "@acme/prettier-config"
+}

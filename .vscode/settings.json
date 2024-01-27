@@ -3,5 +3,6 @@
     {
       "mode": "auto"
     }
-  ]
+  ],
+  "marquee.widgets.npm-stats.packageNames": ["create-t3-turbo"]
 }

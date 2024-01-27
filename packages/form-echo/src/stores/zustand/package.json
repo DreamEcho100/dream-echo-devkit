@@ -1,0 +1,10 @@
+{
+  "name": "@de100/form-echo/stores/zustand",
+  "amdName": "de100FormEchoStoresZustand",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "dependencies": {
+    "zustand": "^4.5.0"
+  }
+}

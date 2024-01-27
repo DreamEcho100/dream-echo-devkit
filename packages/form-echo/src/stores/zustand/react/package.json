@@ -1,0 +1,14 @@
+{
+  "name": "@de100/form-echo/stores/zustand/react",
+  "amdName": "de100FormEchoStoresZustandReact",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "source": "./index.js",
+  "types": "./dist/index.d.ts",
+  "license": "MIT",
+  "dependencies": {
+    "react": "18.2.0"
+  }
+}
