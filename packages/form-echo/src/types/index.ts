@@ -68,17 +68,16 @@ export type HandleValidation<
   params: HandleValidationProps<ControlsValues, ValidationSchema, Key>,
 ) => ValidationSchema[Key];
 
-export type ValidValidationSchemaItem<ControlsValues, Key> =
+export type ValidValidationSchemaInputItemInput<ControlsValues, Key> =
   | (Key extends keyof ControlsValues
       ? HandleValidation<ControlsValues, Record<string, unknown>, Key & string>
       : HandleValidation<ControlsValues, Record<string, unknown>, string>)
   | ZodSchema;
-export type ValidValidationSchema<ControlsValues> = {
+export type ValidValidationSchemaInput<ControlsValues> = {
   // eslint-disable-next-line @typescript-eslint/ban-types
-  [Key in keyof ControlsValues | (string & {})]?: ValidValidationSchemaItem<
-    ControlsValues,
-    Key
-  >;
+  [Key in
+    | keyof ControlsValues
+    | (string & {})]?: ValidValidationSchemaInputItemInput<ControlsValues, Key>;
 };
 
 export interface ValidationMetadata<Name> {
@@ -242,7 +241,7 @@ export type GetFromFormStoreShape<
 /****************        ****************/
 export interface CreateFormStoreProps<
   ControlsValues,
-  ValidationSchema, // extends ValidValidationSchema<ControlsValues>,
+  ValidationSchema, // extends ValidValidationSchemaInput<ControlsValues>,
 > {
   initialValues: ControlsValues;
   isUpdatingControlsValueOnError?: boolean;
@@ -250,7 +249,7 @@ export interface CreateFormStoreProps<
   validationEvents?: {
     [key in ValidationEvents]?: boolean;
   };
-  validationSchema?: ValidationSchema extends ValidValidationSchema<ControlsValues>
+  validationSchema?: ValidationSchema extends ValidValidationSchemaInput<ControlsValues>
     ? ValidationSchema
     : undefined;
   valuesFromControlsToStore?: {

@@ -6,7 +6,7 @@ import { createFormStoreControls, getFormStoreBaseMethods } from "./utils";
 
 /**
  * @template ControlsValues
- * @template {import('~/types').ValidValidationSchema<ControlsValues>} ValidationSchema
+ * @template {import('~/types').ValidValidationSchemaInput<ControlsValues>} ValidationSchema
  * @param {import('~/types').CreateFormStoreProps<ControlsValues, ValidationSchema>} params
  * @returns {(set: import('~/types/internal').SetStateInternal<FormStore>, get: () => FormStore) => FormStore}
  */

@@ -3,12 +3,12 @@ import FormStoreControl from "./control";
 
 /**
  * @template ControlsValues
- * @typedef {import("~/types").ValidValidationSchema<ControlsValues>} ValidValidationSchema
+ * @typedef {import("~/types").ValidValidationSchemaInput<ControlsValues>} ValidValidationSchemaInput
  */
 
 /**
  * @template ControlsValues
- * @template {ValidValidationSchema<ControlsValues>} ValidationSchema
+ * @template {ValidValidationSchemaInput<ControlsValues>} ValidationSchema
  * @typedef {import("~/types").CreateFormStoreProps<ControlsValues, ValidationSchema>} CreateFormStoreProps
  */
 /**
@@ -21,7 +21,7 @@ import FormStoreControl from "./control";
 
 /**
  * @template ControlsValues
- * @template {ValidValidationSchema<ControlsValues>} ValidationSchema
+ * @template {ValidValidationSchemaInput<ControlsValues>} ValidationSchema
  * @param {CreateFormStoreProps<ControlsValues, ValidationSchema>} params - Parameters for creating form store controls.
  * @param {string} baseId - Base identifier for the form store controls.
  * @param {import('./metadata').FormStoreMetadata<ControlsValues, ValidationSchema>} metadata - Metadata object for the form store.
@@ -162,7 +162,7 @@ function _setControlValue(name, valueOrUpdater) {
 
 /**
  * @template ControlsValues
- * @template {import('~/types').ValidValidationSchema<ControlsValues>} ValidationSchema
+ * @template {import('~/types').ValidValidationSchemaInput<ControlsValues>} ValidationSchema
  * @param {import('~/types/internal').SetStateInternal<import('~/types').FormStoreShape<ControlsValues, ValidationSchema>>} set
  * @param {() => import('~/types').FormStoreShape<ControlsValues, ValidationSchema>} get
  * @param {import('~/types').CreateFormStoreProps<ControlsValues, ValidationSchema>} params

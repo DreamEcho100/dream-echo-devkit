@@ -8,18 +8,18 @@ export * from "./types";
 
 /**
  * @template ControlsValues
- * @typedef {import("../../../types").ValidValidationSchema<ControlsValues>} ValidValidationSchema
+ * @typedef {import("../../../types").ValidValidationSchemaInput<ControlsValues>} ValidValidationSchemaInput
  */
 
 /**
  * @template ControlsValues
- * @template {ValidValidationSchema<ControlsValues>} ValidationSchema
+ * @template {ValidValidationSchemaInput<ControlsValues>} ValidationSchema
  * @typedef {import("../../../types").CreateFormStoreProps<ControlsValues, ValidationSchema>} CreateFormStoreProps
  */
 
 /**
  * @template ControlsValues
- * @template {ValidValidationSchema<ControlsValues>} ValidationSchema
+ * @template {ValidValidationSchemaInput<ControlsValues>} ValidationSchema
  * @param {CreateFormStoreProps<ControlsValues, ValidationSchema>} params
  */
 export const handleCreateFormStore = (params) =>
@@ -27,7 +27,7 @@ export const handleCreateFormStore = (params) =>
 
 /**
  * @template ControlsValues
- * @template {ValidValidationSchema<ControlsValues>} ValidationSchema
+ * @template {ValidValidationSchemaInput<ControlsValues>} ValidationSchema
  * @param {CreateFormStoreProps<ControlsValues, ValidationSchema>} props
  */
 export const useCreateFormStore = (props) => {
