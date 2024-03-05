@@ -74,9 +74,9 @@ export type ValidValidationSchemaInputItemInput<ControlsValues, Key> =
       : HandleValidation<ControlsValues, Record<string, unknown>, string>)
   | ZodSchema;
 export type ValidValidationSchemaInput<ControlsValues> = {
-  // eslint-disable-next-line @typescript-eslint/ban-types
   [Key in
     | keyof ControlsValues
+    // eslint-disable-next-line @typescript-eslint/ban-types
     | (string & {})]?: ValidValidationSchemaInputItemInput<ControlsValues, Key>;
 };
 

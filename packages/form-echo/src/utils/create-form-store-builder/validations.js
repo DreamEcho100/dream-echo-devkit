@@ -51,11 +51,11 @@ export class FormStoreValidations {
 
     const validationsControls = /** @type {ValidationsControls} */ ({});
 
-    if (params.validationSchema) {
+    if (params.inputValidationSchema) {
       for (const itemName of params.metadata.validatedControlsNames) {
         const itemValidationsSchema =
-          params.validationSchema[
-            /** @type {keyof typeof params['validationSchema']} */
+          params.inputValidationSchema[
+            /** @type {keyof typeof params['inputValidationSchema']} */
             (itemName)
           ];
 

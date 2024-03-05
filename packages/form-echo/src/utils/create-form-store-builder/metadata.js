@@ -71,10 +71,10 @@ export class FormStoreMetadata {
       this.controlsNamesMap[controlName] = true;
     }
 
-    if (params.validationSchema) {
+    if (params.inputValidationSchema) {
       /** @type {string} */
       let key;
-      for (key in params.validationSchema) {
+      for (key in params.inputValidationSchema) {
         /** @type {string[]} */
         (this.validatedControlsNames).push(key);
 

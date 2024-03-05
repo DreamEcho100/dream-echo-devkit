@@ -22,13 +22,13 @@ export default function createFormStoreBuilder(params) {
     const metadata = new FormStoreMetadata({
       baseId,
       initialValues: params.initialValues,
-      validationSchema: params.validationSchema,
+      inputValidationSchema: params.inputValidationSchema,
     });
     const controls = createFormStoreControls(params, baseId, metadata);
     const validations = new FormStoreValidations({
       metadata,
       validationEvents: params.validationEvents,
-      validationSchema: params.validationSchema,
+      inputValidationSchema: params.inputValidationSchema,
     });
 
     return {
