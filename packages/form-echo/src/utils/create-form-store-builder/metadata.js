@@ -5,7 +5,7 @@
  */
 export class FormStoreMetadata {
   /**
-   * @typedef {import("~/types").FormStoreShape<ControlsValues, ValidationSchema>} FormStore
+   * @typedef {import("~/types/index.js").FormStoreShape<ControlsValues, ValidationSchema>} FormStore
    * @typedef {FormStore['metadata']} Metadata
    * @typedef {Metadata['controlsNames']} ControlNames
    * @typedef {Metadata['directlyValidatedControls']} ReferencedValidatedControls
@@ -43,7 +43,7 @@ export class FormStoreMetadata {
   referencedValidatedControlsMap;
 
   /**
-   * @param {Pick<import("~/types").CreateFormStoreProps<ControlsValues, ValidationSchema>, 'initialValues' | 'validationSchema'> & { baseId: string }} params - Parameters for creating form store metadata.
+   * @param {Pick<import("~/types/index.js").CreateFormStoreProps<ControlsValues, ValidationSchema>, 'initialValues' | 'validationSchema'> & { baseId: string }} params - Parameters for creating form store metadata.
    */
   constructor(params) {
     if (!params.initialValues || typeof params.initialValues !== "object")
@@ -71,10 +71,10 @@ export class FormStoreMetadata {
       this.controlsNamesMap[controlName] = true;
     }
 
-    if (params.inputValidationSchema) {
+    if (params.validationSchema) {
       /** @type {string} */
       let key;
-      for (key in params.inputValidationSchema) {
+      for (key in params.validationSchema) {
         /** @type {string[]} */
         (this.validatedControlsNames).push(key);
 

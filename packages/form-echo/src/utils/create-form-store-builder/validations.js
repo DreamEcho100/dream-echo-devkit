@@ -1,4 +1,4 @@
-import { isZodValidator } from "~/utils/zod";
+import { isZodValidator } from "~/utils/zod.js";
 
 /**
  * @template ControlsValues
@@ -9,7 +9,7 @@ import { isZodValidator } from "~/utils/zod";
 export class FormStoreValidations {
   /**
    * @typedef {{
-   * 	[Key in keyof import("~/types").GetValidationValuesFromSchema<ValidationSchema>]: import("~/types").FormStoreValidation<
+   * 	[Key in keyof import("~/types/index.js").GetValidationValuesFromSchema<ValidationSchema>]: import("~/types/index.js").FormStoreValidation<
    * 		ControlsValues,
    * 		ValidationSchema,
    * 		Key
@@ -23,7 +23,7 @@ export class FormStoreValidations {
   /** @type {Partial<Record<keyof ValidationsControls, boolean>>} */
   dirtyControls = {};
 
-  /** @type {{ item: keyof ValidationsControls | null; event: import("~/types").ValidationEvents | null }} */
+  /** @type {{ item: keyof ValidationsControls | null; event: import("~/types/index.js").ValidationEvents | null }} */
   lastActive = { item: null, event: null };
 
   /** @type {boolean} */
@@ -33,7 +33,7 @@ export class FormStoreValidations {
   currentDirtyControlsCounter = 0;
 
   /**
-   * @param {Pick<import('~/types').CreateFormStoreProps<ControlsValues, ValidationSchema>, 'validationEvents' | 'validationSchema'> & { metadata: import('./metadata').FormStoreMetadata<ControlsValues, ValidationSchema> } } params
+   * @param {Pick<import('~/types/index.js').CreateFormStoreProps<ControlsValues, ValidationSchema>, 'validationEvents' | 'validationSchema'> & { metadata: import('./metadata.js').FormStoreMetadata<ControlsValues, ValidationSchema> } } params
    */
   constructor(params) {
     /**
@@ -46,16 +46,16 @@ export class FormStoreValidations {
       focus: true,
     };
     let isControlHavingPassedValidations = false;
-    /** @type {import('~/types').ValidationEvents} */
+    /** @type {import('~/types/index.js').ValidationEvents} */
     let itemValidationEventKey;
 
     const validationsControls = /** @type {ValidationsControls} */ ({});
 
-    if (params.inputValidationSchema) {
+    if (params.validationSchema) {
       for (const itemName of params.metadata.validatedControlsNames) {
         const itemValidationsSchema =
-          params.inputValidationSchema[
-            /** @type {keyof typeof params['inputValidationSchema']} */
+          params.validationSchema[
+            /** @type {keyof typeof params['validationSchema']} */
             (itemName)
           ];
 

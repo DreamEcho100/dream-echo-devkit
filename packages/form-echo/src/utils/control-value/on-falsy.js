@@ -1,7 +1,7 @@
 /**
  * @template Value
  * @template DefaultValue
- * @typedef {Value extends import("./_types").FalsyValues ? DefaultValue : NonNullable<Value>} OnFalsyDefaultReturn
+ * @typedef {Value extends import("./_types.js").FalsyValues ? DefaultValue : NonNullable<Value>} OnFalsyDefaultReturn
  */
 
 /**

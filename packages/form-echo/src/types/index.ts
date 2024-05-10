@@ -1,9 +1,9 @@
 import type { z, ZodSchema } from "zod";
 
-import type { ErrorFormatter, FormErrorShape } from "./internal";
-import type FormStoreControl from "~/utils/create-form-store-builder/control";
-import type { FormStoreMetadata } from "~/utils/create-form-store-builder/metadata";
-import type { FormStoreValidations } from "~/utils/create-form-store-builder/validations";
+import type { ErrorFormatter, FormErrorShape } from "./internal.js";
+import type FormStoreControl from "~/utils/create-form-store-builder/control.js";
+import type { FormStoreMetadata } from "~/utils/create-form-store-builder/metadata.js";
+import type { FormStoreValidations } from "~/utils/create-form-store-builder/validations.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TFunction = (...args: any[]) => any;

@@ -5,9 +5,9 @@ import type {
   FormStoreShape,
   FormStoreShapeBaseMethods,
   SharedStoreMethodsKeys,
-} from "../types";
-import type { OtherStrings, TFunction } from "../types/internal";
-import type { FormError } from "~/types";
+} from "../types/index.js";
+import type { OtherStrings, TFunction } from "../types/internal.js";
+import type { FormError } from "~/types/index.js";
 
 export interface SubmitState {
   counter: number;
@@ -19,10 +19,15 @@ export interface SubmitState {
 
 export type ResolveEvents = "submit" | "change" | "focus" | "custom";
 
-export type HandleResolverPropsPassedMethods<Values, ExternalResolvers> = {
+export type HandleResolverPropsPassedMethods<
+  Values,
+  ExternalResolvers,
+  ErrorShape,
+> = {
   [Key in SharedStoreMethodsKeys]: FormStoreShapeBaseMethods<
     Values,
-    ExternalResolvers
+    ExternalResolvers,
+    ErrorShape
   >[Key];
 };
 
@@ -36,7 +41,7 @@ type FormStoreResolver<
     name: Name;
     get: () => FormStoreShape<Values, ExternalResolvers, ErrorShape>;
     value: Name extends keyof Values ? Values[Name] : undefined;
-  } & HandleResolverPropsPassedMethods<Values, ExternalResolvers>,
+  } & HandleResolverPropsPassedMethods<Values, ExternalResolvers, ErrorShape>,
 ) => GetResolverValues<ExternalResolvers>[Name];
 
 type FormStoreResolverParams<
@@ -44,7 +49,7 @@ type FormStoreResolverParams<
   ExternalResolvers,
   Key extends keyof Values | OtherStrings,
   ErrorShape,
-> = HandleResolverPropsPassedMethods<Values, ExternalResolvers> & {
+> = HandleResolverPropsPassedMethods<Values, ExternalResolvers, ErrorShape> & {
   // ???
   // Weird typescript error and inference here
   // name: Key;
@@ -130,7 +135,24 @@ export function createFormStoreResolvers<
   externalResolvers: ExternalResolvers,
   initialResolveEvents?: { [key in ResolveEvents]?: boolean },
 ): FormStoreResolvers<Values, ExternalResolvers, ErrorShape> {
-  type Fields = FormStoreResolvers<
+  return {
+    fields: createFields(externalResolvers, initialResolveEvents),
+    currentDirtyCount: 0,
+    isDirty: false,
+    lastActive: { event: null, item: null },
+    metadata: {
+      resolversKeys: Object.keys(externalResolvers),
+      externalResolvers,
+      initialResolveEvents,
+    },
+  };
+}
+
+function createFields<Values, ExternalResolvers, ErrorShape>(
+  externalResolvers: ExternalResolvers,
+  initialResolveEvents?: { [key in ResolveEvents]?: boolean },
+): FormStoreResolvers<Values, ExternalResolvers, ErrorShape>["fields"] {
+  const fields = {} as FormStoreResolvers<
     Values,
     ExternalResolvers,
     ErrorShape
@@ -142,9 +164,9 @@ export function createFormStoreResolvers<
     ErrorShape
   >;
 
-  // const externalResolvers = schema;
-  const fields = {} as Fields;
   for (const key in externalResolvers) {
+    // updateFields(key, fields, externalResolvers, initialResolveEvents);
+
     fields[key].currentDirtyEventsCounter = 0;
     fields[key].passed = 0;
     fields[key].failed = 0;
@@ -190,15 +212,12 @@ export function createFormStoreResolvers<
     }
   }
 
-  return {
-    fields,
-    currentDirtyCount: 0,
-    isDirty: false,
-    lastActive: { event: null, item: null },
-    metadata: {
-      resolversKeys: Object.keys(externalResolvers),
-      externalResolvers,
-      initialResolveEvents,
-    },
-  };
+  return fields;
 }
+
+// function updateFields<Values, ExternalResolvers, ErrorShape>(
+//   key: Extract<keyof ExternalResolvers, string>,
+//   fields: FormStoreResolvers<Values, ExternalResolvers, ErrorShape>["fields"],
+//   externalResolvers: ExternalResolvers,
+//   initialResolveEvents?: { [key in ResolveEvents]?: boolean },
+// ) {}

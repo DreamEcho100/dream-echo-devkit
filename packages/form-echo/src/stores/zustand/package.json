@@ -1,6 +1,7 @@
 {
   "name": "@de100/form-echo/stores/zustand",
   "amdName": "de100FormEchoStoresZustand",
+  "type": "module",
   "version": "1.0.0",
   "private": true,
   "license": "MIT",

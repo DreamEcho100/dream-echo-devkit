@@ -1,4 +1,4 @@
-import type { FormError, ValidationEvents } from ".";
+import type { FormError, ValidationEvents } from "./index.js";
 
 export type ErrorFormatter = (
   error: unknown,

@@ -1,18 +1,18 @@
-import { FormStoreMetadata } from "~/utils/create-form-store-builder/metadata";
-import { FormStoreValidations } from "~/utils/create-form-store-builder/validations";
-import { createFormStoreControls, getFormStoreBaseMethods } from "./utils";
+import { FormStoreMetadata } from "~/utils/create-form-store-builder/metadata.js";
+import { FormStoreValidations } from "~/utils/create-form-store-builder/validations.js";
+import { createFormStoreControls, getFormStoreBaseMethods } from "./utils.js";
 
 // import { createFormStoreValidations } from './validations';
 
 /**
  * @template ControlsValues
- * @template {import('~/types').ValidValidationSchemaInput<ControlsValues>} ValidationSchema
- * @param {import('~/types').CreateFormStoreProps<ControlsValues, ValidationSchema>} params
- * @returns {(set: import('~/types/internal').SetStateInternal<FormStore>, get: () => FormStore) => FormStore}
+ * @template {import('~/types/index.js').ValidValidationSchemaInput<ControlsValues>} ValidationSchema
+ * @param {import('~/types/index.js').CreateFormStoreProps<ControlsValues, ValidationSchema>} params
+ * @returns {(set: import('~/types/internal.js').SetStateInternal<FormStore>, get: () => FormStore) => FormStore}
  */
 export default function createFormStoreBuilder(params) {
   /**
-   * @typedef {import('~/types').FormStoreShape<ControlsValues, ValidationSchema>} FormStore
+   * @typedef {import('~/types/index.js').FormStoreShape<ControlsValues, ValidationSchema>} FormStore
    */
 
   return (set, get) => {
@@ -22,13 +22,13 @@ export default function createFormStoreBuilder(params) {
     const metadata = new FormStoreMetadata({
       baseId,
       initialValues: params.initialValues,
-      inputValidationSchema: params.inputValidationSchema,
+      validationSchema: params.validationSchema,
     });
     const controls = createFormStoreControls(params, baseId, metadata);
     const validations = new FormStoreValidations({
       metadata,
       validationEvents: params.validationEvents,
-      inputValidationSchema: params.inputValidationSchema,
+      validationSchema: params.validationSchema,
     });
 
     return {

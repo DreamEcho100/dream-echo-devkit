@@ -1,6 +1,7 @@
 {
   "name": "@de100/form-echo",
   "version": "0.0.14",
+  "type": "module",
   "description": "A form state management for fields validations and errors",
   "keywords": [
     "form",

@@ -1,6 +1,6 @@
-export { default as onFalsy } from './on-falsy';
-export { default as onNullable } from './on-nullable';
-export { default as onTruthy } from './on-truthy';
+export { default as onFalsy } from "./on-falsy.js";
+export { default as onNullable } from "./on-nullable.js";
+export { default as onTruthy } from "./on-truthy.js";
 
 // import { inputDateHelpers } from '.';
 

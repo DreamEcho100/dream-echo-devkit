@@ -27,7 +27,7 @@ export function isZodError(error) {
 
 /**
  * @param {unknown} err
- * @returns {import("../types").FormError}
+ * @returns {import("../types/index.js").FormError}
  * */
 export function errorFormatter(err) {
   if (isZodError(err)) {

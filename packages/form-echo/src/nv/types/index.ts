@@ -3,9 +3,9 @@ import type { z, ZodSchema } from "zod";
 import type {
   FormStoreResolvers,
   ResolveEvents,
-  ValidExternalResolverSchema,
-} from "../create-form-store-builder/resolvers";
-import type { AnyValueExceptFunctions, TFunction } from "./internal";
+  // ValidExternalResolverSchema,
+} from "../create-form-store-builder/resolvers.js";
+import type { AnyValueExceptFunctions, TFunction } from "./internal.js";
 
 export type ErrorFormatter = (
   error: unknown,
@@ -31,20 +31,31 @@ export type SharedStoreMethodsKeys =
 export type HandleValidationPropsPassedMethods<
   ControlsValues,
   ValidationSchema,
+  ErrorShape,
 > = {
   [Key in SharedStoreMethodsKeys]: FormStoreShapeBaseMethods<
     ControlsValues,
-    ValidationSchema
+    ValidationSchema,
+    ErrorShape
   >[Key];
 };
 
-export type HandleSubmitCB<ControlsValues, ValidationSchema, Event> = (
+export type HandleSubmitCB<
+  ControlsValues,
+  ValidationSchema,
+  ErrorShape,
+  Event,
+> = (
   params: {
     event: Event;
     validatedValues: GetValidationValuesFromSchema<ValidationSchema>;
     values: ControlsValues;
-    get: () => FormStoreShape<ControlsValues, ValidationSchema>;
-  } & HandleValidationPropsPassedMethods<ControlsValues, ValidationSchema>,
+    get: () => FormStoreShape<ControlsValues, ValidationSchema, ErrorShape>;
+  } & HandleValidationPropsPassedMethods<
+    ControlsValues,
+    ValidationSchema,
+    ErrorShape
+  >,
   // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 ) => Promise<unknown> | unknown;
 
@@ -62,7 +73,11 @@ export type FormError =
     }
   | { message: string; path: (string | number)[] }[];
 
-export interface FormStoreShapeBaseMethods<Values, ExternalResolvers> {
+export interface FormStoreShapeBaseMethods<
+  Values,
+  ExternalResolvers,
+  ErrorShape,
+> {
   getValues: () => Values;
   getValue: <Key extends keyof Values>(name: Key) => Values[typeof name];
   setSubmit: (
@@ -102,7 +117,7 @@ export interface FormStoreShapeBaseMethods<Values, ExternalResolvers> {
     validationName?: ValidationName,
   ) => void;
   handleSubmit: <Event>(
-    cb: HandleSubmitCB<Values, ExternalResolvers, Event>,
+    cb: HandleSubmitCB<Values, ExternalResolvers, ErrorShape, Event>,
     // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   ) => (event: Event) => Promise<unknown> | unknown;
 

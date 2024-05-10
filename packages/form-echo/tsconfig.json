@@ -37,6 +37,8 @@
     "./src/**/*.ts",
     "./tsup.config.ts",
     "src/react/fields.jsx",
-    "src/react/fields.jsx"
+    "src/react/fields.jsx",
+    "src/nv/utils/index.js",
+    "src/nv/tests/_.mjs"
   ]
 }

@@ -1,22 +1,22 @@
-import { errorFormatter as defaultErrorFormatter } from "~/utils/zod";
-import FormStoreControl from "./control";
+import { errorFormatter as defaultErrorFormatter } from "~/utils/zod.js";
+import FormStoreControl from "./control.js";
 
 /**
  * @template ControlsValues
- * @typedef {import("~/types").ValidValidationSchemaInput<ControlsValues>} ValidValidationSchemaInput
+ * @typedef {import("~/types/index.js").ValidValidationSchemaInput<ControlsValues>} ValidValidationSchemaInput
  */
 
 /**
  * @template ControlsValues
  * @template {ValidValidationSchemaInput<ControlsValues>} ValidationSchema
- * @typedef {import("~/types").CreateFormStoreProps<ControlsValues, ValidationSchema>} CreateFormStoreProps
+ * @typedef {import("~/types/index.js").CreateFormStoreProps<ControlsValues, ValidationSchema>} CreateFormStoreProps
  */
 /**
  * @template ControlsValues, ValidationSchema
- * @typedef {import("~/types").FormStoreShape<ControlsValues, ValidationSchema>} FormStoreShape
+ * @typedef {import("~/types/index.js").FormStoreShape<ControlsValues, ValidationSchema>} FormStoreShape
  */
 /**
- * @typedef {import("~/types").ValidationEvents} ValidationEvents
+ * @typedef {import("~/types/index.js").ValidationEvents} ValidationEvents
  */
 
 /**
@@ -24,7 +24,7 @@ import FormStoreControl from "./control";
  * @template {ValidValidationSchemaInput<ControlsValues>} ValidationSchema
  * @param {CreateFormStoreProps<ControlsValues, ValidationSchema>} params - Parameters for creating form store controls.
  * @param {string} baseId - Base identifier for the form store controls.
- * @param {import('./metadata').FormStoreMetadata<ControlsValues, ValidationSchema>} metadata - Metadata object for the form store.
+ * @param {import('./metadata.js').FormStoreMetadata<ControlsValues, ValidationSchema>} metadata - Metadata object for the form store.
  *
  * @description Creates controls for the form store based on the provided parameters and metadata.
  */
@@ -70,8 +70,8 @@ const itemsToResetDefaults = {
 /**
  * @template ControlsValues
  * @template ValidationSchema
- * @param {import('~/types/internal').FormErrorShape<keyof ValidationSchema>} params
- * @returns {(currentStat: import('~/types').FormStoreShape<ControlsValues, ValidationSchema>) => import('~/types').FormStoreShape<ControlsValues, ValidationSchema>}
+ * @param {import('~/types/internal.js').FormErrorShape<keyof ValidationSchema>} params
+ * @returns {(currentStat: import('~/types/index.js').FormStoreShape<ControlsValues, ValidationSchema>) => import('~/types/index.js').FormStoreShape<ControlsValues, ValidationSchema>}
  */
 function _setValidationError(params) {
   return function (currentState) {
@@ -137,8 +137,8 @@ function _setValidationError(params) {
  * @template ValidationSchema
  * @template {keyof ControlsValues} Name
  * @param {Name} name
- * @param {import('~/types/internal').AnyValueExceptFunctions | ((value: ControlsValues[Name]) => ControlsValues[Name])} valueOrUpdater
- * @returns {(currentStat: import('~/types').FormStoreShape<ControlsValues, ValidationSchema>) => import('~/types').FormStoreShape<ControlsValues, ValidationSchema>}
+ * @param {import('~/types/internal.js').AnyValueExceptFunctions | ((value: ControlsValues[Name]) => ControlsValues[Name])} valueOrUpdater
+ * @returns {(currentStat: import('~/types/index.js').FormStoreShape<ControlsValues, ValidationSchema>) => import('~/types/index.js').FormStoreShape<ControlsValues, ValidationSchema>}
  */
 function _setControlValue(name, valueOrUpdater) {
   return function (currentState) {
@@ -162,14 +162,14 @@ function _setControlValue(name, valueOrUpdater) {
 
 /**
  * @template ControlsValues
- * @template {import('~/types').ValidValidationSchemaInput<ControlsValues>} ValidationSchema
- * @param {import('~/types/internal').SetStateInternal<import('~/types').FormStoreShape<ControlsValues, ValidationSchema>>} set
- * @param {() => import('~/types').FormStoreShape<ControlsValues, ValidationSchema>} get
- * @param {import('~/types').CreateFormStoreProps<ControlsValues, ValidationSchema>} params
+ * @template {import('~/types/index.js').ValidValidationSchemaInput<ControlsValues>} ValidationSchema
+ * @param {import('~/types/internal.js').SetStateInternal<import('~/types/index.js').FormStoreShape<ControlsValues, ValidationSchema>>} set
+ * @param {() => import('~/types/index.js').FormStoreShape<ControlsValues, ValidationSchema>} get
+ * @param {import('~/types/index.js').CreateFormStoreProps<ControlsValues, ValidationSchema>} params
  */
 export function getFormStoreBaseMethods(set, get, params) {
   /**
-   * @typedef {import('~/types').FormStoreShapeBaseMethods<ControlsValues, ValidationSchema>} FormStoreBaseMethods
+   * @typedef {import('~/types/index.js').FormStoreShapeBaseMethods<ControlsValues, ValidationSchema>} FormStoreBaseMethods
    * @typedef {FormStoreBaseMethods['getControlsValues']} GetValues
    * @typedef {FormStoreBaseMethods['getControlValue']} GetValue
    * @typedef {keyof ControlsValues} ControlsValuesKeys
@@ -312,8 +312,10 @@ export function getFormStoreBaseMethods(set, get, params) {
         validations.items[key].currentEvent = null;
         validations.items[key].error = null;
 
-        /** @type {import('~/types').ValidationEvents} */
+        /** @type {import('~/types/index.js').ValidationEvents} */
         let eventKey;
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
         for (eventKey in validations.items[key].events) {
           validations.items[key].events[eventKey].isActive = false;
           validations.items[key].events[eventKey].failedAttempts = 0;
@@ -469,7 +471,7 @@ export function getFormStoreBaseMethods(set, get, params) {
       /** @type {Record<string, unknown> } */
       const validatedValues = {};
 
-      /** @type {Record<string, import('~/types/internal').FormErrorShape<keyof ValidationSchema>> } */
+      /** @type {Record<string, import('~/types/internal.js').FormErrorShape<keyof ValidationSchema>> } */
       const errors = {};
 
       let hasError = false;
@@ -547,13 +549,13 @@ export function getFormStoreBaseMethods(set, get, params) {
             });
 
           errors[/** @type {string} */ (manualControlName)] = {
-            name: manualControlName,
+            name: /** @type {keyof ValidationSchema} */ (manualControlName),
             error: null,
             validationEvent: "submit",
           };
         } catch (error) {
           errors[/** @type {string} */ (manualControlName)] = {
-            name: manualControlName,
+            name: /** @type {keyof ValidationSchema} */ (manualControlName),
             error: currentState.errorFormatter(error, "submit"),
             validationEvent: "submit",
           };
@@ -563,16 +565,16 @@ export function getFormStoreBaseMethods(set, get, params) {
       /**
        * @description Necessary Evil
        * @typedef {ControlsValues} Values
-       * @typedef {import('~/types').GetValidationValuesFromSchema<ValidationSchema>} ValidatedValues
-       * @typedef {{ [Key in keyof ValidationSchema]: import('~/types/internal').FormErrorShape<Key> }} Error
-       * @typedef {{ [Key in keyof ValidationSchema]: { name: Key; message: string | null; validationEvent: import('~/types').ValidationEvents; }; }} Errors
+       * @typedef {import('~/types/index.js').GetValidationValuesFromSchema<ValidationSchema>} ValidatedValues
+       * @typedef {{ [Key in keyof ValidationSchema]: import('~/types/internal.js').FormErrorShape<Key> }} Error
+       * @typedef {{ [Key in keyof ValidationSchema]: { name: Key; message: string | null; validationEvent: import('~/types/index.js').ValidationEvents; }; }} Errors
        */
 
       /** @type {keyof typeof errors & string} */
       let errorKey;
       for (errorKey in errors) {
         const errorObj =
-          /** @type {import("~/types/internal").FormErrorShape<keyof ValidationSchema>} */ (
+          /** @type {import("~/types/internal.js").FormErrorShape<keyof ValidationSchema>} */ (
             errors[errorKey]
           );
 

@@ -1,20 +1,22 @@
 import { useId, useRef } from "react";
 import { createStore, useStore } from "zustand";
 
-import createFormStoreBuilder from "~/utils/create-form-store-builder";
+import createFormStoreBuilder from "~/utils/create-form-store-builder/index.js";
+
+// import createFormStoreBuilder from "~/utils/create-form-store-builder/index.js";
 
 export { useStore } from "zustand";
-export * from "./types";
+export * from "./types.js";
 
 /**
  * @template ControlsValues
- * @typedef {import("../../../types").ValidValidationSchemaInput<ControlsValues>} ValidValidationSchemaInput
+ * @typedef {import("../../../types/index.js").ValidValidationSchemaInput<ControlsValues>} ValidValidationSchemaInput
  */
 
 /**
  * @template ControlsValues
  * @template {ValidValidationSchemaInput<ControlsValues>} ValidationSchema
- * @typedef {import("../../../types").CreateFormStoreProps<ControlsValues, ValidationSchema>} CreateFormStoreProps
+ * @typedef {import("../../../types/index.js").CreateFormStoreProps<ControlsValues, ValidationSchema>} CreateFormStoreProps
  */
 
 /**
@@ -41,7 +43,7 @@ export const useCreateFormStore = (props) => {
 
 /**
  * @template ControlsValues, ValidationSchema
- * @param {import("./types").PropsWithFormStoreControl<ControlsValues, ValidationSchema, { ignoreFocus?: boolean }>} props
+ * @param {import("./types.js").PropsWithFormStoreControl<ControlsValues, ValidationSchema, { ignoreFocus?: boolean }>} props
  */
 export function useGetControlProps(props) {
   const value = useStore(
@@ -74,7 +76,7 @@ export function useGetControlProps(props) {
 
 /**
  * @template ControlsValues, ValidationSchema
- * @param {import("./types").PropsWithFormStoreValidationItem<ControlsValues, ValidationSchema, { ignoreFocus?: boolean }>} props
+ * @param {import("./types.js").PropsWithFormStoreValidationItem<ControlsValues, ValidationSchema, { ignoreFocus?: boolean }>} props
  */
 export function useGetControlErrorProps(props) {
   const error = useStore(props.store, (store) => {

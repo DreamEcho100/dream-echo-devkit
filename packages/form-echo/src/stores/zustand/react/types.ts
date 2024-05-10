@@ -5,7 +5,7 @@ import type {
   FormStoreShape,
   GetValidationValuesFromSchema,
   HandleSubmitCB,
-} from "../../../types";
+} from "../../../types/index.js";
 
 export type FormStoreApi<
   ControlsValues,
