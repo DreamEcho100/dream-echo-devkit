@@ -38,7 +38,6 @@ type ResolverBaseShape = {
   handler: ResolverHandler;
  };
 };
-
 type ResolverHandlerParam<Values, Resolvers extends ResolverBaseShape, Path> = {
  /** @description - used to set the errors of the form, by passing the path _(separated by dotes)_ of the error which is the paths of the `resolvers`. */
  setErrors: (path: keyof Resolvers, message: string) => void;
@@ -52,9 +51,7 @@ type ResolverHandlerParam<Values, Resolvers extends ResolverBaseShape, Path> = {
   ? { name: never; value: never }
   : { name: Path; value: Value }
  : { name: never; value: never });
-
 type ResolverHandlerResult<Value> = { value: Value } | { error: Error };
-
 /** @description - used to handle the form validation. */
 type ResolverHandler = <Values, Resolvers extends ResolverBaseShape, Path>(
  param: ResolverHandlerParam<Values, Resolvers, Path>
