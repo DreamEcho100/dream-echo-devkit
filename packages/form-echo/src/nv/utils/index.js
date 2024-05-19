@@ -1,104 +1,44 @@
-/**
- * Credits to: <https://github.com/edmundhung/conform/blob/main/packages/conform-dom/formdata.ts>
- *
- * for the `getPaths`, `formatPaths`, `setValue`, `isPlainObject` and `getValue` implementation
- *
- */
+import { isPlainObject } from "./general/index.js";
+import { getPaths } from "./paths/index.js";
 
 /**
- * Returns the paths from a name based on the JS syntax convention
- * @example
- * ```js
- * const paths = getPaths('todos[0].content'); // ['todos', 0, 'content']
- * ```
+ * Retrieve the value from a target object by following the paths
  *
- * @param {string} name - The name to get the paths from
- * @returns {(string | number)[]} The paths from the name
+ * @template Target
+ * @template {import("./paths/types.js").DeepPaths<Target>} Name
+ *
+ * @param {Target} target
+ * @param {Name} name
+ * @returns {import("./paths/types.js").GetValueByPath<Target, Name>}
  */
-export function getPaths(name) {
-  if (!name) {
-    return [];
-  }
+export function getValue(target, name) {
+  /** @type {unknown} */
+  let pointer = target;
 
-  const paths = [];
-  let currentPath = "";
-  let inBracket = false;
+  for (const path of getPaths(name)) {
+    if (typeof pointer === "undefined" || pointer == null) {
+      break;
+    }
 
-  let i = 0;
-  /** @type {string | undefined} */
-  let char;
-  for (; i < name.length; i++) {
-    char = name[i];
-    if (char === "." && !inBracket) {
-      // End of a path segment
-      if (currentPath !== "") {
-        paths.push(currentPath);
-        currentPath = "";
-      }
-    } else if (char === "[") {
-      // Start of an array index
-      if (currentPath !== "") {
-        paths.push(currentPath);
-        currentPath = "";
-      }
-      inBracket = true;
-    } else if (char === "]" && inBracket) {
-      // End of an array index
-      inBracket = false;
-      paths.push(Number(currentPath));
-      currentPath = "";
+    if (isPlainObject(pointer) && typeof path === "string") {
+      pointer = pointer[path];
+    } else if (Array.isArray(pointer) && typeof path === "number") {
+      pointer = pointer[path];
     } else {
-      currentPath += char;
+      pointer = undefined;
+      break;
     }
   }
 
-  // Add last segment if there's any
-  if (currentPath !== "") {
-    if (!inBracket) {
-      paths.push(currentPath);
-    } else {
-      // Handle potential syntax error or assume it's part of the path
-      paths.push(Number(currentPath));
-    }
-  }
-
-  return paths;
+  return /** @type {import("./paths/types.js").GetValueByPath<Target, Name>} */ (
+    pointer
+  );
 }
 
-/**
- * Returns a formatted name from the paths based on the JS syntax convention
- * @example
- * ```js
- * const name = formatPaths(['todos', 0, 'content']); // "todos[0].content"
- * ```
- *
- * @param {(string | number)[]} paths - The paths to format
- * @returns {string} The formatted name
- */
-export function formatPaths(paths) {
-  let formattedName = "";
-
-  let i = 0;
-  /** @type {string | number | undefined} */
-  let curr;
-  for (; i < paths.length; i++) {
-    curr = paths[i];
-    if (typeof curr === "number") {
-      // Directly append number within brackets
-      formattedName += `[${Number.isNaN(curr) ? "" : curr}]`;
-    } else {
-      // For strings, check if it's the first element or not to prepend a dot
-      if (i > 0) {
-        formattedName += `.${curr}`;
-      } else {
-        // First element, just append
-        formattedName += curr;
-      }
-    }
-  }
-
-  return formattedName;
-}
+// getValue(
+//   { todos: [{ content: "Hello", test: [] }], lol: { bruh: "xd" } },
+//   "todos[2].content",
+// );
 
 /**
  * Assign a value to a target object by following the paths.
@@ -130,47 +70,6 @@ export function setValue(target, path, valueFn) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     pointer = /** @type {any} */ (pointer[key]);
   }
-}
-
-/**
- * Check if the value is a plain object
- *
- * @param {unknown} obj
- * @returns {obj is Record<string | number | symbol, unknown>}
- */
-export function isPlainObject(obj) {
-  return (
-    !!obj &&
-    obj.constructor === Object &&
-    Object.getPrototypeOf(obj) === Object.prototype
-  );
-}
-
-/**
- * Retrieve the value from a target object by following the paths
- *
- * @param {unknown} target
- * @param {string} name
- * @returns {unknown}
- */
-export function getValue(target, name) {
-  let pointer = target;
-
-  for (const path of getPaths(name)) {
-    if (typeof pointer === "undefined" || pointer == null) {
-      break;
-    }
-
-    if (isPlainObject(pointer) && typeof path === "string") {
-      pointer = pointer[path];
-    } else if (Array.isArray(pointer) && typeof path === "number") {
-      pointer = pointer[path];
-    } else {
-      return;
-    }
-  }
-
-  return pointer;
 }
 
 export const coerce = {
