@@ -44,6 +44,8 @@ export function getPaths(name) {
       inBracket = true;
     } else if (char === "]" && inBracket) {
       // End of an array index
+      // Should check if it's a number or not
+      // ???
       paths.push(Number(currentPath));
       inBracket = false;
       currentPath = "";

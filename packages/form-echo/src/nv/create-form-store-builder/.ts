@@ -17,6 +17,8 @@ Custom Form Handling
 
 import type { infer as ZodInfer, ZodSchema } from "zod";
 
+import { DeepPaths } from "../utils/paths/types.js";
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type TFunction = (...args: any[]) => any;
 // eslint-disable-next-line @typescript-eslint/ban-types
@@ -94,7 +96,6 @@ interface FormStoreResolvers<Values, InputResolvers, ResolverError> {
   reset: (options?: { keepErrors?: boolean; keepIsDirty?: boolean }) => void;
 }
 // Resolvers types end here
-
 interface CurrentField<Name> {
   name: Name;
   at: number;
@@ -103,12 +104,12 @@ interface CurrentField<Name> {
 interface FormStoreFields<Values> {
   values: Values;
   initialValues: Values;
-  focused: null | CurrentField<keyof Values>;
-  changing: null | CurrentField<keyof Values>;
+  focused: null | CurrentField<DeepPaths<Values>>;
+  changing: null | DeepPaths<Values>;
   touched: {
-    fields: { [Key in keyof Values]: false };
+    fields: { [Key in DeepPaths<Values> & string]?: boolean };
     count: number;
-    last: null | CurrentField<keyof Values>;
+    last: null | CurrentField<DeepPaths<Values>>;
   };
 }
 
@@ -168,7 +169,7 @@ interface FormStoreSubmit<Values, InputResolvers, ResolverError> {
         ) => void | Promise<void>;
       },
     ) => U | Promise<U>,
-  ) => U;
+  ) => void;
 
   reset: (options?: {
     keepErrors?: boolean;
